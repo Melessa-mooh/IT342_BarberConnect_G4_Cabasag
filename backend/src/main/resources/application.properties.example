@@ -1,0 +1,38 @@
+# Example application properties file
+# Copy this to application.properties and update with your actual values
+
+# Application Configuration
+spring.application.name=barberconnect-backend
+
+# Server Configuration
+server.port=8080
+server.servlet.context-path=/api/v1
+
+# Database Configuration (H2 for development)
+spring.datasource.url=jdbc:h2:mem:barberconnect
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# JPA Configuration
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# Firebase Configuration
+firebase.service-account-key=classpath:serviceAccountKey.json
+
+# Cloudinary Configuration (add your credentials)
+cloudinary.cloud-name=your-cloud-name
+cloudinary.api-key=your-api-key
+cloudinary.api-secret=your-api-secret
+
+# CORS Configuration
+cors.allowed-origins=http://localhost:5173,http://localhost:3000
+
+# Logging
+logging.level.com.barberconnect=DEBUG
+logging.level.org.springframework.security=DEBUG
