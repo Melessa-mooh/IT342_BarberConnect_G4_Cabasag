@@ -25,6 +25,9 @@ public class AuthService {
     private final FirebaseAuth firebaseAuth;
     
     public AuthResponse register(RegisterRequest request) {
+        // Clean phone number (remove spaces and formatting)
+        String cleanedPhoneNumber = request.getPhoneNumber().replaceAll("\\s+", "");
+        
         // Check if user already exists
         if (userService.findById(request.getFirebaseUid()).isPresent()) {
             throw new RuntimeException("User already exists");
@@ -34,7 +37,7 @@ public class AuthService {
             throw new RuntimeException("Email already registered");
         }
         
-        if (userService.existsByPhoneNumber(request.getPhoneNumber())) {
+        if (userService.existsByPhoneNumber(cleanedPhoneNumber)) {
             throw new RuntimeException("Phone number already registered");
         }
         
@@ -44,7 +47,7 @@ public class AuthService {
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
-        user.setPhoneNumber(request.getPhoneNumber());
+        user.setPhoneNumber(cleanedPhoneNumber);
         user.setRole(request.getRole());
         user.setIsActive(true);
         user.setCreatedAt(LocalDateTime.now());

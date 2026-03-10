@@ -68,7 +68,17 @@ export const authService = {
       
       return response.data.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || error.message);
+      // Handle Firebase-specific errors
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('This email is already registered. Please use a different email or try logging in.');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Invalid email address format.');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Password is too weak. Please use a stronger password.');
+      }
+      
+      // Handle backend errors
+      throw new Error(error.response?.data?.error || error.message || 'Registration failed');
     }
   },
 
