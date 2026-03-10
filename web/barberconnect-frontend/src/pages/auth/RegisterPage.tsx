@@ -233,8 +233,6 @@ const RegisterPage: React.FC = () => {
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   placeholder="+63 9XX XXX XXXX"
-                  pattern="^(\+63|0)?[9][0-9]{9}$"
-                  title="Enter a valid Philippine phone number (e.g., +639171234567 or 09171234567)"
                   required
                 />
                 <small className="input-hint">
