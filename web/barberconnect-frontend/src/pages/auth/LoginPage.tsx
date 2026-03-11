@@ -1,20 +1,50 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { authService } from '../../services/authService';
 import './LoginPage.css';
+
+interface FormData {
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, signInWithGoogle } = useAuth();
-  
-  const [formData, setFormData] = useState({
+  const [searchParams] = useSearchParams();
+  const message = searchParams.get('message');
+
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     password: ''
   });
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Please enter a valid email address';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -22,40 +52,46 @@ const LoginPage: React.FC = () => {
       ...prev,
       [name]: value
     }));
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
     
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors({});
+
     try {
-      await signInWithGoogle();
+      await authService.login({
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      // Redirect to dashboard on success
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in failed');
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      setErrors({
+        general: error.message || 'Login failed. Please try again.'
+      });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = () => {
-    // TODO: Implement forgot password
-    console.log('Forgot password clicked');
+  const handleGoogleLogin = () => {
+    authService.loginWithGoogle();
   };
 
   return (
@@ -66,8 +102,8 @@ const LoginPage: React.FC = () => {
           <span className="logo-icon">✂️</span>
           <span className="logo-text">BarberConnect</span>
         </Link>
-        <Link to="/register" className="nav-link">
-          Don't have an account? <span>Sign Up</span>
+        <Link to="/" className="nav-link">
+          Back to Home
         </Link>
       </nav>
 
@@ -75,15 +111,80 @@ const LoginPage: React.FC = () => {
         <div className="login-content">
           {/* Header */}
           <div className="login-header">
-            <h1>Welcome back</h1>
-            <p>Sign in to your BarberConnect account</p>
+            <h1>Welcome Back</h1>
+            <p>Sign in to continue your barbershop journey</p>
           </div>
 
-          {/* Google Sign In */}
+          {/* Success Message */}
+          {message && (
+            <div className="success-message">
+              {message}
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="login-form">
+            {/* General Error */}
+            {errors.general && (
+              <div className="error-message general-error">
+                {errors.general}
+              </div>
+            )}
+
+            {/* Email Field */}
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={errors.email ? 'error' : ''}
+                placeholder="Enter your email address"
+              />
+              {errors.email && (
+                <span className="error-message">{errors.email}</span>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={errors.password ? 'error' : ''}
+                placeholder="Enter your password"
+              />
+              {errors.password && (
+                <span className="error-message">{errors.password}</span>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="login-btn"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="divider">
+            <span>or</span>
+          </div>
+
+          {/* Google Sign In Button */}
           <button
             type="button"
             className="google-btn"
-            onClick={handleGoogleSignIn}
+            onClick={handleGoogleLogin}
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -91,112 +192,18 @@ const LoginPage: React.FC = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Continue with Google
+            Sign in with Google
           </button>
-
-          <div className="divider">
-            <span>or</span>
-          </div>
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="login-form">
-            {error && (
-              <div className="error-message">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                {error}
-              </div>
-            )}
-
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="password-input">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Enter your password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="form-options">
-              <label className="remember-me">
-                <input type="checkbox" />
-                <span className="checkmark"></span>
-                Remember me
-              </label>
-              <button
-                type="button"
-                className="forgot-password"
-                onClick={handleForgotPassword}
-              >
-                Forgot password?
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="spinner"></div>
-                  Signing In...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="12,5 19,12 12,19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </>
-              )}
-            </button>
-          </form>
 
           <div className="login-footer">
             <p>
-              New to BarberConnect?{' '}
-              <Link to="/register" className="link">Create an account</Link>
+              Don't have an account?{' '}
+              <Link to="/register" className="link">Sign Up</Link>
+            </p>
+            <p style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
+              By continuing, you agree to our{' '}
+              <a href="#" className="link">Terms of Service</a> and{' '}
+              <a href="#" className="link">Privacy Policy</a>
             </p>
           </div>
         </div>

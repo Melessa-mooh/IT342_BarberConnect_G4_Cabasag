@@ -17,6 +17,7 @@ public class AuthResponse {
     private String phoneNumber;
     private User.UserRole role;
     private boolean isActive;
+    private String token; // JWT token
     private BarberProfileResponse barberProfile;
     
     @Data

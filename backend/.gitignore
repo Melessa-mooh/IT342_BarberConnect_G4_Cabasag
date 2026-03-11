@@ -34,8 +34,10 @@ build/
 
 # Firebase Service Account Key (NEVER commit this!)
 src/main/resources/serviceAccountKey.json
+src/main/resources/serviceAccountKey*.json
 
 # Environment specific files
+src/main/resources/application.properties
 src/main/resources/application-*.properties
 application-*.properties
 

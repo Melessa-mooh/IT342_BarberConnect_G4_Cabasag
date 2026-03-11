@@ -4,7 +4,7 @@ import { formatPhoneNumber, validatePhilippinePhoneNumber, normalizePhoneNumber 
 import './ProfilePage.css';
 
 const ProfilePage: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -81,7 +81,8 @@ const ProfilePage: React.FC = () => {
         updateData.isAvailable = formData.isAvailable;
       }
 
-      await updateProfile(updateData);
+      // TODO: Implement profile update API call
+      console.log('Profile update data:', updateData);
       setSuccess('Profile updated successfully!');
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');

@@ -1,6 +1,7 @@
 package edu.cit.cabasag.barberconnect.config;
 
-import edu.cit.cabasag.barberconnect.security.FirebaseTokenFilter;
+import edu.cit.cabasag.barberconnect.security.JwtAuthenticationFilter;
+import edu.cit.cabasag.barberconnect.security.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,47 +17,57 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    
-    private final FirebaseTokenFilter firebaseTokenFilter;
-    
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
     @Value("${cors.allowed-origins}")
-    private String[] allowedOrigins;
-    
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/auth/register", "/auth/login", "/auth/google").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/barbers/public/**", "/haircuts/public/**").permitAll()
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints
+                .requestMatchers(
+                    "/auth/**",
+                    "/oauth2/**",
+                    "/login/oauth2/**",
+                    "/error"
+                ).permitAll()
+                // Admin endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                // Barber endpoints
                 .requestMatchers("/barbers/profile/**").hasRole("BARBER")
-                .anyRequest().permitAll() // Allow all requests for development
+                // Protected endpoints
+                .anyRequest().authenticated()
             )
-            .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions().disable()); // For H2 console
-        
+            .oauth2Login(oauth2 -> oauth2
+                .successHandler(oAuth2SuccessHandler)
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
-    
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

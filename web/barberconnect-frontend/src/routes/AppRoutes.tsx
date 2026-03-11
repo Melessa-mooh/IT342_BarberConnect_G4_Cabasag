@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
+import AuthCallback from '../pages/auth/AuthCallback';
 import CustomerDashboard from '../pages/customer/CustomerDashboard';
 import BarberDashboard from '../pages/barber/BarberDashboard';
 import ProfilePage from '../pages/ProfilePage';
-import TestAuth from '../pages/TestAuth';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -108,7 +108,9 @@ const AppRoutes: React.FC = () => {
           <RegisterPage />
         </PublicRoute>
       } />
-      <Route path="/test-auth" element={<TestAuth />} />
+      
+      {/* OAuth2 Callback Route */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       {/* Protected Routes */}
       <Route path="/dashboard" element={
