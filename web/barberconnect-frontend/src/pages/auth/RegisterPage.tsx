@@ -1,103 +1,135 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { formatPhoneNumber, validatePhilippinePhoneNumber, normalizePhoneNumber } from '../../utils/phoneUtils';
+import { authService } from '../../services/authService';
 import './RegisterPage.css';
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+}
 
 const RegisterPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { register, registerWithGoogle } = useAuth();
-  
-  const [selectedRole, setSelectedRole] = useState<'CUSTOMER' | 'BARBER'>(
-    (searchParams.get('role')?.toUpperCase() as 'CUSTOMER' | 'BARBER') || 'CUSTOMER'
-  );
-  
-  const [formData, setFormData] = useState({
+  const role = searchParams.get('role') || 'customer';
+
+  const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     email: '',
-    phoneNumber: '',
     password: '',
-    confirmPassword: '',
-    bio: '',
-    yearsExperience: 0
+    confirmPassword: ''
   });
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    // First Name validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName.trim())) {
+      newErrors.firstName = 'First name must contain only letters';
+    }
+
+    // Last Name validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.lastName.trim())) {
+      newErrors.lastName = 'Last name must contain only letters';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Please enter a valid email address';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    // Confirm Password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Handle phone number formatting
-    if (name === 'phoneNumber') {
-      const formatted = formatPhoneNumber(value);
-      setFormData(prev => ({
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({
         ...prev,
-        [name]: formatted
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: name === 'yearsExperience' ? parseInt(value) || 0 : value
+        [name]: undefined
       }));
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    
+    if (!validateForm()) {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
-    if (!validatePhilippinePhoneNumber(formData.phoneNumber)) {
-      setError('Please enter a valid Philippine phone number');
-      return;
-    }
-
-    setLoading(true);
+    setIsLoading(true);
+    setErrors({});
 
     try {
-      // Clean phone number for submission
-      const cleanedPhoneNumber = normalizePhoneNumber(formData.phoneNumber);
-      
-      await register({
-        ...formData,
-        phoneNumber: cleanedPhoneNumber,
-        role: selectedRole
+      await authService.register({
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        password: formData.password
       });
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+
+      // Redirect to login page on success
+      navigate('/login?message=Registration successful! Please sign in.');
+    } catch (error: any) {
+      console.error('Registration failed:', error);
+      setErrors({
+        general: error.message || 'Registration failed. Please try again.'
+      });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    setError('');
-    setLoading(true);
-    
-    try {
-      await registerWithGoogle(selectedRole);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Google sign-up failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleSignUp = () => {
+    authService.loginWithGoogle();
   };
 
   return (
@@ -118,38 +150,120 @@ const RegisterPage: React.FC = () => {
           {/* Header */}
           <div className="register-header">
             <h1>Create your account</h1>
-            <p>Join our barbershop community and get started today</p>
+            <p>Join our barbershop community as a {role}</p>
           </div>
 
-          {/* Role Selection */}
-          <div className="role-toggle">
-            <p className="role-label">I want to register as</p>
-            <div className="toggle-buttons">
-              <button
-                type="button"
-                className={`toggle-btn ${selectedRole === 'CUSTOMER' ? 'active' : ''}`}
-                onClick={() => setSelectedRole('CUSTOMER')}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                Customer
-              </button>
-              <button
-                type="button"
-                className={`toggle-btn ${selectedRole === 'BARBER' ? 'active' : ''}`}
-                onClick={() => setSelectedRole('BARBER')}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Barber
-              </button>
+          {/* Registration Form */}
+          <form onSubmit={handleSubmit} className="register-form">
+            {/* General Error */}
+            {errors.general && (
+              <div className="error-message general-error">
+                {errors.general}
+              </div>
+            )}
+
+            {/* Name Fields Row */}
+            <div className="name-row">
+              <div className="form-group">
+                <label htmlFor="firstName">First Name</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className={errors.firstName ? 'error' : ''}
+                  placeholder="Enter your first name"
+                />
+                {errors.firstName && (
+                  <span className="error-message">{errors.firstName}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className={errors.lastName ? 'error' : ''}
+                  placeholder="Enter your last name"
+                />
+                {errors.lastName && (
+                  <span className="error-message">{errors.lastName}</span>
+                )}
+              </div>
             </div>
+
+            {/* Email Field */}
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={errors.email ? 'error' : ''}
+                placeholder="Enter your email address"
+              />
+              {errors.email && (
+                <span className="error-message">{errors.email}</span>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={errors.password ? 'error' : ''}
+                placeholder="Enter your password"
+              />
+              {errors.password && (
+                <span className="error-message">{errors.password}</span>
+              )}
+            </div>
+
+            {/* Confirm Password Field */}
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className={errors.confirmPassword ? 'error' : ''}
+                placeholder="Confirm your password"
+              />
+              {errors.confirmPassword && (
+                <span className="error-message">{errors.confirmPassword}</span>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="register-btn"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="divider">
+            <span>or</span>
           </div>
 
-          {/* Google Sign Up */}
+          {/* Google Sign Up Button */}
           <button
             type="button"
             className="google-btn"
@@ -161,210 +275,8 @@ const RegisterPage: React.FC = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Continue with Google
+            Sign up with Google
           </button>
-
-          <div className="divider">
-            <span>or</span>
-          </div>
-
-          {/* Registration Form */}
-          <form onSubmit={handleSubmit} className="register-form">
-            {error && (
-              <div className="error-message">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                {error}
-              </div>
-            )}
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="firstName">First Name</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  placeholder="Ma.Melessa"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="lastName">Last Name</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  placeholder="Cabasag"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="melessa@example.com"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="phoneNumber">Phone Number</label>
-                <input
-                  type="tel"
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange}
-                  placeholder="+63 9XX XXX XXXX"
-                  required
-                />
-                <small className="input-hint">
-                  Format: +63 9XX XXX XXXX or 09XX XXX XXXX
-                </small>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <div className="password-input">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Create a strong password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <div className="password-input">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="Confirm your password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Barber-specific fields */}
-            {selectedRole === 'BARBER' && (
-              <>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="yearsExperience">Years of Experience</label>
-                    <input
-                      type="number"
-                      id="yearsExperience"
-                      name="yearsExperience"
-                      value={formData.yearsExperience}
-                      onChange={handleInputChange}
-                      placeholder="5"
-                      min="0"
-                      max="50"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="bio">Bio (Optional)</label>
-                    <textarea
-                      id="bio"
-                      name="bio"
-                      value={formData.bio}
-                      onChange={handleInputChange}
-                      placeholder="Tell us about your experience and specialties..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="spinner"></div>
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  Create Account
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="12,5 19,12 12,19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </>
-              )}
-            </button>
-          </form>
 
           <div className="register-footer">
             <p>

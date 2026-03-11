@@ -8,31 +8,37 @@ spring.application.name=barberconnect-backend
 server.port=8080
 server.servlet.context-path=/api/v1
 
-# Database Configuration (H2 for development)
-spring.datasource.url=jdbc:h2:mem:barberconnect
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=password
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
-
-# JPA Configuration
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=create-drop
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-
-# Firebase Configuration
+# Firebase Configuration (Firestore ONLY - no auth)
 firebase.service-account-key=classpath:serviceAccountKey.json
+firebase.project.id=your-firebase-project-id
 
-# Cloudinary Configuration (add your credentials)
+# Google OAuth2 Configuration - REPLACE WITH YOUR VALUES
+spring.security.oauth2.client.registration.google.client-id=your-google-client-id-here
+spring.security.oauth2.client.registration.google.client-secret=your-google-client-secret-here
+spring.security.oauth2.client.registration.google.scope=profile,email
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/google
+
+# OAuth2 Provider Configuration
+spring.security.oauth2.client.provider.google.authorization-uri=https://accounts.google.com/o/oauth2/auth
+spring.security.oauth2.client.provider.google.token-uri=https://oauth2.googleapis.com/token
+spring.security.oauth2.client.provider.google.user-info-uri=https://www.googleapis.com/oauth2/v2/userinfo
+spring.security.oauth2.client.provider.google.user-name-attribute=email
+
+# JWT Configuration - REPLACE WITH SECURE SECRET
+jwt.secret=your-secure-jwt-secret-key-minimum-256-bits
+jwt.expiration=86400000
+
+# Cloudinary Configuration - REPLACE WITH YOUR VALUES
 cloudinary.cloud-name=your-cloud-name
 cloudinary.api-key=your-api-key
 cloudinary.api-secret=your-api-secret
 
 # CORS Configuration
-cors.allowed-origins=http://localhost:5173,http://localhost:3000
+cors.allowed-origins=http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000
+
+# Frontend URL for OAuth2 redirect
+frontend.url=http://localhost:5173
 
 # Logging
-logging.level.com.barberconnect=DEBUG
+logging.level.edu.cit.cabasag.barberconnect=DEBUG
 logging.level.org.springframework.security=DEBUG

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { auth } from '../assets/firebase/firebaseConfig';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,12 +9,11 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add Firebase token
+// Request interceptor to add JWT token
 api.interceptors.request.use(
-  async (config) => {
-    const user = auth.currentUser;
-    if (user) {
-      const token = await user.getIdToken();
+  (config) => {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -31,8 +29,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access
-      auth.signOut();
-      window.location.href = '/login';
+      localStorage.removeItem('jwt_token');
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }

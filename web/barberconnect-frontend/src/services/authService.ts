@@ -1,23 +1,10 @@
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut,
-  signInWithPopup,
-  GoogleAuthProvider
-} from 'firebase/auth';
-import type { User as FirebaseUser } from 'firebase/auth';
-import { auth } from '../assets/firebase/firebaseConfig';
 import api from './api';
 
 export interface RegisterData {
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
   password: string;
-  role: 'CUSTOMER' | 'BARBER';
-  bio?: string;
-  yearsExperience?: number;
 }
 
 export interface LoginData {
@@ -44,173 +31,111 @@ export interface User {
   };
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export const authService = {
+  /**
+   * Register with email and password
+   */
   async register(data: RegisterData): Promise<User> {
     try {
-      // Create Firebase user
-      const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        data.email, 
-        data.password
-      );
+      const response = await api.post('/auth/register', data);
+      const authResponse = response.data.data;
       
-      // Register with backend
-      const response = await api.post('/auth/register', {
-        firebaseUid: userCredential.user.uid,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phoneNumber: data.phoneNumber,
-        role: data.role,
-        bio: data.bio,
-        yearsExperience: data.yearsExperience
-      });
-      
-      return response.data.data;
-    } catch (error: any) {
-      // Handle Firebase-specific errors
-      if (error.code === 'auth/email-already-in-use') {
-        throw new Error('This email is already registered. Please use a different email or try logging in.');
-      } else if (error.code === 'auth/invalid-email') {
-        throw new Error('Invalid email address format.');
-      } else if (error.code === 'auth/weak-password') {
-        throw new Error('Password is too weak. Please use a stronger password.');
+      // Store JWT token
+      if (authResponse.token) {
+        authService.setToken(authResponse.token);
       }
       
-      // Handle backend errors
-      throw new Error(error.response?.data?.error || error.message || 'Registration failed');
-    }
-  },
-
-  async login(data: LoginData): Promise<User> {
-    try {
-      // Sign in with Firebase
-      const userCredential = await signInWithEmailAndPassword(
-        auth, 
-        data.email, 
-        data.password
-      );
-      
-      // Get Firebase ID token
-      const idToken = await userCredential.user.getIdToken();
-      
-      // Login with backend using fetch to avoid interceptor conflicts
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
-      }
-      
-      const responseData = await response.json();
-      return responseData.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Login failed');
-    }
-  },
-
-  async signInWithGoogle(): Promise<User> {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-      
-      // Sign in with Google popup
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      // Get Firebase ID token
-      const idToken = await user.getIdToken();
-      
-      // Use the new Google auth endpoint (defaults to CUSTOMER role)
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idToken,
-          role: 'CUSTOMER'
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Google sign-in failed');
-      }
-      
-      const responseData = await response.json();
-      return responseData.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Google sign-in failed');
-    }
-  },
-
-  async registerWithGoogle(role: 'CUSTOMER' | 'BARBER'): Promise<User> {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-      
-      // Sign in with Google popup
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      // Get Firebase ID token
-      const idToken = await user.getIdToken();
-      
-      // Use the new Google auth endpoint with specified role
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idToken,
-          role: role
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Google authentication failed');
-      }
-      
-      const responseData = await response.json();
-      return responseData.data;
-    } catch (error: any) {
-      throw new Error(error.message || 'Google authentication failed');
-    }
-  },
-
-  async updateProfile(userId: string, data: {
-    firstName?: string;
-    lastName?: string;
-    phoneNumber?: string;
-    bio?: string;
-    yearsExperience?: number;
-    profileImageUrl?: string;
-    isAvailable?: boolean;
-  }): Promise<User> {
-    try {
-      const response = await api.put(`/auth/profile/${userId}`, data);
-      return response.data.data;
+      return authResponse;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || error.message);
     }
   },
 
-  async logout(): Promise<void> {
-    await signOut(auth);
+  /**
+   * Login with email and password
+   */
+  async login(data: LoginData): Promise<User> {
+    try {
+      const response = await api.post('/auth/login', data);
+      const authResponse = response.data.data;
+      
+      // Store JWT token
+      if (authResponse.token) {
+        authService.setToken(authResponse.token);
+      }
+      
+      return authResponse;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || error.message);
+    }
   },
 
-  getCurrentUser(): FirebaseUser | null {
-    return auth.currentUser;
+  /**
+   * Redirect to Google OAuth2 login
+   */
+  loginWithGoogle(): void {
+    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+  },
+
+  /**
+   * Get current user from JWT token
+   */
+  async getCurrentUser(): Promise<User> {
+    try {
+      const response = await api.get('/auth/me');
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get user data');
+    }
+  },
+
+  /**
+   * Validate JWT token
+   */
+  async validateToken(): Promise<boolean> {
+    try {
+      const response = await api.post('/auth/validate');
+      return response.data.data;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  /**
+   * Store JWT token in localStorage
+   */
+  setToken(token: string): void {
+    localStorage.setItem('jwt_token', token);
+  },
+
+  /**
+   * Get JWT token from localStorage
+   */
+  getToken(): string | null {
+    return localStorage.getItem('jwt_token');
+  },
+
+  /**
+   * Remove JWT token from localStorage
+   */
+  removeToken(): void {
+    localStorage.removeItem('jwt_token');
+  },
+
+  /**
+   * Logout user
+   */
+  logout(): void {
+    authService.removeToken();
+    window.location.href = '/';
+  },
+
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated(): boolean {
+    return authService.getToken() !== null;
   }
 };

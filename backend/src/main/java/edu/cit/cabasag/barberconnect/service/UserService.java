@@ -110,7 +110,7 @@ public class UserService {
     
     private Map<String, Object> convertToMap(User user) {
         Map<String, Object> map = new HashMap<>();
-        map.put("firebaseUid", user.getUser_id());
+        map.put("user_id", user.getUser_id());
         map.put("firstName", user.getFirstName());
         map.put("lastName", user.getLastName());
         map.put("email", user.getEmail());
