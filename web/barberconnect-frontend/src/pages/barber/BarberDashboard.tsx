@@ -24,11 +24,19 @@ const BarberDashboard: React.FC = () => {
     <div className="barber-dashboard">
       <header className="dashboard-header">
         <div className="header-content">
-          <h1 className="dashboard-title">Barber Dashboard</h1>
-          <div className="header-actions">
-            <Link to="/profile" className="profile-btn">👤 Profile</Link>
-            <button className="logout-btn" onClick={handleLogout}>🚪</button>
+          <div className="logo">
+            <span className="logo-icon">✂</span>
+            <span className="logo-text">BarberConnect</span>
           </div>
+          <nav className="header-nav">
+            <Link to="/dashboard" className="nav-btn active">🏠 Dashboard</Link>
+            <button className="nav-btn">📅 Appointments</button>
+            <button className="nav-btn">💰 Income</button>
+            <Link to="/profile" className="nav-btn">👤 Profile</Link>
+            <button className="nav-btn logout-btn" onClick={handleLogout}>
+              🚪 Logout
+            </button>
+          </nav>
         </div>
       </header>
 

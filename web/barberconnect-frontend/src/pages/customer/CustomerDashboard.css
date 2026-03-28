@@ -1,12 +1,16 @@
 .customer-dashboard {
   min-height: 100vh;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #1A1A1A 0%, #2F1B14 50%, #8B4513 100%);
 }
 
 .dashboard-header {
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-content {
@@ -15,60 +19,76 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
+  padding: 0 2rem;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  font-size: 20px;
-  color: #667eea;
+  color: #8B4513;
+  text-decoration: none;
 }
 
 .logo-icon {
-  font-size: 24px;
+  font-size: 2rem;
+  filter: drop-shadow(0 0 10px rgba(139, 69, 19, 0.3));
 }
 
 .header-nav {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 1rem;
 }
 
 .nav-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  background: #f3f4f6;
-  color: #374151;
-  cursor: pointer;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  color: #8B4513;
+  text-decoration: none;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .nav-btn:hover {
-  background: #e5e7eb;
+  background: rgba(139, 69, 19, 0.1);
+  border-color: rgba(139, 69, 19, 0.2);
+  transform: translateY(-2px);
 }
 
-.logout-btn {
-  background: #fee2e2;
-  color: #dc2626;
+.nav-btn.active {
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+  color: white;
+  border-color: #8B4513;
 }
 
-.logout-btn:hover {
-  background: #fecaca;
+.nav-btn.logout-btn {
+  background: linear-gradient(135deg, #DC3545 0%, #C82333 100%);
+  color: white;
+  border-color: #DC3545;
+}
+
+.nav-btn.logout-btn:hover {
+  background: linear-gradient(135deg, #C82333 0%, #A71E2A 100%);
+  transform: translateY(-2px);
 }
 
 .dashboard-main {
-  padding: 20px;
+  padding: 1rem;
 }
 
 .dashboard-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
 }
 
 .profile-warning {
@@ -120,123 +140,191 @@
   transform: translateY(-1px);
 }
 
-.dashboard-content {
-  max-width: 1200px;
-  margin: 0 auto;
+/* Search Section */
+.search-section {
+  margin-bottom: 1rem;
 }
 
-.welcome-section {
-  margin-bottom: 32px;
+.search-container {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.welcome-section h1 {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px;
-}
-
-.welcome-section p {
-  font-size: 16px;
+.search-icon {
   color: #6b7280;
-  margin: 0;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #374151;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background: #e5e7eb;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 32px;
+  grid-template-columns: 1fr 350px;
+  gap: 1rem;
+  align-items: start;
 }
 
-.barber-feed h2,
-.available-barbers h2 {
-  font-size: 20px;
-  font-weight: 600;
+/* Barber Feed */
+.barber-feed {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.barber-feed h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #1f2937;
-  margin: 0 0 20px;
+  margin: 0 0 1rem 0;
 }
 
 .feed-posts {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  max-height: 75vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.feed-posts::-webkit-scrollbar {
+  width: 6px;
+}
+
+.feed-posts::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.feed-posts::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.feed-posts::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .post-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  height: fit-content;
+}
+
+.post-card:hover {
+  border-color: #D2691E;
+  box-shadow: 0 4px 12px rgba(210, 105, 30, 0.1);
 }
 
 .post-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .post-avatar {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: #667eea;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .post-info h4 {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #1f2937;
   margin: 0;
 }
 
 .post-info span {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #6b7280;
 }
 
 .post-content p {
-  font-size: 14px;
+  font-size: 0.8rem;
   color: #374151;
-  margin: 0 0 12px;
-  line-height: 1.5;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.3;
 }
 
 .post-image {
-  margin-bottom: 16px;
+  margin-bottom: 0.25rem;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-.placeholder-image {
+.post-image img {
   width: 100%;
-  height: 200px;
-  background: #f3f4f6;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  font-size: 14px;
+  height: 120px;
+  object-fit: cover;
 }
 
 .post-actions {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   background: none;
   border: none;
   color: #6b7280;
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
   transition: all 0.2s;
 }
 
@@ -245,38 +333,50 @@
   color: #374151;
 }
 
+/* Available Barbers */
 .available-barbers {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
   height: fit-content;
+  position: sticky;
+  top: 100px;
+}
+
+.available-barbers h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1rem 0;
 }
 
 .barbers-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0.75rem;
 }
 
 .barber-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 0.75rem;
+  padding: 0.75rem;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   transition: all 0.2s;
+  background: #fafafa;
 }
 
 .barber-card:hover {
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  border-color: #D2691E;
+  box-shadow: 0 2px 8px rgba(210, 105, 30, 0.1);
 }
 
 .barber-avatar {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -288,77 +388,72 @@
   object-fit: cover;
 }
 
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background: #667eea;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-}
-
 .barber-info {
   flex: 1;
 }
 
 .barber-info h4 {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 4px;
+  margin: 0 0 0.25rem 0;
 }
 
 .barber-rating {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #f59e0b;
-  margin-bottom: 2px;
+  margin-bottom: 0.125rem;
 }
 
 .barber-experience {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #6b7280;
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .barber-specialties {
-  font-size: 11px;
-  color: #667eea;
+  font-size: 0.6875rem;
+  color: #D2691E;
   font-weight: 500;
 }
 
 .book-btn {
-  background: #667eea;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   flex-shrink: 0;
 }
 
 .book-btn:hover {
-  background: #5a67d8;
+  background: linear-gradient(135deg, #D2691E 0%, #CD853F 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+  color: white;
+  text-decoration: none;
 }
 
 .error-message {
   background: #fee2e2;
   color: #dc2626;
-  padding: 12px;
+  padding: 0.75rem;
   border-radius: 8px;
-  font-size: 14px;
-  margin-bottom: 16px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
   text-align: center;
 }
 
 .no-barbers {
   text-align: center;
-  padding: 40px 20px;
+  padding: 2rem 1rem;
   color: #6b7280;
 }
 
@@ -368,14 +463,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f4f6;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid #D2691E;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -388,27 +483,40 @@
 @media (max-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 1rem;
   }
   
-  .header-content {
-    padding: 0 16px;
-  }
-  
-  .header-nav {
-    gap: 8px;
-  }
-  
-  .nav-btn {
-    padding: 6px 12px;
-    font-size: 12px;
+  .feed-posts {
+    grid-template-columns: 1fr;
   }
   
   .dashboard-main {
-    padding: 16px;
+    padding: 1rem;
   }
   
-  .welcome-section h1 {
-    font-size: 24px;
+  .header-content {
+    padding: 0 1rem;
+  }
+  
+  .header-nav {
+    gap: 0.5rem;
+  }
+  
+  .nav-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .search-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .filter-btn {
+    align-self: flex-end;
+  }
+  
+  .available-barbers {
+    position: static;
   }
 }
