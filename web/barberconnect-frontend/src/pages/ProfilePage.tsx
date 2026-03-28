@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatPhoneNumber, validatePhilippinePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import './ProfilePage.css';
 
 const ProfilePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -18,11 +19,20 @@ const ProfilePage: React.FC = () => {
     isAvailable: user?.barberProfile?.isAvailable ?? true
   });
 
+  const handleLogout = async () => {
+    try {
+      logout();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
     if (name === 'phoneNumber') {
       const formatted = formatPhoneNumber(value);
+      console.log('Phone number formatting:', { original: value, formatted });
       setFormData(prev => ({
         ...prev,
         [name]: formatted
@@ -71,7 +81,12 @@ const ProfilePage: React.FC = () => {
       };
 
       if (formData.phoneNumber) {
-        updateData.phoneNumber = normalizePhoneNumber(formData.phoneNumber);
+        const normalized = normalizePhoneNumber(formData.phoneNumber);
+        console.log('Phone number normalization:', { 
+          original: formData.phoneNumber, 
+          normalized 
+        });
+        updateData.phoneNumber = normalized;
       }
 
       // Add barber-specific fields if user is a barber
@@ -81,9 +96,45 @@ const ProfilePage: React.FC = () => {
         updateData.isAvailable = formData.isAvailable;
       }
 
-      // TODO: Implement profile update API call
-      console.log('Profile update data:', updateData);
+      // Call the profile update API
+      console.log('Sending profile update request:', updateData);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      console.log('Profile update response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Profile update error:', errorData);
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      const result = await response.json();
+      console.log('Profile update result:', result);
       setSuccess('Profile updated successfully!');
+      
+      // Refresh user context to get updated data
+      await refreshUser();
+      
+      // Update the form data with the response to reflect any server-side changes
+      if (result.data) {
+        setFormData(prev => ({
+          ...prev,
+          firstName: result.data.firstName || prev.firstName,
+          lastName: result.data.lastName || prev.lastName,
+          phoneNumber: result.data.phoneNumber || prev.phoneNumber,
+          bio: result.data.barberProfile?.bio || prev.bio,
+          yearsExperience: result.data.barberProfile?.yearsExperience || prev.yearsExperience,
+          isAvailable: result.data.barberProfile?.isAvailable ?? prev.isAvailable
+        }));
+      }
+      
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');
     } finally {
@@ -97,6 +148,32 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="profile-page">
+      {/* Navigation Header */}
+      <header className="dashboard-header">
+        <div className="header-content">
+          <div className="logo">
+            <span className="logo-icon">✂</span>
+            <span className="logo-text">BarberConnect</span>
+          </div>
+          <nav className="header-nav">
+            <Link to="/dashboard" className="nav-btn">🏠 Dashboard</Link>
+            {user?.role === 'CUSTOMER' && (
+              <Link to="/booking" className="nav-btn">📅 My Bookings</Link>
+            )}
+            {user?.role === 'BARBER' && (
+              <>
+                <button className="nav-btn">📅 Appointments</button>
+                <button className="nav-btn">💰 Income</button>
+              </>
+            )}
+            <Link to="/profile" className="nav-btn active">👤 Profile</Link>
+            <button className="nav-btn logout-btn" onClick={handleLogout}>
+              🚪 Logout
+            </button>
+          </nav>
+        </div>
+      </header>
+
       <div className="profile-container">
         <div className="profile-header">
           <h1>My Profile</h1>

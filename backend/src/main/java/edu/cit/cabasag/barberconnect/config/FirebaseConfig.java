@@ -17,26 +17,26 @@ import java.io.InputStream;
 @Configuration
 @Slf4j
 public class FirebaseConfig {
-    
+
     @Value("${firebase.service-account-key:}")
     private String serviceAccountKeyPath;
-    
+
     @Value("${firebase.project.id:barberconnect-db}")
     private String projectId;
-    
+
     @PostConstruct
     public void initializeFirebase() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder();
-                
+
                 // Try to load service account key if provided
                 if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isEmpty()) {
                     try {
                         // Remove "classpath:" prefix if present
                         String keyPath = serviceAccountKeyPath.replace("classpath:", "");
                         Resource resource = new ClassPathResource(keyPath);
-                        
+
                         if (resource.exists()) {
                             InputStream serviceAccount = resource.getInputStream();
                             optionsBuilder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
@@ -47,27 +47,31 @@ public class FirebaseConfig {
                             optionsBuilder.setCredentials(GoogleCredentials.getApplicationDefault());
                         }
                     } catch (Exception e) {
-                        log.warn("Failed to load service account key, using application default credentials: {}", e.getMessage());
+                        log.warn("Failed to load service account key, using application default credentials: {}",
+                                e.getMessage());
                         try {
                             optionsBuilder.setCredentials(GoogleCredentials.getApplicationDefault());
                         } catch (Exception ex) {
-                            log.warn("Application default credentials not available, initializing without credentials for development");
+                            log.warn(
+                                    "Application default credentials not available, initializing without credentials for development");
                         }
                     }
                 } else {
-                    log.info("No service account key configured, using application default credentials");
+                    log.info("No service account key configured, using dummy credentials for development");
                     try {
-                        optionsBuilder.setCredentials(GoogleCredentials.getApplicationDefault());
+                        optionsBuilder.setCredentials(GoogleCredentials.fromStream(
+                                new java.io.ByteArrayInputStream(
+                                        "{\"type\": \"service_account\", \"project_id\": \"dummy\"}".getBytes())));
                     } catch (Exception e) {
-                        log.warn("Application default credentials not available, initializing without credentials for development");
+                        log.warn("Application dummy credentials failed");
                     }
                 }
-                
+
                 // Set project ID if available
                 if (projectId != null && !projectId.isEmpty()) {
                     optionsBuilder.setProjectId(projectId);
                 }
-                
+
                 FirebaseApp.initializeApp(optionsBuilder.build());
                 log.info("Firebase initialized successfully");
             }
@@ -77,8 +81,11 @@ public class FirebaseConfig {
             try {
                 if (FirebaseApp.getApps().isEmpty()) {
                     FirebaseOptions options = FirebaseOptions.builder()
-                        .setProjectId(projectId != null ? projectId : "barberconnect-dev")
-                        .build();
+                            .setProjectId(projectId != null ? projectId : "barberconnect-dev")
+                            .setCredentials(GoogleCredentials.fromStream(
+                                    new java.io.ByteArrayInputStream(
+                                            "{\"type\": \"service_account\", \"project_id\": \"dummy\"}".getBytes())))
+                            .build();
                     FirebaseApp.initializeApp(options);
                     log.info("Firebase initialized with minimal configuration for development");
                 }
@@ -87,7 +94,7 @@ public class FirebaseConfig {
             }
         }
     }
-    
+
     @Bean
     public FirebaseAuth firebaseAuth() {
         try {

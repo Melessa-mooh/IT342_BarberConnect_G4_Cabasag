@@ -2,6 +2,7 @@ package edu.cit.cabasag.barberconnect.controller;
 
 import edu.cit.cabasag.barberconnect.dto.request.LoginRequest;
 import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
+import edu.cit.cabasag.barberconnect.dto.request.UpdateProfileRequest;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
 import edu.cit.cabasag.barberconnect.model.User;
@@ -96,6 +97,57 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Token validation failed", e);
             return ResponseEntity.ok(ApiResponse.success(false));
+        }
+    }
+    
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<AuthResponse>> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String uid = (String) authentication.getPrincipal();
+            
+            log.info("Profile update request for user: {}", uid);
+            log.info("Request data: firstName={}, lastName={}, phoneNumber={}", 
+                    request.getFirstName(), request.getLastName(), request.getPhoneNumber());
+            
+            User user = userService.findById(uid)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            log.info("Current user data: firstName={}, lastName={}, phoneNumber={}", 
+                    user.getFirstName(), user.getLastName(), user.getPhoneNumber());
+            
+            // Update basic user information
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            
+            if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+                log.info("Updating phone number from '{}' to '{}'", user.getPhoneNumber(), request.getPhoneNumber());
+                user.setPhoneNumber(request.getPhoneNumber());
+            }
+            
+            // Update barber-specific information if user is a barber
+            if (user.getRole() == User.UserRole.BARBER && user.getBarberProfile() != null) {
+                var barberProfile = user.getBarberProfile();
+                if (request.getBio() != null) {
+                    barberProfile.setBio(request.getBio());
+                }
+                if (request.getYearsExperience() != null) {
+                    barberProfile.setYearsExperience(request.getYearsExperience());
+                }
+                if (request.getIsAvailable() != null) {
+                    barberProfile.setIsAvailable(request.getIsAvailable());
+                }
+            }
+            
+            // Save updated user
+            user = userService.save(user);
+            log.info("User saved successfully. New phone number: {}", user.getPhoneNumber());
+            
+            AuthResponse response = mapToAuthResponse(user);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("Profile update failed", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
     

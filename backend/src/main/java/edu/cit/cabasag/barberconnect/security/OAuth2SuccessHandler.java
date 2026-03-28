@@ -14,7 +14,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Optional;
 
 @Component
@@ -39,6 +39,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String email = oAuth2User.getAttribute("email");
             String name = oAuth2User.getAttribute("name");
             String googleId = oAuth2User.getAttribute("sub");
+            if (googleId == null || googleId.trim().isEmpty()) {
+                googleId = oAuth2User.getAttribute("id");
+            }
             
             log.info("Google OAuth2 success for email: {}", email);
             log.debug("Google user attributes: {}", oAuth2User.getAttributes());
@@ -114,8 +117,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         user.setPhoneNumber(""); // User can update later
         user.setRole(User.UserRole.CUSTOMER); // Default role
         user.setIsActive(true);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setCreatedAt(new Date());
+        user.setUpdatedAt(new Date());
         
         return userService.save(user);
     }

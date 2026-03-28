@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
@@ -15,11 +15,11 @@ public class User {
     private String firstName;
     private String lastName;
     private String email;
-    private String phoneNumber; // Philippine format: +63 9XX XXX XXXX
+    private String phoneNumber; // Philippine format: +63 900 000 0000
     private UserRole role;
     private Boolean isActive = true;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Date createdAt;
+    private Date updatedAt;
     
     // Reference to barber profile (if user is a barber)
     private BarberProfile barberProfile;

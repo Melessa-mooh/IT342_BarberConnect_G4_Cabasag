@@ -7,6 +7,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithGoogle: () => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -51,11 +52,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      if (authService.isAuthenticated()) {
+        const userData = await authService.getCurrentUser();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
+  };
+
   const value = {
     user,
     loading,
     loginWithGoogle,
     logout,
+    refreshUser,
     isAuthenticated: authService.isAuthenticated()
   };
 

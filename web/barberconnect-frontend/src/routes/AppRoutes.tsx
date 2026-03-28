@@ -6,6 +6,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 import AuthCallback from '../pages/auth/AuthCallback';
 import CustomerDashboard from '../pages/customer/CustomerDashboard';
+import BookingPage from '../pages/customer/BookingPage';
 import BarberDashboard from '../pages/barber/BarberDashboard';
 import ProfilePage from '../pages/ProfilePage';
 
@@ -122,6 +123,12 @@ const AppRoutes: React.FC = () => {
       <Route path="/profile" element={
         <ProtectedRoute>
           <ProfilePage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/booking" element={
+        <ProtectedRoute>
+          <BookingPage />
         </ProtectedRoute>
       } />
 

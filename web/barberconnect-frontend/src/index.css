@@ -24,10 +24,16 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
@@ -44,15 +50,31 @@ button {
   font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 button:hover {
   border-color: #646cff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+button:active {
+  transform: translateY(0) scale(0.96) !important;
+}
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+/* Ensure all links and typical button classes inherit the smooth transition */
+a, .btn, .nav-btn, .action-btn, .logout-btn, .auth-btn, .book-btn, .submit-btn, .role-card, .slide-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn:active, .nav-btn:active, .action-btn:active, .logout-btn:active, .auth-btn:active, .book-btn:active, .submit-btn:active, .role-card:active {
+  transform: scale(0.96) !important;
+}
+
 
 @media (prefers-color-scheme: light) {
   :root {

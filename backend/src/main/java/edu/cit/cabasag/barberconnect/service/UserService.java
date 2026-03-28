@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -90,9 +90,9 @@ public class UserService {
             if (db == null) throw new RuntimeException("Firestore not available");
             
             if (user.getCreatedAt() == null) {
-                user.setCreatedAt(LocalDateTime.now());
+                user.setCreatedAt(new Date());
             }
-            user.setUpdatedAt(LocalDateTime.now());
+            user.setUpdatedAt(new Date());
             
             Map<String, Object> userData = convertToMap(user);
             
