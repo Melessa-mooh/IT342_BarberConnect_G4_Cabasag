@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 import './LoginPage.css';
 
 interface FormData {
@@ -18,6 +19,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const message = searchParams.get('message');
+  const { refreshUser } = useAuth();
 
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -77,6 +79,11 @@ const LoginPage: React.FC = () => {
         email: formData.email.trim(),
         password: formData.password
       });
+
+      // Update the AuthContext state so ProtectedRoute knows we're logged in
+      if (refreshUser) {
+        await refreshUser();
+      }
 
       // Redirect to dashboard on success
       navigate('/dashboard');
