@@ -48,7 +48,13 @@ public class AuthService {
             user.setLastName(request.getLastName());
             user.setEmail(request.getEmail());
             user.setPhoneNumber(""); // Empty for now, can be updated later
-            user.setRole(User.UserRole.CUSTOMER); // Default role
+            
+            User.UserRole selectedRole = User.UserRole.CUSTOMER;
+            if (request.getRole() != null && request.getRole().equalsIgnoreCase("BARBER")) {
+                selectedRole = User.UserRole.BARBER;
+            }
+            user.setRole(selectedRole);
+            
             user.setIsActive(true);
             user.setCreatedAt(new Date());
             user.setUpdatedAt(new Date());

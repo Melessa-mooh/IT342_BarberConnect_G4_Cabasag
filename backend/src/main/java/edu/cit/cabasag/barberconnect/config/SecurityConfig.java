@@ -37,9 +37,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
                 .requestMatchers(
-                    "/auth/**",
+                    "/auth/register",
+                    "/auth/login",
+                    "/auth/firebase-login",
                     "/oauth2/**",
                     "/login/oauth2/**",
                     "/error"
