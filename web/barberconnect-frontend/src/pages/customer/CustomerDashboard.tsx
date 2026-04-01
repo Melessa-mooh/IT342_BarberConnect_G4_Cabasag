@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { barberService } from '../../services/barberService';
 import type { Barber } from '../../services/barberService';
+import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
 import './CustomerDashboard.css';
 
 const CustomerDashboard: React.FC = () => {
@@ -312,6 +313,17 @@ const CustomerDashboard: React.FC = () => {
                     <p>No barbers available at the moment</p>
                   </div>
                 )}
+              </div>
+              
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>My Calendar</h2>
+                <CalendarWidget 
+                  isBarberView={false} 
+                  appointments={[
+                    { id: '1', date: 15, time: '10:00 AM' },
+                    { id: '2', date: 22, time: '2:30 PM' }
+                  ]}
+                />
               </div>
             </aside>
           </div>

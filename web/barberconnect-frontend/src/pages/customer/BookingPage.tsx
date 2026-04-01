@@ -29,9 +29,10 @@ const BookingPage: React.FC = () => {
   });
 
   const [selectedStyle, setSelectedStyle] = useState<HaircutStyle | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   
   const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([
     { id: '1', name: 'Beard Trim', price: 10, selected: false },
@@ -45,9 +46,6 @@ const BookingPage: React.FC = () => {
     { id: '1', name: 'Classic Fade', price: 25, image: '/api/placeholder/150/150' },
     { id: '2', name: 'Modern Pompadour', price: 30, image: '/api/placeholder/150/150' }
   ];
-
-  const weekDays = ['TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN', 'MON'];
-  const dates = [3, 4, 5, 6, 7, 8, 9];
   
   const timeSlots = [
     '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM',
@@ -99,6 +97,73 @@ const BookingPage: React.FC = () => {
     
     alert('Booking confirmed!');
     navigate('/dashboard');
+  };
+
+  // Calendar functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const getMonthName = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const isDateDisabled = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  const isSameDate = (date1: Date | null, date2: Date) => {
+    if (!date1) return false;
+    return date1.toDateString() === date2.toDateString();
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev);
+      if (direction === 'prev') {
+        newMonth.setMonth(prev.getMonth() - 1);
+      } else {
+        newMonth.setMonth(prev.getMonth() + 1);
+      }
+      return newMonth;
+    });
+  };
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const days = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      const isDisabled = isDateDisabled(date);
+      const isSelected = isSameDate(selectedDate, date);
+
+      days.push(
+        <button
+          key={day}
+          className={`calendar-day ${isDisabled ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`}
+          onClick={() => !isDisabled && setSelectedDate(date)}
+          disabled={isDisabled}
+        >
+          {day}
+        </button>
+      );
+    }
+
+    return days;
   };
 
   return (
@@ -201,17 +266,53 @@ const BookingPage: React.FC = () => {
                   </svg>
                   Select Date
                 </h2>
-                <div className="date-selector">
-                  {dates.map((date, index) => (
-                    <button
-                      key={date}
-                      className={`date-btn ${selectedDate === date.toString() ? 'selected' : ''}`}
-                      onClick={() => setSelectedDate(date.toString())}
+                <div className="calendar-container">
+                  <div className="calendar-header">
+                    <button 
+                      className="calendar-nav-btn"
+                      onClick={() => navigateMonth('prev')}
+                      type="button"
                     >
-                      <span className="day">{weekDays[index]}</span>
-                      <span className="date">{date}</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </button>
-                  ))}
+                    <h3 className="calendar-month">{getMonthName(currentMonth)}</h3>
+                    <button 
+                      className="calendar-nav-btn"
+                      onClick={() => navigateMonth('next')}
+                      type="button"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="calendar-weekdays">
+                    <div className="weekday">Sun</div>
+                    <div className="weekday">Mon</div>
+                    <div className="weekday">Tue</div>
+                    <div className="weekday">Wed</div>
+                    <div className="weekday">Thu</div>
+                    <div className="weekday">Fri</div>
+                    <div className="weekday">Sat</div>
+                  </div>
+                  
+                  <div className="calendar-grid">
+                    {renderCalendar()}
+                  </div>
+                  
+                  {selectedDate && (
+                    <div className="selected-date-display">
+                      Selected: {selectedDate.toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </div>
+                  )}
                 </div>
               </section>
 
