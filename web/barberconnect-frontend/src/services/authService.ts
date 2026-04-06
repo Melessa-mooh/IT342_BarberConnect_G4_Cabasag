@@ -28,6 +28,7 @@ export interface User {
     rating: string;
     totalReviews: number;
     profileImageUrl: string;
+    gcashNumber?: string;
     isAvailable: boolean;
   };
 }

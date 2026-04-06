@@ -21,6 +21,7 @@ public class BarberProfile {
     private Integer totalReviews = 0;
     private String profileImageUrl;
     private Boolean isAvailable = true;
+    private String gcashNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     

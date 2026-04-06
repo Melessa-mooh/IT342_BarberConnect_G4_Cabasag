@@ -27,5 +27,14 @@ export const barberService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to fetch barber');
     }
+  },
+
+  async updateProfile(userId: string, data: any): Promise<Barber> {
+    try {
+      const response = await api.put(`/barbers/${userId}/profile`, data);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update profile');
+    }
   }
 };
