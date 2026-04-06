@@ -2,10 +2,12 @@ package edu.cit.cabasag.barberconnect.dto.response;
 
 import edu.cit.cabasag.barberconnect.model.User;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthResponse {
@@ -21,6 +23,7 @@ public class AuthResponse {
     private BarberProfileResponse barberProfile;
     
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BarberProfileResponse {
