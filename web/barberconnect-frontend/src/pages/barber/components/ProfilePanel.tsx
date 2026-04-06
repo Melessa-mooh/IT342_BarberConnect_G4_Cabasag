@@ -1,16 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { barberService } from '../../../services/barberService';
 
 const ProfilePanel = () => {
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const [formData, setFormData] = useState({
     phone: '',
     bio: '',
     experience: '',
     gcash: '',
-    email: 'barber@example.com' // Mock read-only Google email
+    email: ''
   });
 
-  const handleChange = (e) => {
+  // Pre-fill the form with real authenticated user data from Context
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        phone: user.phoneNumber || '',
+        bio: user.barberProfile?.bio || '',
+        experience: user.barberProfile?.yearsExperience?.toString() || '',
+        gcash: user.barberProfile?.gcashNumber || '',
+        email: user.email || ''
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      await barberService.updateProfile(user.firebaseUid, {
+        phone: formData.phone,
+        bio: formData.bio,
+        experience: parseInt(formData.experience) || 0,
+        gcash: formData.gcash
+      });
+      
+      setSaveSuccess(true);
+      // Hide success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Failed to save profile", error);
+      alert("Failed to save profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -32,7 +77,7 @@ const ProfilePanel = () => {
         </div>
 
         {/* Profile Form */}
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
@@ -94,13 +139,24 @@ const ProfilePanel = () => {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-gray-100 flex justify-end gap-4">
-            <button type="button" className="px-6 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition">
-              Cancel
-            </button>
-            <button type="submit" className="px-8 py-2 bg-[#8B4513] text-white font-bold rounded-lg hover:bg-[#D2691E] shadow-sm transition">
-              Save Profile
-            </button>
+          <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-6">
+            {saveSuccess && (
+              <span className="text-green-600 font-bold bg-green-50 px-4 py-2 rounded-lg animate-pulse">
+                ✓ Profile Saved!
+              </span>
+            )}
+            <div className="flex gap-4">
+              <button type="button" className="px-6 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition">
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className={`px-8 py-2 text-white font-bold rounded-lg shadow-sm transition ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8B4513] hover:bg-[#D2691E]'}`}
+              >
+                {isSaving ? 'Saving...' : 'Save Profile'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

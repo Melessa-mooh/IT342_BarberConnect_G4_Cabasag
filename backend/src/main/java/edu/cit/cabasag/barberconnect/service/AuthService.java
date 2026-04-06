@@ -4,6 +4,7 @@ import edu.cit.cabasag.barberconnect.dto.request.LoginRequest;
 import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
 import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.factory.UserFactory;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -13,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -24,6 +24,7 @@ public class AuthService {
     private final UserService userService;
     private final FirebaseAuth firebaseAuth;
     private final JwtUtil jwtUtil;
+    private final UserFactory userFactory;
 
     public AuthResponse register(RegisterRequest request) {
         try {
@@ -41,23 +42,14 @@ public class AuthService {
 
             UserRecord userRecord = firebaseAuth.createUser(createRequest);
 
-            // Create user in Firestore
-            User user = new User();
-            user.setUser_id(userRecord.getUid());
-            user.setFirstName(request.getFirstName());
-            user.setLastName(request.getLastName());
-            user.setEmail(request.getEmail());
-            user.setPhoneNumber(""); // Empty for now, can be updated later
-            
-            User.UserRole selectedRole = User.UserRole.CUSTOMER;
-            if (request.getRole() != null && request.getRole().equalsIgnoreCase("BARBER")) {
-                selectedRole = User.UserRole.BARBER;
-            }
-            user.setRole(selectedRole);
-            
-            user.setIsActive(true);
-            user.setCreatedAt(new Date());
-            user.setUpdatedAt(new Date());
+            // Create user in Firestore using our Factory Pattern
+            User user = userFactory.createUser(
+                userRecord.getUid(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.getRole()
+            );
 
             user = userService.save(user);
 

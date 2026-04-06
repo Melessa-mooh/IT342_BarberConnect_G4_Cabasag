@@ -36,4 +36,16 @@ public class BarberController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+    
+    @PutMapping("/{userId}/profile")
+    public ResponseEntity<ApiResponse<AuthResponse.BarberProfileResponse>> updateBarberProfile(
+            @PathVariable String userId,
+            @RequestBody edu.cit.cabasag.barberconnect.dto.request.UpdateBarberProfileRequest request) {
+        try {
+            AuthResponse.BarberProfileResponse updatedProfile = barberService.updateProfile(userId, request);
+            return ResponseEntity.ok(ApiResponse.success(updatedProfile));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

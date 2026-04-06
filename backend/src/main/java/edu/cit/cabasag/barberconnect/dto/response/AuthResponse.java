@@ -33,6 +33,7 @@ public class AuthResponse {
         private String rating;
         private Integer totalReviews;
         private String profileImageUrl;
+        private String gcashNumber;
         private Boolean isAvailable;
     }
 }
