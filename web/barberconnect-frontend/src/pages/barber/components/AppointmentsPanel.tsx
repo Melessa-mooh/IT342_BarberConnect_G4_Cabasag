@@ -8,7 +8,7 @@ const AppointmentsPanel = () => {
     { id: 4, customer: 'Chris Lee', service: 'Midnight Curtains', time: '3:00 PM', status: 'CANCELLED' }
   ]);
 
-  const handleAction = (id, newStatus) => {
+  const handleAction = (id: number, newStatus: string) => {
     // In a real app, this would trigger an FCM notification API
     console.log(`Mock FCM Notification sent to customer: Appointment ${newStatus}`);
     setAppointments(appointments.map(app => app.id === id ? { ...app, status: newStatus } : app));
@@ -36,9 +36,9 @@ const AppointmentsPanel = () => {
                 <td className="p-4 text-gray-600 font-medium">{app.time}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 text-xs font-bold rounded-full 
-                    ${app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
-                      app.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 
-                      'bg-red-100 text-red-800'}`}>
+                    ${app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                      app.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'}`}>
                     {app.status}
                   </span>
                 </td>

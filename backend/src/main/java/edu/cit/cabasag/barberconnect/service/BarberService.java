@@ -51,28 +51,28 @@ public class BarberService {
     public AuthResponse.BarberProfileResponse getBarberById(String id) {
         // For now, return a mock barber since we need to implement proper ID handling
         // In a real implementation, you'd query Firestore by barber profile ID
-        AuthResponse.BarberProfileResponse barber = new AuthResponse.BarberProfileResponse();
-        barber.setId(id);
-        barber.setBio("Professional barber with years of experience");
-        barber.setYearsExperience(5);
-        barber.setRating("4.5");
-        barber.setTotalReviews(100);
-        barber.setProfileImageUrl(null);
-        barber.setIsAvailable(true);
-        
-        return barber;
+        // Implemented using the Creational Builder Pattern
+        return AuthResponse.BarberProfileResponse.builder()
+                .id(id)
+                .bio("Professional barber with years of experience")
+                .yearsExperience(5)
+                .rating("4.5")
+                .totalReviews(100)
+                .profileImageUrl(null)
+                .isAvailable(true)
+                .build();
     }
     
     private AuthResponse.BarberProfileResponse mapToBarberResponse(BarberProfile barber) {
-        AuthResponse.BarberProfileResponse response = new AuthResponse.BarberProfileResponse();
-        response.setId(barber.getBarber_profile_id());
-        response.setBio(barber.getBio());
-        response.setYearsExperience(barber.getYearsExperience());
-        response.setRating(barber.getRating().toString());
-        response.setTotalReviews(barber.getTotalReviews());
-        response.setProfileImageUrl(barber.getProfileImageUrl());
-        response.setIsAvailable(barber.getIsAvailable());
-        
-        return response;
+        // Implemented using the Creational Builder Pattern
+        return AuthResponse.BarberProfileResponse.builder()
+                .id(barber.getBarber_profile_id())
+                .bio(barber.getBio())
+                .yearsExperience(barber.getYearsExperience())
+                .rating(barber.getRating() != null ? barber.getRating().toString() : "0.0")
+                .totalReviews(barber.getTotalReviews())
+                .profileImageUrl(barber.getProfileImageUrl())
+                .isAvailable(barber.getIsAvailable())
+                .build();
     }
 }
