@@ -2,12 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { barberService } from '../../services/barberService';
+import { appointmentService } from '../../services/appointmentService';
 import type { Barber } from '../../services/barberService';
+import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
+import type { Appointment } from '../../components/CalendarWidget/CalendarWidget';
 import './CustomerDashboard.css';
 
 const CustomerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [calendarAppointments, setCalendarAppointments] = useState<Appointment[]>([]);
+  const [selectedDayProps, setSelectedDayProps] = useState<{ day: number, rawData: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -19,6 +24,20 @@ const CustomerDashboard: React.FC = () => {
     try {
       const barbersData = await barberService.getAvailableBarbers();
       setBarbers(barbersData);
+      
+      if (user?.firebaseUid) {
+          const appts = await appointmentService.getAppointmentsByCustomer(user.firebaseUid);
+          const mappedAppts = appts.map((a: any) => {
+              const d = new Date(a.appointmentDateTime);
+              return {
+                  id: a.appointment_id,
+                  date: d.getDate(),
+                  time: d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                  raw: a // Storing the raw Firebase fields inside our Generic object
+              };
+          });
+          setCalendarAppointments(mappedAppts);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -313,6 +332,68 @@ const CustomerDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h2 style={{ fontSize: '1.1rem', margin: 0 }}>My Appointments</h2>
+                    <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 600 }}>
+                        {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                </div>
+                <CalendarWidget 
+                  isBarberView={false} 
+                  appointments={calendarAppointments}
+                  onDayClick={(day, appts) => {
+                      setSelectedDayProps({
+                          day,
+                          rawData: appts.map((a: any) => a.raw)
+                      });
+                  }}
+                />
+              </div>
+
+              {selectedDayProps && (
+                  <div className="appointment-modal-overlay" onClick={() => setSelectedDayProps(null)}>
+                      <div className="appointment-modal-content" onClick={e => e.stopPropagation()}>
+                          <div className="modal-header">
+                              <h3>Appointments for {selectedDayProps.rawData.length > 0 ? new Date(selectedDayProps.rawData[0].appointmentDateTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : `Day ${selectedDayProps.day}`}</h3>
+                              <button className="close-modal-btn" onClick={() => setSelectedDayProps(null)}>✕</button>
+                          </div>
+                          <div className="modal-body">
+                              {selectedDayProps.rawData.map((rawAppt: any) => (
+                                  <div key={rawAppt.appointment_id} className="appt-detail-card">
+                                      <p className="appt-status">{rawAppt.status}</p>
+                                      <div className="appt-info-row">
+                                          <span className="appt-label">Barber:</span>
+                                          <span className="appt-value">
+                                              {rawAppt.barber_profile_id === '1' ? 'Marcus Johnson' :
+                                               rawAppt.barber_profile_id === '2' ? 'David Chen' :
+                                               rawAppt.barber_profile_id === '3' ? 'James Wilson' : 
+                                               rawAppt.barber_profile_id === '4' ? 'Alex Rivera' : 'Marcus Johnson'}
+                                          </span>
+                                      </div>
+                                      <div className="appt-info-row">
+                                          <span className="appt-label">Style:</span>
+                                          <span className="appt-value">
+                                              {rawAppt.haircut_style_id === '1' ? 'Classic Fade' :
+                                               rawAppt.haircut_style_id === '2' ? 'Modern Quiff' :
+                                               rawAppt.haircut_style_id === '3' ? 'Buzz Cut' : 
+                                               rawAppt.haircut_style_id === '4' ? 'Textured Crop' : 'Classic Fade'}
+                                          </span>
+                                      </div>
+                                      <div className="appt-info-row">
+                                          <span className="appt-label">Payment:</span>
+                                          <span className="appt-value">{rawAppt.paymentMethod}</span>
+                                      </div>
+                                      <div className="appt-info-row total-row">
+                                          <span className="appt-label">Total Price:</span>
+                                          <span className="appt-value">₱{parseFloat(rawAppt.totalPrice || 0).toFixed(2)}</span>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  </div>
+              )}
             </aside>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { appointmentService } from '../../services/appointmentService';
 import './BookingPage.css';
 
 interface HaircutStyle {
@@ -18,8 +19,9 @@ interface AdditionalService {
 }
 
 const BookingPage: React.FC = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [selectedBarber] = useState({
     id: '1',
@@ -80,25 +82,50 @@ const BookingPage: React.FC = () => {
     return stylePrice + servicesPrice;
   };
 
-  const handleContinueBooking = () => {
+  const handleContinueBooking = async () => {
     if (!selectedStyle || !selectedDate || !selectedTime) {
       alert('Please complete all required fields');
       return;
     }
     
-    // Handle booking submission
-    console.log('Booking details:', {
-      barber: selectedBarber,
-      style: selectedStyle,
-      additionalServices: additionalServices.filter(s => s.selected),
-      date: selectedDate,
-      time: selectedTime,
-      paymentMethod,
-      total: calculateTotal()
-    });
+    if (!user || !user.firebaseUid) {
+      alert('You must be logged in to book an appointment.');
+      return;
+    }
     
-    alert('Booking confirmed!');
-    navigate('/dashboard');
+    setIsSubmitting(true);
+    
+    try {
+      // Parse "9:00 AM" into hours and minutes
+      const [time, modifier] = selectedTime.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (hours === 12) {
+        hours = modifier === 'AM' ? 0 : 12;
+      } else if (modifier === 'PM') {
+        hours += 12;
+      }
+      
+      const appointmentDateTime = new Date(selectedDate);
+      appointmentDateTime.setHours(hours, minutes, 0, 0);
+
+      await appointmentService.createAppointment({
+        customerId: user.firebaseUid,
+        barberProfileId: selectedBarber.id,
+        haircutStyleId: selectedStyle.id,
+        appointmentDateTime: appointmentDateTime.toISOString(),
+        totalPrice: calculateTotal(),
+        paymentMethod: paymentMethod.toUpperCase(),
+        selectedOptionIds: additionalServices.filter(s => s.selected).map(s => s.id)
+      });
+      
+      alert('Booking confirmed in Firestore!');
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Failed to submit booking:', err);
+      alert('Failed to save to database. Check console logs.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -303,9 +330,9 @@ const BookingPage: React.FC = () => {
               <button 
                 className="continue-btn"
                 onClick={handleContinueBooking}
-                disabled={!selectedStyle || !selectedDate || !selectedTime}
+                disabled={!selectedStyle || !selectedDate || !selectedTime || isSubmitting}
               >
-                Continue Booking
+                {isSubmitting ? 'Booking...' : 'Continue Booking'}
               </button>
             </div>
           </div>
