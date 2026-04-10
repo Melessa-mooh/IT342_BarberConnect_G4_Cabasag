@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -17,15 +17,15 @@ public class Appointment {
     private String customer_id; // Reference to User user_id
     private String barber_profile_id; // Reference to BarberProfile barber_profile_id
     private String haircut_style_id; // Reference to HaircutStyle haircut_style_id
-    private LocalDateTime appointmentDateTime;
+    private Date appointmentDateTime;
     private Integer durationMinutes;
     private BigDecimal totalPrice;
     private AppointmentStatus status = AppointmentStatus.PENDING;
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
     private String notes;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Date createdAt;
+    private Date updatedAt;
     
     // References to related data
     private List<String> selectedOptionIds; // References to StyleOption style_option_ids

@@ -122,4 +122,20 @@ public class UserService {
         map.put("updatedAt", user.getUpdatedAt());
         return map;
     }
+
+    public void updateProfilePicture(String userId, String imageUrl) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) return;
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("profileImageUrl", imageUrl);
+            updates.put("updatedAt", new Date());
+            
+            db.collection(COLLECTION_NAME).document(Objects.requireNonNull(userId)).update(updates).get();
+        } catch (Exception e) {
+            log.error("Failed to update profile picture URL in Firestore", e);
+            throw new RuntimeException("Failed to update profile picture in database");
+        }
+    }
 }

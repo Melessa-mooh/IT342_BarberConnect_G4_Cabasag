@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brown Barber Palette (matching web exactly) -->
+    <color name="brown_primary">#8B4513</color>
+    <color name="brown_secondary">#D2691E</color>
+    <color name="brown_medium">#A0522D</color>
+    <color name="brown_dark">#5D2E0C</color>
+    <color name="cream">#F4E4BC</color>
+
+    <!-- Neutrals -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray_border">#E5E5E5</color>
+    <color name="gray_text">#666666</color>
+    <color name="input_bg">#FAFAFA</color>
+
+    <!-- State colours -->
+    <color name="error_red">#DC3545</color>
+    <color name="error_bg">#FFF5F5</color>
+    <color name="error_border">#FECACA</color>
+    <color name="success_blue">#0369A1</color>
+    <color name="success_bg">#F0F9FF</color>
+    <color name="success_border">#BAE6FD</color>
+
+    <!-- Material Theme aliases -->
+    <color name="colorPrimary">#8B4513</color>
+    <color name="colorPrimaryVariant">#5D2E0C</color>
+    <color name="colorSecondary">#D2691E</color>
+    <color name="colorSecondaryVariant">#A0522D</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorBackground">#F4E4BC</color>
+    <color name="colorError">#DC3545</color>
+    <color name="colorOnError">#FFFFFF</color>
+</resources>
