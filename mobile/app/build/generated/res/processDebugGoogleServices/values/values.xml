@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_web_client_id" translatable="false">482985142962-oshej0ge3t9p6a6h77oe81d7467gv8rb.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">482985142962</string>
+    <string name="google_api_key" translatable="false">AIzaSyCz5tUZj7SLEKFYkcmodWS7O12EhJNrBVk</string>
+    <string name="google_app_id" translatable="false">1:482985142962:android:56a9eb1add4f980878b7ab</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCz5tUZj7SLEKFYkcmodWS7O12EhJNrBVk</string>
+    <string name="google_storage_bucket" translatable="false">barberconnect-db.firebasestorage.app</string>
+    <string name="project_id" translatable="false">barberconnect-db</string>
+</resources>

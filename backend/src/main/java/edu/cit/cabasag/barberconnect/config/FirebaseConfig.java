@@ -24,6 +24,9 @@ public class FirebaseConfig {
     @Value("${firebase.project.id:barberconnect-db}")
     private String projectId;
 
+    @Value("${firebase.storage.bucket:}")
+    private String storageBucket;
+
     @PostConstruct
     public void initializeFirebase() {
         try {
@@ -70,6 +73,10 @@ public class FirebaseConfig {
                 // Set project ID if available
                 if (projectId != null && !projectId.isEmpty()) {
                     optionsBuilder.setProjectId(projectId);
+                }
+
+                if (storageBucket != null && !storageBucket.isEmpty()) {
+                    optionsBuilder.setStorageBucket(storageBucket);
                 }
 
                 FirebaseApp.initializeApp(optionsBuilder.build());

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "482985142962",
+    "project_id": "barberconnect-db",
+    "storage_bucket": "barberconnect-db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:482985142962:android:56a9eb1add4f980878b7ab",
+        "android_client_info": {
+          "package_name": "edu.cit.cabasag.barberconnect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "482985142962-higaukin82s87f7mt9k682um1bi6a1fe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "edu.cit.cabasag.barberconnect",
+            "certificate_hash": "a7dd9e0bd0c9a4b1c7b008a944bedba896983dc7"
+          }
+        },
+        {
+          "client_id": "482985142962-oshej0ge3t9p6a6h77oe81d7467gv8rb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz5tUZj7SLEKFYkcmodWS7O12EhJNrBVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "482985142962-oshej0ge3t9p6a6h77oe81d7467gv8rb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

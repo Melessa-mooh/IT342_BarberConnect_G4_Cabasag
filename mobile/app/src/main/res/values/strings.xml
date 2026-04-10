@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BarberConnect</string>
+
+    <!-- Auth -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="signing_in">Signing In…</string>
+    <string name="creating_account">Creating Account…</string>
+    <string name="welcome_back">Welcome Back</string>
+    <string name="sign_in_subtitle">Sign in to continue your barbershop journey</string>
+    <string name="create_account">Create your account</string>
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Password</string>
+    <string name="confirm_password_hint">Confirm Password</string>
+    <string name="first_name_hint">First Name</string>
+    <string name="last_name_hint">Last Name</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_up_google">Sign up with Google</string>
+    <string name="no_account">Don\'t have an account?</string>
+    <string name="have_account">Already have an account?</string>
+
+    <!-- Role -->
+    <string name="role_label">I am a:</string>
+    <string name="role_customer">Customer</string>
+    <string name="role_barber">Barber</string>
+
+    <!-- Dashboard -->
+    <string name="welcome_user">Welcome, %1$s!</string>
+    <string name="logout">Logout</string>
+    <string name="your_role">Role: %1$s</string>
+
+    <!-- Google Sign-In Client ID -->
+    <!-- IMPORTANT: Replace with your Web Client ID from Firebase Console
+         Project Settings → General → Your apps → Web app → Web API Key
+         OR from google-services.json: oauth_client where client_type = 3 -->
+    <string name="default_web_client_id">482985142962-oshej0ge3t9p6a6h77oe81d7467gv8rb.apps.googleusercontent.com</string>
+</resources>
