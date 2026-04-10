@@ -50,6 +50,9 @@ docs/_build/
 # Project specific
 mobile/node_modules/
 mobile/build/
+mobile/app/build/
+mobile/.gradle/
+mobile/local.properties
 mobile/dist/
 
 # Backup files
