@@ -17,6 +17,7 @@ public class User {
     private String email;
     private String phoneNumber; // Philippine format: +63 900 000 0000
     private UserRole role;
+    private String profileImageUrl;
     private Boolean isActive = true;
     private Date createdAt;
     private Date updatedAt;

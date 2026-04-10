@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme -->
+    <style name="Theme.BarberConnect" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brown_primary</item>
+        <item name="colorPrimaryVariant">@color/brown_dark</item>
+        <item name="colorSecondary">@color/brown_secondary</item>
+        <item name="colorSecondaryVariant">@color/brown_medium</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorError">@color/error_red</item>
+        <item name="android:windowBackground">@color/cream</item>
+        <!-- TextInputLayout focused colour -->
+        <item name="boxStrokeColor">@color/brown_secondary</item>
+        <item name="hintTextColor">@color/brown_secondary</item>
+    </style>
+
+    <!-- Splash theme (shows before content is ready) -->
+    <style name="Theme.BarberConnect.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brown_primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_scissors</item>
+        <item name="postSplashScreenTheme">@style/Theme.BarberConnect</item>
+    </style>
+
+    <!-- Outlined TextInputLayout with barber colours -->
+    <style name="BarberConnectInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="boxStrokeColor">@color/gray_border</item>
+        <item name="hintTextColor">@color/brown_secondary</item>
+        <item name="android:textColorHint">@color/gray_text</item>
+    </style>
+
+    <!-- Primary filled button -->
+    <style name="BarberConnectButton" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">12dp</item>
+        <item name="backgroundTint">@color/brown_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Outlined button (Google) -->
+    <style name="BarberConnectButton.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="cornerRadius">12dp</item>
+        <item name="strokeColor">@color/gray_border</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="android:textColor">@color/brown_dark</item>
+        <item name="android:textSize">15sp</item>
+        <item name="backgroundTint">@color/white</item>
+    </style>
+
+</resources>

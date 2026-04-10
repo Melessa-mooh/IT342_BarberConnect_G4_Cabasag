@@ -5,6 +5,7 @@ export interface RegisterData {
   lastName: string;
   email: string;
   password: string;
+  role?: string;
 }
 
 export interface LoginData {
@@ -27,6 +28,7 @@ export interface User {
     rating: string;
     totalReviews: number;
     profileImageUrl: string;
+    gcashNumber?: string;
     isAvailable: boolean;
   };
 }

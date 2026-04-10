@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
 import './LandingPage.css';
 
 // Import local images
@@ -72,11 +71,6 @@ const LandingPage: React.FC = () => {
 
   const resetSelection = () => {
     setSelectedRole(null);
-  };
-
-  const handleGoogleAuth = () => {
-    // Redirect to Spring Boot OAuth2 endpoint
-    authService.loginWithGoogle();
   };
 
   return (

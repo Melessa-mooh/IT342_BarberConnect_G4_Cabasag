@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const AuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string>('');
+  const { refreshUser } = useAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -18,17 +20,14 @@ const AuthCallback: React.FC = () => {
         authService.setToken(token);
         
         try {
-          // Get user data to determine role
-          const user = await authService.getCurrentUser();
-          
-          // Redirect based on role
-          if (user.role === 'BARBER') {
-            navigate('/barber/dashboard');
-          } else if (user.role === 'ADMIN') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/dashboard');
+          // We don't need to load user data manually here, refreshUser handles it
+          // Update the global AuthContext so the user is not null
+          if (refreshUser) {
+            await refreshUser();
           }
+          
+          // Dashboard routes are dynamically resolved in AppRoutes
+          navigate('/dashboard');
         } catch (err: any) {
           setError('Failed to load user data. Please try again.');
           setTimeout(() => navigate('/'), 3000);

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -27,7 +28,7 @@ public class UserService {
             if (db == null) return Optional.empty();
             
             DocumentSnapshot document = db.collection(COLLECTION_NAME)
-                    .document(firebaseUid)
+                    .document(Objects.requireNonNull(firebaseUid))
                     .get()
                     .get();
             
@@ -97,8 +98,8 @@ public class UserService {
             Map<String, Object> userData = convertToMap(user);
             
             db.collection(COLLECTION_NAME)
-                    .document(user.getUser_id())
-                    .set(userData)
+                    .document(Objects.requireNonNull(user.getUser_id()))
+                    .set(Objects.requireNonNull(userData))
                     .get();
             
             return user;
@@ -120,5 +121,21 @@ public class UserService {
         map.put("createdAt", user.getCreatedAt());
         map.put("updatedAt", user.getUpdatedAt());
         return map;
+    }
+
+    public void updateProfilePicture(String userId, String imageUrl) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) return;
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("profileImageUrl", imageUrl);
+            updates.put("updatedAt", new Date());
+            
+            db.collection(COLLECTION_NAME).document(Objects.requireNonNull(userId)).update(updates).get();
+        } catch (Exception e) {
+            log.error("Failed to update profile picture URL in Firestore", e);
+            throw new RuntimeException("Failed to update profile picture in database");
+        }
     }
 }
