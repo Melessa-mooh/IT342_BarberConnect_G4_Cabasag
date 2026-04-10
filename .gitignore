@@ -42,6 +42,7 @@ logs/
 secrets/
 credentials/
 serviceAccountKey.json
+google-services.json
 
 # Documentation build
 docs/_build/
