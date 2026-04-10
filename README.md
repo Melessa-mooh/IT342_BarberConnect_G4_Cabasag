@@ -17,9 +17,9 @@ By combining a sleek, customer-facing mobile application with a powerful managem
 Throughout the development of BarberConnect (especially during IT342 Phase 2), we worked hands-on to turn our initial concept into a fully functioning platform. Here are the core features and implementations we personally built:
 
 ### 📱 The Mobile Experience (Android / Kotlin)
-- **Premium UI/UX:** We designed a custom, Nike-inspired "barber-themed" aesthetic. We made sure buttons have smooth transitions, and the interface feels high-end, dynamic, and responsive.
+- **Premium UI/UX:** We designed a custom,"barber-themed" aesthetic. We made sure buttons have smooth transitions, and the interface feels high-end, dynamic, and responsive.
 - **Clean Architecture:** Engineered the Android app using **MVVM (Model-View-ViewModel)** alongside Coroutines and Retrofit so the code stays deeply organized.
-- **Authentication:** Integrated Google Firebase alongside our custom Spring Boot backend for secure login and registration flows.
+- **Authentication:** Integrated Google OAuth and Firebase Authentication for secure login and registration flows.
 - **State Management:** Carefully managed UI states (Loading, Success, Error) to give users proper visual feedback during API interactions.
 
 ### 💻 The Web Dashboard
