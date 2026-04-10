@@ -54,3 +54,29 @@ mobile/dist/
 # Backup files
 *.bak
 *.backup
+
+# ======== Android / Mobile App ========
+mobile/.gradle/
+mobile/app/build/
+mobile/build/
+mobile/local.properties
+mobile/**/*.apk
+mobile/**/*.ap_
+mobile/**/*.aab
+mobile/**/*.dex
+mobile/**/*.class
+mobile/google-services.json
+
+# ======== Spring Boot / Backend ========
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+backend/**/*.class
+backend/**/*.jar
+backend/**/*.war
+
+# IDE files
+*.iml
+.idea/
+.vscode/
