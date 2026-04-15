@@ -3,18 +3,23 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { barberService } from '../../services/barberService';
 import type { Barber } from '../../services/barberService';
+import { bookingService } from '../../services/bookingService';
+import type { AppointmentData } from '../../services/bookingService';
 import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
+import type { Appointment } from '../../types/appointment';
 import './CustomerDashboard.css';
 
 const CustomerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     fetchBarbers();
-  }, []);
+    fetchAppointments();
+  }, [user]);
 
   const fetchBarbers = async () => {
     try {
@@ -24,6 +29,28 @@ const CustomerDashboard: React.FC = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    if (!user?.firebaseUid) return;
+    
+    try {
+      const appointmentsData = await bookingService.getCustomerAppointments(user.firebaseUid);
+      
+      // Transform backend appointments to calendar format
+      const calendarAppointments: Appointment[] = appointmentsData.map((appt: AppointmentData) => {
+        const date = appt.appointmentDateTime ? new Date(appt.appointmentDateTime) : new Date();
+        return {
+          id: appt.appointment_id || '',
+          date: date.getDate(),
+          time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        };
+      });
+      
+      setAppointments(calendarAppointments);
+    } catch (err: any) {
+      console.error('Failed to fetch appointments:', err);
     }
   };
 
@@ -316,13 +343,12 @@ const CustomerDashboard: React.FC = () => {
               </div>
               
               <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
-                <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>My Calendar</h2>
+                <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
+                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </h2>
                 <CalendarWidget 
                   isBarberView={false} 
-                  appointments={[
-                    { id: '1', date: 15, time: '10:00 AM' },
-                    { id: '2', date: 22, time: '2:30 PM' }
-                  ]}
+                  appointments={appointments}
                 />
               </div>
             </aside>
