@@ -21,6 +21,7 @@ export interface User {
   phoneNumber: string;
   role: 'CUSTOMER' | 'BARBER' | 'ADMIN';
   isActive: boolean;
+  profileImageUrl?: string;
   barberProfile?: {
     id: number;
     bio: string;
@@ -90,6 +91,25 @@ export const authService = {
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get user data');
+    }
+  },
+
+  /**
+   * Upload user profile picture directly using multipart/form-data
+   */
+  async uploadProfileImage(file: File): Promise<string> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post('/auth/profile/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to upload profile image');
     }
   },
 

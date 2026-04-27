@@ -9,8 +9,6 @@ import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
 import edu.cit.cabasag.barberconnect.model.Appointment;
 import com.google.cloud.firestore.Firestore;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -40,9 +38,9 @@ public class AppointmentService {
             appointment.setBarber_profile_id(request.getBarberProfileId());
             appointment.setHaircut_style_id(request.getHaircutStyleId());
             
-            // Parse ISO String from frontend
-            LocalDateTime ldt = LocalDateTime.parse(request.getAppointmentDateTime(), DateTimeFormatter.ISO_DATE_TIME);
-            appointment.setAppointmentDateTime(Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant()));
+            // Parse ISO String from frontend using Instant to safely handle the 'Z' (UTC) timezone marker
+            java.time.Instant instant = java.time.Instant.parse(request.getAppointmentDateTime());
+            appointment.setAppointmentDateTime(Date.from(instant));
             
             appointment.setTotalPrice(request.getTotalPrice());
             
@@ -94,6 +92,65 @@ public class AppointmentService {
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch appointments from Firestore", e);
             throw new RuntimeException("Failed to fetch appointments", e);
+        }
+    }
+
+    public Appointment completeAppointment(String appointmentId) {
+        log.info("Completing appointment: {} and processing income distribution.", appointmentId);
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            // 1. Fetch Appointment
+            com.google.cloud.firestore.DocumentSnapshot doc = db.collection("appointments").document(java.util.Objects.requireNonNull(appointmentId)).get().get();
+            if (!doc.exists()) {
+                throw new RuntimeException("Appointment not found");
+            }
+            Appointment appointment = doc.toObject(Appointment.class);
+            if (appointment == null) throw new RuntimeException("Failed to map appointment");
+
+            // 2. Compute 80/20 Split using precise BigDecimal math
+            java.math.BigDecimal total = appointment.getTotalPrice();
+            if (total == null) total = java.math.BigDecimal.ZERO;
+            
+            java.math.BigDecimal platformFee = total.multiply(new java.math.BigDecimal("0.20"));
+            java.math.BigDecimal netAmount = total.multiply(new java.math.BigDecimal("0.80"));
+
+            // 3. Generate Income Record
+            edu.cit.cabasag.barberconnect.model.IncomeRecord incomeRecord = new edu.cit.cabasag.barberconnect.model.IncomeRecord();
+            incomeRecord.setIncome_record_id(UUID.randomUUID().toString());
+            incomeRecord.setBarber_profile_id(appointment.getBarber_profile_id());
+            incomeRecord.setAppointment_id(appointment.getAppointment_id());
+            incomeRecord.setAmount(total);
+            incomeRecord.setPlatformFee(platformFee);
+            incomeRecord.setNetAmount(netAmount);
+            
+            // Map payment method safely
+            try {
+                incomeRecord.setPaymentMethod(edu.cit.cabasag.barberconnect.model.IncomeRecord.PaymentMethod.valueOf(appointment.getPaymentMethod().name()));
+            } catch (Exception e) {
+                incomeRecord.setPaymentMethod(edu.cit.cabasag.barberconnect.model.IncomeRecord.PaymentMethod.CASH);
+            }
+            
+            incomeRecord.setRecordedAt(LocalDateTime.now());
+
+            // 4. Update Appointment Status
+            appointment.setStatus(Appointment.AppointmentStatus.COMPLETED);
+            appointment.setPaymentStatus(Appointment.PaymentStatus.PAID);
+            appointment.setUpdatedAt(new Date());
+
+            // 5. Commit to Firestore (Atomically-like)
+            db.collection("income_records").document(java.util.Objects.requireNonNull(incomeRecord.getIncome_record_id())).set(incomeRecord);
+            db.collection("appointments").document(java.util.Objects.requireNonNull(appointmentId)).set(appointment);
+
+            String notificationMessage = "Appointment completed! " + netAmount + " added to your earnings.";
+            eventManager.notifyAll(appointment.getBarber_profile_id(), notificationMessage);
+
+            return appointment;
+
+        } catch (Exception e) {
+            log.error("Failed to process appointment completion", e);
+            throw new RuntimeException("Failed to complete appointment and process income", e);
         }
     }
 }

@@ -350,3 +350,74 @@
     font-size: 1.125rem;
   }
 }
+
+/* Avatar Subsystem CSS */
+.profile-avatar-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: -3rem; /* overlap header */
+  margin-bottom: 1rem;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid white;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.avatar-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.profile-avatar-large {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+}
+
+.avatar-loading .spinner {
+  width: 30px;
+  height: 30px;
+  border-color: #D2691E;
+  border-top-color: transparent;
+}

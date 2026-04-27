@@ -16,20 +16,32 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
 
     @PostMapping("/book")
-    public ResponseEntity<Appointment> bookAppointment(@RequestBody CreateAppointmentRequest request) {
+    public ResponseEntity<?> bookAppointment(@RequestBody CreateAppointmentRequest request) {
         try {
             Appointment appointment = appointmentService.bookAppointment(request);
             return ResponseEntity.ok(appointment);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : "Unknown error"));
         }
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<java.util.List<Appointment>> getCustomerAppointments(@PathVariable String customerId) {
+    public ResponseEntity<?> getCustomerAppointments(@PathVariable String customerId) {
         try {
             java.util.List<Appointment> appointments = appointmentService.getAppointmentsByCustomerId(customerId);
             return ResponseEntity.ok(appointments);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : "Unknown error"));
+        }
+    }
+
+    @PutMapping("/{appointmentId}/complete")
+    public ResponseEntity<Appointment> completeAppointment(@PathVariable String appointmentId) {
+        try {
+            Appointment completedAppointment = appointmentService.completeAppointment(appointmentId);
+            return ResponseEntity.ok(completedAppointment);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }

@@ -8,6 +8,7 @@ import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
 import edu.cit.cabasag.barberconnect.model.User;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import edu.cit.cabasag.barberconnect.service.AuthService;
+import edu.cit.cabasag.barberconnect.service.CloudinaryService;
 import edu.cit.cabasag.barberconnect.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -28,6 +30,7 @@ public class AuthController {
     
     private final AuthService authService;
     private final UserService userService;
+    private final CloudinaryService cloudinaryService;
     private final JwtUtil jwtUtil;
     
     @PostMapping("/register")
@@ -82,6 +85,33 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Get current user failed", e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/profile/image")
+    public ResponseEntity<ApiResponse<String>> uploadProfileImage(@RequestParam("file") MultipartFile file) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String uid = (String) authentication.getPrincipal();
+            
+            log.info("Profile image upload request for user: {}", uid);
+            
+            User user = userService.findById(uid)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    
+            // Pipe it strictly to the remote bucket
+            String profileImageUrl = cloudinaryService.uploadProfilePicture(uid, file);
+            
+            // Sync up Firestore natively
+            user.setProfileImageUrl(profileImageUrl);
+            userService.save(user);
+            
+            log.info("User {} profile picture completely updated", uid);
+            
+            return ResponseEntity.ok(ApiResponse.success(profileImageUrl));
+        } catch (Exception e) {
+            log.error("Profile image upload crashed: ", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error("File upload failed: " + e.getMessage()));
         }
     }
     
@@ -160,6 +190,7 @@ public class AuthController {
         response.setPhoneNumber(user.getPhoneNumber());
         response.setRole(user.getRole());
         response.setActive(user.getIsActive());
+        response.setProfileImageUrl(user.getProfileImageUrl());
         
         if (user.getBarberProfile() != null) {
             var bp = user.getBarberProfile();

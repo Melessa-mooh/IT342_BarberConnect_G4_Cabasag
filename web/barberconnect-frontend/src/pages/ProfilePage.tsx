@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 import { formatPhoneNumber, validatePhilippinePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import './ProfilePage.css';
 
@@ -9,6 +10,8 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -48,6 +51,30 @@ const ProfilePage: React.FC = () => {
         ...prev,
         [name]: name === 'yearsExperience' ? parseInt(value) || 0 : value
       }));
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
+    setImageUploading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await authService.uploadProfileImage(file);
+      await refreshUser();
+      setSuccess('Profile picture updated successfully!');
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload profile picture');
+    } finally {
+      setImageUploading(false);
     }
   };
 
@@ -178,6 +205,34 @@ const ProfilePage: React.FC = () => {
         <div className="profile-header">
           <h1>My Profile</h1>
           <p>Update your personal information</p>
+        </div>
+        
+        <div className="profile-avatar-section">
+          <div className="avatar-wrapper" onClick={() => fileInputRef.current?.click()}>
+            {imageUploading ? (
+              <div className="avatar-loading">
+                <div className="spinner"></div>
+              </div>
+            ) : (
+              <>
+                <img 
+                  src={user?.profileImageUrl || user?.barberProfile?.profileImageUrl || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=1f2937&color=c79864`} 
+                  alt="Profile" 
+                  className="profile-avatar-large" 
+                />
+                <div className="avatar-overlay">
+                  <span>📷 Change</span>
+                </div>
+              </>
+            )}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImageUpload} 
+              accept="image/*" 
+              hidden 
+            />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="profile-form">

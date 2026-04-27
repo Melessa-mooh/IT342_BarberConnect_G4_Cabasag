@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { bookingService } from '../../services/bookingService';
-import type { CreateAppointmentRequest } from '../../services/bookingService';
+import { appointmentService } from '../../services/appointmentService';
 import './BookingPage.css';
 
 interface HaircutStyle {
@@ -22,7 +21,7 @@ interface AdditionalService {
 const BookingPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isBooking, setIsBooking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [selectedBarber] = useState({
     id: '1',
@@ -86,39 +85,43 @@ const BookingPage: React.FC = () => {
       alert('Please complete all required fields');
       return;
     }
-    
-    // Combine selectedDate and selectedTime
-    const timeMatch = selectedTime.match(/(\d+):(\d+)\s(AM|PM)/);
-    const dateCopy = new Date(selectedDate);
-    if (timeMatch) {
-      let hours = parseInt(timeMatch[1], 10);
-      const minutes = parseInt(timeMatch[2], 10);
-      const ampm = timeMatch[3];
-      if (ampm === 'PM' && hours < 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-      dateCopy.setHours(hours, minutes, 0, 0);
+
+    if (!user) {
+      alert('Please log in to book an appointment.');
+      return;
     }
     
-    setIsBooking(true);
     try {
-      const request: CreateAppointmentRequest = {
-        customerId: user?.firebaseUid || 'temp-user-id',
+      setIsSubmitting(true);
+      
+      const [timeStr, period] = selectedTime.split(' ');
+      const [hoursStr, minutes] = timeStr.split(':');
+      let hours = parseInt(hoursStr, 10);
+      if (period === 'PM' && hours < 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      
+      const appointmentDate = new Date(selectedDate);
+      appointmentDate.setHours(hours, parseInt(minutes, 10), 0, 0);
+
+      const requestPayload = {
+        customerId: user.firebaseUid,
         barberProfileId: selectedBarber.id,
         haircutStyleId: selectedStyle.id,
-        appointmentDateTime: dateCopy.toISOString(),
+        appointmentDateTime: appointmentDate.toISOString(),
         totalPrice: calculateTotal(),
         paymentMethod: paymentMethod === 'gcash' ? 'DIGITAL_WALLET' : 'CASH',
         selectedOptionIds: additionalServices.filter(s => s.selected).map(s => s.id)
       };
+
+      await appointmentService.bookAppointment(requestPayload);
       
-      await bookingService.createAppointment(request);
       alert('Booking confirmed!');
       navigate('/dashboard');
-    } catch (e: any) {
-      alert('Failed to save booking. Make sure your local Backend Server is running.');
-      console.error(e);
+    } catch (error: any) {
+      console.error('Booking failed:', error);
+      alert(error.message || 'Failed to book appointment. Please try again.');
     } finally {
-      setIsBooking(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -427,9 +430,9 @@ const BookingPage: React.FC = () => {
               <button 
                 className="continue-btn"
                 onClick={handleContinueBooking}
-                disabled={!selectedStyle || !selectedDate || !selectedTime || isBooking}
+                disabled={!selectedStyle || !selectedDate || !selectedTime || isSubmitting}
               >
-                {isBooking ? 'Booking...' : 'Continue Booking'}
+                {isSubmitting ? 'Booking...' : 'Continue Booking'}
               </button>
             </div>
           </div>

@@ -54,15 +54,6 @@
   border-color: #D2691E;
 }
 
-.calendar-widget .booked-brown.clickable {
-  cursor: pointer;
-}
-
-.calendar-widget .booked-brown.clickable:hover {
-  background-color: #fde4c0;
-  transform: scale(1.02);
-}
-
 .calendar-widget .appointment-details-list {
   display: flex;
   flex-direction: column;
@@ -95,121 +86,88 @@
   text-overflow: ellipsis;
 }
 
-/* Modal Styles */
+.calendar-widget .calendar-day.clickable {
+  cursor: pointer;
+}
+.calendar-widget .calendar-day.clickable:hover {
+  background-color: #fce2c2;
+}
+
 .calendar-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  backdrop-filter: blur(2px);
 }
 
 .calendar-modal {
   background: white;
+  padding: 1.5rem;
   border-radius: 12px;
-  padding: 0;
-  max-width: 400px;
-  width: 90%;
-  max-height: 80vh;
-  overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: slideUp 0.3s ease;
+  min-width: 320px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: modalFadeIn 0.2s ease-out;
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
-  color: white;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
 }
 
 .modal-header h3 {
   margin: 0;
+  color: #8B4513;
   font-size: 1.25rem;
-  font-weight: 600;
 }
 
-.modal-close-btn {
+.close-btn {
   background: none;
   border: none;
-  font-size: 2rem;
-  color: white;
+  font-size: 1.5rem;
   cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s;
+  color: #6b7280;
+  line-height: 1;
+}
+.close-btn:hover {
+  color: #000;
 }
 
-.modal-close-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.modal-body {
-  padding: 1.5rem;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.modal-appointment-item {
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
+.modal-appointment-card {
   background: #fef0db;
-  transition: all 0.2s;
-}
-
-.modal-appointment-item:hover {
-  border-color: #D2691E;
-  box-shadow: 0 2px 4px rgba(210, 105, 30, 0.1);
-}
-
-.modal-appointment-item:last-child {
-  margin-bottom: 0;
+  border-left: 4px solid #D2691E;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
 }
 
 .modal-appt-time {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #8B4513;
-  margin-bottom: 0.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 1.1rem;
 }
 
-.modal-appt-customer {
+.modal-appt-name {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+
+.modal-appt-status {
+  font-size: 0.85rem;
+  color: #059669;
+  font-weight: 600;
+  margin-top: 0.5rem;
 }

@@ -9,6 +9,7 @@ import CustomerDashboard from '../pages/customer/CustomerDashboard';
 import BookingPage from '../pages/customer/BookingPage';
 import BarberDashboard from '../pages/barber/BarberDashboard';
 import ProfilePage from '../pages/ProfilePage';
+import AdminDashboard from '../pages/admin/AdminDashboard';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -119,7 +120,7 @@ const DashboardRoute: React.FC = () => {
     case 'CUSTOMER':
       return <CustomerDashboard />;
     case 'ADMIN':
-      return <BarberDashboard />; // For now, admins see barber dashboard
+      return <AdminDashboard />;
     default:
       return <CustomerDashboard />;
   }

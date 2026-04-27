@@ -3,23 +3,53 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { barberService } from '../../services/barberService';
 import type { Barber } from '../../services/barberService';
-import { bookingService } from '../../services/bookingService';
-import type { AppointmentData } from '../../services/bookingService';
+import { appointmentService } from '../../services/appointmentService';
 import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
-import type { Appointment } from '../../types/appointment';
 import './CustomerDashboard.css';
 
 const CustomerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [calendarAppointments, setCalendarAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     fetchBarbers();
-    fetchAppointments();
+  }, []);
+
+  useEffect(() => {
+    if (user?.firebaseUid) {
+      fetchAppointments();
+    }
   }, [user]);
+
+  const fetchAppointments = async () => {
+    try {
+      const data = await appointmentService.getCustomerAppointments(user!.firebaseUid);
+      const formatted = data.map(app => {
+        const d = new Date(app.appointmentDateTime);
+        return {
+          id: app.appointment_id,
+          date: d.getDate(),
+          fullDateText: d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+          time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          barberId: app.barber_profile_id,
+          haircutId: app.haircut_style_id,
+          totalPrice: app.totalPrice,
+          paymentMethod: app.paymentMethod,
+          status: app.status
+        };
+      });
+      setCalendarAppointments(formatted);
+      if (data.length === 0) {
+         // Silently ignore if empty, or notify
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch appointments:', err);
+      alert('CRITICAL ERROR FETCHING CALENDAR: ' + err.message);
+    }
+  };
 
   const fetchBarbers = async () => {
     try {
@@ -29,28 +59,6 @@ const CustomerDashboard: React.FC = () => {
       setError(err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAppointments = async () => {
-    if (!user?.firebaseUid) return;
-    
-    try {
-      const appointmentsData = await bookingService.getCustomerAppointments(user.firebaseUid);
-      
-      // Transform backend appointments to calendar format
-      const calendarAppointments: Appointment[] = appointmentsData.map((appt: AppointmentData) => {
-        const date = appt.appointmentDateTime ? new Date(appt.appointmentDateTime) : new Date();
-        return {
-          id: appt.appointment_id || '',
-          date: date.getDate(),
-          time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-        };
-      });
-      
-      setAppointments(calendarAppointments);
-    } catch (err: any) {
-      console.error('Failed to fetch appointments:', err);
     }
   };
 
@@ -344,11 +352,30 @@ const CustomerDashboard: React.FC = () => {
               
               <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
                 <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </h2>
                 <CalendarWidget 
                   isBarberView={false} 
-                  appointments={appointments}
+                  appointments={calendarAppointments.map(app => {
+                    let barberName = 'Barber';
+                    if (app.barberId == 1) barberName = 'Marcus Johnson';
+                    else if (app.barberId == 2) barberName = 'David Chen';
+                    else if (app.barberId == 3) barberName = 'James Wilson';
+                    else if (app.barberId == 4) barberName = 'Alex Rivera';
+
+                    let haircutName = 'Haircut';
+                    if (app.haircutId == 1) haircutName = 'Classic Fade';
+                    else if (app.haircutId == 2) haircutName = 'Modern Pompadour';
+                    else if (app.haircutId == 3) haircutName = 'Buzz Cut';
+                    else if (app.haircutId == 4) haircutName = 'Textured Crop';
+                    else if (app.haircutId == 5) haircutName = 'Beard Trim & Line Up';
+
+                    return {
+                      ...app,
+                      barberName,
+                      haircutName
+                    };
+                  })}
                 />
               </div>
             </aside>
