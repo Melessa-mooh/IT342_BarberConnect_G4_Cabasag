@@ -1,0 +1,519 @@
+/* ═══════════════════════════════════════════════════════════════
+   AuthPage.css — BarberConnect unified login / sign-up page
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ─── Reset & base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Page shell ─── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #1a0a00 0%, #3b1a08 40%, #6b3510 100%);
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle animated background grain */
+.auth-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(210, 105, 30, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.2)  0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Top navigation ─── */
+.auth-topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: #f4e4bc;
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+}
+
+.auth-logo-icon { font-size: 1.6rem; }
+
+.auth-back-link {
+  color: #c8956a;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.auth-back-link:hover { color: #f4e4bc; }
+
+/* ─── Card wrapper ─── */
+.auth-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem 3rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Main card ─── */
+.auth-card {
+  display: flex;
+  width: 100%;
+  max-width: 900px;
+  min-height: 580px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+/* ══════════════════════════
+   LEFT PANEL (dark / branded)
+══════════════════════════ */
+.auth-panel-left {
+  width: 38%;
+  background: linear-gradient(160deg, #3b1a08 0%, #8B4513 60%, #c4601a 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  text-align: center;
+}
+
+/* When signup is active, the left panel text content transitions via JS class toggling.
+   The slide animation is handled entirely by the right panel's form containers. */
+
+.auth-panel-left::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 250px; height: 250px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+.auth-panel-left::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: -40px;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.1);
+}
+
+.panel-content { position: relative; z-index: 1; }
+
+.panel-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+.panel-title {
+  color: #f4e4bc;
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.panel-subtitle {
+  color: rgba(244, 228, 188, 0.75);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.panel-switch-btn {
+  background: rgba(255,255,255,0.12);
+  color: #f4e4bc;
+  border: 2px solid rgba(244,228,188,0.5);
+  padding: 0.75rem 2.2rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.02em;
+}
+.panel-switch-btn:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: #f4e4bc;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+/* Decorative scissors */
+.panel-decoration {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0.15;
+}
+.panel-decoration span {
+  font-size: 1.1rem;
+  animation: fadeSpin 4s linear infinite;
+}
+.panel-decoration span:nth-child(even)  { animation-delay: -2s; }
+.panel-decoration span:nth-child(3n)    { animation-delay: -1s; }
+
+@keyframes fadeSpin {
+  0%   { opacity: 0.1; transform: rotate(0deg); }
+  50%  { opacity: 0.35; transform: rotate(180deg); }
+  100% { opacity: 0.1; transform: rotate(360deg); }
+}
+
+/* ══════════════════════════
+   RIGHT PANEL (forms / white)
+══════════════════════════ */
+.auth-panel-right {
+  width: 62%;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+}
+
+/* ─── Individual form containers ─── */
+.auth-form-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.5rem 3rem;
+  overflow-y: auto;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity  0.4s  ease;
+  will-change: transform, opacity;
+}
+
+/* Sign-in default: visible on the right */
+.login-form-container {
+  transform: translateX(0%);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+/* Sign-in slides away LEFT when signup is active */
+.login-form-container.slide-out {
+  transform: translateX(-110%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Register default: hidden to the right */
+.register-form-container {
+  transform: translateX(110%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+/* Register slides IN from right */
+.register-form-container.slide-in {
+  transform: translateX(0%);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+/* Register goes back right */
+.register-form-container.slide-out-reg {
+  transform: translateX(110%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Form header ─── */
+.form-header {
+  margin-bottom: 1.5rem;
+}
+.form-header h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1a0a00;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.35rem;
+}
+.form-header p {
+  color: #8B4513;
+  font-size: 0.9rem;
+}
+
+/* ─── Alerts ─── */
+.alert {
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+.alert-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+.alert-error {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+/* ─── Auth form ─── */
+.auth-form { display: flex; flex-direction: column; gap: 0; }
+
+.name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+/* ─── Field group ─── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.9rem;
+}
+
+.field-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3b1a08;
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.01em;
+}
+
+.field-group input {
+  padding: 0.7rem 0.95rem;
+  border: 1.5px solid #e2d9d0;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  background: #fafaf8;
+  color: #1a0a00;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  font-family: inherit;
+  width: 100%;
+}
+.field-group input:focus {
+  outline: none;
+  border-color: #D2691E;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(210,105,30,0.12);
+}
+.field-group input.input-error {
+  border-color: #dc2626;
+  background: #fff5f5;
+}
+
+/* ─── Password wrapper ─── */
+.pw-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pw-wrapper input { flex: 1; padding-right: 2.8rem; }
+.pw-toggle {
+  position: absolute;
+  right: 0.7rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.15rem;
+  color: #8B4513;
+  transition: opacity 0.2s;
+}
+.pw-toggle:hover { opacity: 0.7; }
+
+/* ─── Field error ─── */
+.field-error {
+  font-size: 0.775rem;
+  color: #dc2626;
+  margin-top: 0.2rem;
+}
+
+/* ─── Primary button ─── */
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+  color: #fff;
+  border: none;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a0521c 0%, #e07320 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139,69,19,0.35);
+}
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button spinner */
+.btn-spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Divider ─── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.85rem 0;
+  color: #c8a88a;
+  font-size: 0.8rem;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2d9d0;
+}
+
+/* ─── Google button ─── */
+.btn-google {
+  width: 100%;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #e2d9d0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  transition: all 0.25s ease;
+  font-family: inherit;
+}
+.btn-google:hover {
+  border-color: #D2691E;
+  background: #fdf8f4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(139,69,19,0.12);
+}
+
+/* ─── Switch text ─── */
+.form-switch-text {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #8B4513;
+  margin-top: 0.85rem;
+}
+.text-link {
+  background: none;
+  border: none;
+  color: #D2691E;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+  font-family: inherit;
+}
+.text-link:hover { color: #8B4513; }
+
+/* ════════════════════════════════
+   SLIDE ANIMATION — card direction swap
+   When signup is active: left panel gets pushed to right-side position
+   We achieve the "panel flip" with flex-direction reverse on the card
+════════════════════════════════ */
+.auth-card {
+  flex-direction: row;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .auth-card {
+    flex-direction: column;
+    max-width: 480px;
+    min-height: auto;
+  }
+
+  .auth-panel-left {
+    width: 100%;
+    padding: 2.5rem 2rem;
+    min-height: 220px;
+  }
+
+  .auth-panel-right {
+    width: 100%;
+    min-height: 520px;
+  }
+
+  .auth-form-container {
+    padding: 2rem 1.75rem;
+  }
+
+  .name-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .auth-topnav { padding: 1rem 1.25rem; }
+  .auth-wrapper { padding: 1rem 1rem 2rem; }
+}
+
+@media (max-width: 400px) {
+  .auth-form-container { padding: 1.5rem 1.25rem; }
+  .form-header h1      { font-size: 1.45rem; }
+}

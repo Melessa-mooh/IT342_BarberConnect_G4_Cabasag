@@ -2,8 +2,9 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LandingPage from '../pages/LandingPage';
-import LoginPage from '../pages/auth/LoginPage';
-import RegisterPage from '../pages/auth/RegisterPage';
+import AuthPage from '../pages/auth/AuthPage';
+import BarberLoginPage from '../pages/auth/BarberLoginPage';
+import AdminLoginPage from '../pages/auth/AdminLoginPage';
 import AuthCallback from '../pages/auth/AuthCallback';
 import CustomerDashboard from '../pages/customer/CustomerDashboard';
 import BookingPage from '../pages/customer/BookingPage';
@@ -136,15 +137,29 @@ const AppRoutes: React.FC = () => {
         </PublicRoute>
       } />
 
-      {/* Public Routes */}
+      {/* Public Auth Routes */}
+      {/* /login — unified sign-in + sign-up sliding page (customers) */}
       <Route path="/login" element={
         <PublicRoute>
-          <LoginPage />
+          <AuthPage />
         </PublicRoute>
       } />
+      {/* /register redirects to /login?tab=signup for backwards compatibility */}
       <Route path="/register" element={
         <PublicRoute>
-          <RegisterPage />
+          <AuthPage />
+        </PublicRoute>
+      } />
+      {/* /barber-login — barber staff only portal (admin-created accounts) */}
+      <Route path="/barber-login" element={
+        <PublicRoute>
+          <BarberLoginPage />
+        </PublicRoute>
+      } />
+      {/* /admin-login — administrator portal */}
+      <Route path="/admin-login" element={
+        <PublicRoute>
+          <AdminLoginPage />
         </PublicRoute>
       } />
       
