@@ -2,88 +2,215 @@
 
 ## 📌 What is BarberConnect?
 
-BarberConnect is a comprehensive, full-stack barbershop management platform designed to bridge the gap between barbers and their customers. 
+BarberConnect is a comprehensive, full-stack barbershop management platform designed to bridge the gap between barbers and their customers.
 
 In today's fast-paced world, booking a haircut can be tedious, involving back-and-forth phone calls and unorganized schedules. BarberConnect solves this by providing a unified digital hub where:
-- **Customers** can effortlessly discover services, browse barber portfolios, book appointments securely, make digital payments, and keep track of their grooming schedules.
-- **Barbers** can digitize their business, effortlessly manage their daily bookings, showcase their work through image uploads, and reduce no-shows with automated scheduling and notifications.
+- **Customers** can effortlessly discover services, browse barber portfolios, book appointments securely, and keep track of their grooming schedules.
+- **Barbers** can digitize their business, manage daily bookings, showcase their work through image uploads, and reduce no-shows with automated scheduling and notifications.
+- **Admins** can manage barber accounts, monitor platform statistics, and approve leave requests.
 
 By combining a sleek, customer-facing mobile application with a powerful management web dashboard, BarberConnect creates a seamless, end-to-end grooming experience.
 
 ---
 
-## 🌟 Our Journey: What We Did
-
-Throughout the development of BarberConnect (especially during IT342 Phase 2), we worked hands-on to turn our initial concept into a fully functioning platform. Here are the core features and implementations we personally built:
-
-### 📱 The Mobile Experience (Android / Kotlin)
-- **Premium UI/UX:** We designed a custom,"barber-themed" aesthetic. We made sure buttons have smooth transitions, and the interface feels high-end, dynamic, and responsive.
-- **Clean Architecture:** Engineered the Android app using **MVVM (Model-View-ViewModel)** alongside Coroutines and Retrofit so the code stays deeply organized.
-- **Authentication:** Integrated Google OAuth and Firebase Authentication for secure login and registration flows.
-- **State Management:** Carefully managed UI states (Loading, Success, Error) to give users proper visual feedback during API interactions.
-
-### 💻 The Web Dashboard
-- **Dynamic Appointments:** Built a fully interactive, Firestore-backed appointment calendar from scratch specifically for the user dashboard.
-- **Profile Enhancements:** Implemented secure profile picture uploads that sync directly to Firebase Storage.
-- **Data Formatting:** Created utilities to format currencies properly locally (Philippine Pesos - PHP) and mapped internal technical database IDs into human-readable labels so the UI is intuitive.
-
-### 🔐 Security & Infrastructure
-- Cleaned up our repository by systematically analyzing and configuring our `.gitignore`, ensuring sensitive files like `google-services.json`, `local.properties`, and Gradle build caches are completely hidden from source control.
-
----
-
-## 🏗️ The Foundation: What the System Handles
-
-We chose a robust baseline tech stack that provides incredible out-of-the-box infrastructure, letting us focus on the custom features:
-
-- **Spring Boot (Java 17):** Provides our core layered architecture (Controller → Service → Repository). It shoulders the heavy lifting for dependency injection, RESTful API mapping, and our Global Exception Handling.
-- **Database (MySQL):** Handles our persistent relational queries (users, sessions, appointments).
-- **Security Protocols:** Utilizing system-generated JWT tokens for stateless session management and BCrypt for secure, out-of-the-box password hashing.
-- **Third-Party Services:** 
-  - **Firebase:** Facilitates our OAuth2 flows and scalable image storage backend.
-  - **Stripe Sandbox:** Seamlessly manages the complexities and security of processing mock payments.
-  - **SMTP:** Fires off automated booking confirmations and welcome emails.
-
----
-
-## 🚀 Key Platform Features
-
-- **For Customers:** Register and login securely, book and cancel appointments seamlessly, pay securely via Stripe, and track your booking history.
-- **For Barbers:** Manage grooming services, upload showcase images, accept or update new bookings smoothly.
-- **External Integrations:** Dashboard displays useful external public APIs (like local weather) completely insulated with graceful fallback handlers.
-
----
-
 ## 🛠 Technology Stack
-- **Backend:** Spring Boot (Java), MySQL, JWT, BCrypt
-- **Mobile Application:** Android / Kotlin
-- **Web Application:** HTML, JS, Vanilla CSS
-- **Cloud & Microservices:** Firebase (Auth & Storage), Stripe (Sandbox Dashboard), SMTP Mail Server
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Java 17, Spring Boot 3.5, Maven |
+| **Database** | Cloud Firestore (Firebase NoSQL) |
+| **Authentication** | Google Aoth2 + Custom JWT (jjwt 0.12.3) |
+| **Image Storage** | Cloudinary |
+| **Web Frontend** | React 18, TypeScript, Vite, Axios |
+| **Mobile** | Android (Kotlin), MVVM, Retrofit2, OkHttp3 |
+| **Architecture** | Vertical Slice Architecture |
 
 ---
 
-## 📦 Getting Started
+## ✅ Prerequisites — What to Install
 
-### 1️⃣ Backend Setup
-1. Clone the repository.
-2. Provide your own `application.properties` with appropriate environment variables containing your MySQL, JWT, Stripe, SMTP, and Firebase credentials.
-3. Run the Spring Boot application (by default runs on `localhost:8080`).
+Before running any part of the project, make sure you have the following tools installed on your machine.
 
-### 2️⃣ Mobile App Setup
-1. Open the `/mobile` project folder in Android Studio.
-2. Note: You will need to create and add your own `google-services.json` inside the `mobile/app` directory (this is intentionally ignored in version control).
-3. Sync Gradle and run the app on an Android emulator or a physical device.
+### 🔧 Global Requirements (All Platforms)
 
-### 3️⃣ Web Setup
-1. Navigate to the `web` directory.
-2. Ensure you have mapped your backend API correctly inside your frontend scripts.
-3. Serve locally (using an extension like Live Server in VS Code) and open in your browser.
+| Tool | Version | Download |
+|---|---|---|
+| **Git** | Latest | https://git-scm.com/downloads |
+| **Java JDK** | 17 (LTS) | https://adoptium.net/ |
+| **Node.js** | 18+ (LTS) | https://nodejs.org/ |
+| **npm** | Comes with Node.js | — |
+
+> ⚠️ Verify installations by running: `java -version`, `node -v`, `npm -v`, `git --version`
+
+---
+
+### ☕ Backend Requirements
+
+| Tool | Version | Notes |
+|---|---|---|
+| **Java JDK 17** | 17 (LTS) | Required to compile and run Spring Boot |
+| **Maven** | 3.9+ | Bundled via `mvnw` wrapper — no separate install needed |
+| **Firebase Admin SDK** | 9.2.0 | Included in `pom.xml` — auto-downloaded by Maven |
+| **Firebase Project** | Any | You must create a Firebase project and download `serviceAccountKey.json` |
+| **Cloudinary Account** | Free tier | Required for image upload functionality |
+
+**Setup Steps:**
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/Melessa-mooh/IT342_BarberConnect_G4_Cabasag.git
+cd IT342_BarberConnect_G4_Cabasag/backend
+
+# 2. Add your environment config (create this file — never commit it)
+# File: backend/src/main/resources/application.properties
+# Required keys:
+#   firebase.service-account-key=<path-to-serviceAccountKey.json>
+#   cloudinary.cloud-name=<your-cloud-name>
+#   cloudinary.api-key=<your-api-key>
+#   cloudinary.api-secret=<your-api-secret>
+#   jwt.secret=<your-secret-key>
+
+# 3. Run the backend (starts on http://localhost:8080)
+./mvnw spring-boot:run        # macOS / Linux
+mvnw.cmd spring-boot:run      # Windows
+```
+
+---
+
+### 🌐 Web Frontend Requirements
+
+| Tool | Version | Notes |
+|---|---|---|
+| **Node.js** | 18+ | JavaScript runtime |
+| **npm** | 9+ | Package manager (comes with Node.js) |
+| **Vite** | Bundled | No separate install — `npm install` handles it |
+
+**Setup Steps:**
+
+```bash
+# 1. Navigate to the frontend directory
+cd web/barberconnect-frontend
+
+# 2. Install all dependencies
+npm install
+
+# 3. Start the development server (runs on http://localhost:5173)
+npm run dev
+```
+
+> ℹ️ Make sure the backend is running on `http://localhost:8080` before starting the frontend.
+
+**Run Frontend Tests:**
+
+```bash
+npm run test
+```
+
+---
+
+### 📱 Mobile App Requirements
+
+| Tool | Version | Download |
+|---|---|---|
+| **Android Studio** | Iguana (2023.2.1+) | https://developer.android.com/studio |
+| **Android SDK** | API 26+ (Android 8.0) | Installed via Android Studio SDK Manager |
+| **Kotlin Plugin** | Bundled in Android Studio | — |
+| **JDK 17** | 17 (LTS) | Configured inside Android Studio |
+| **Google Services JSON** | — | Download from your Firebase Console |
+
+**Setup Steps:**
+
+1. Open **Android Studio** → `File → Open` → select the `mobile/` folder
+2. Add your `google-services.json` file to `mobile/app/` (download from your Firebase Console → Project Settings → Android app)
+3. Update the `BASE_URL` in `mobile/app/build.gradle.kts`:
+   - **Emulator:** `http://10.0.2.2:8080/api/v1/`
+   - **Real device (same Wi-Fi):** `http://<your-PC-local-IP>:8080/api/v1/`
+4. Click **Sync Project with Gradle Files** (the elephant icon)
+5. Run the app on an emulator or physical Android device (API 26+)
+
+> ⚠️ `google-services.json` is listed in `.gitignore` and must **never** be committed to the repository.
+
+---
+
+### 🔥 Firebase Setup (Required for All Platforms)
+
+1. Go to [https://console.firebase.google.com](https://console.firebase.google.com)
+2. Create a new project (or use an existing one)
+3. Enable **Firestore Database** (Native mode)
+4. Enable **Firebase Authentication** (Email/Password + Google Sign-In)
+5. **For backend:** Go to `Project Settings → Service Accounts → Generate new private key` → save as `serviceAccountKey.json`
+6. **For mobile:** Go to `Project Settings → General → Your apps → Android → Download google-services.json`
+
+---
+
+## 🏗️ Architecture Overview
+
+BarberConnect follows **Vertical Slice Architecture** — each feature owns its controller, service, and model within a cohesive package:
+
+```
+backend/feature/
+├── shared/         ← FirebaseService, CloudinaryService
+├── auth/           ← AuthService, User
+├── appointment/    ← AppointmentService, Appointment
+├── barber/         ← BarberService, BarberProfile
+├── catalog/        ← HaircutStyleService, HaircutStyle, StyleOption
+├── admin/          ← AdminService, LeaveRequest
+├── income/         ← IncomeRecord
+└── social/         ← Post, Comment, Feedback, Reaction
+
+web/src/features/
+├── auth/           ← authService + login/register pages
+├── appointment/    ← appointmentService + AppointmentsPanel
+├── barber/         ← barberService + dashboard panels
+├── catalog/        ← haircutStyleService + CatalogPanel
+└── admin/          ← adminService + admin pages
+
+mobile/feature/
+├── auth/           ← LoginActivity, RegisterActivity, AuthViewModel
+├── dashboard/      ← DashboardActivity
+└── core/           ← RetrofitClient, ApiService, TokenManager
+```
+
+---
+
+## 🌟 Key Features
+
+| Feature | Customer | Barber | Admin |
+|---|---|---|---|
+| Register / Login | ✅ | ✅ | ✅ |
+| Google Sign-In | ✅ | — | — |
+| Book Appointment | ✅ | — | — |
+| Manage Appointments | — | ✅ | ✅ |
+| Haircut Catalog | View | Manage | View |
+| Income Dashboard | — | ✅ | ✅ |
+| Leave Requests | — | Submit | Approve |
+| Social Feed / Posts | View | Post | Moderate |
+| Profile Management | ✅ | ✅ | ✅ |
+| Admin Create Barber | — | — | ✅ |
+
+---
+
+## 🚀 Running Tests
+
+### Backend (JUnit 5 + Mockito)
+```bash
+cd backend
+./mvnw test          # macOS / Linux
+mvnw.cmd test        # Windows
+```
+
+### Frontend (Vitest)
+```bash
+cd web/barberconnect-frontend
+npm run test
+```
 
 ---
 
 ## 📄 License & Credits
-Designed and developed for academic requirements (Project Individual) showcasing modern software engineering practices.
 
-**Author:** Cabasag, Ma. Melessa V.
+Designed and developed for academic requirements (IT342 — Software Engineering) showcasing modern full-stack software engineering practices including Vertical Slice Architecture and Regression Testing.
+
+**Author:** Cabasag, Ma. Melessa V. — Group 4
 
 ✨ *BarberConnect – Connecting Barbers and Customers Seamlessly.*
