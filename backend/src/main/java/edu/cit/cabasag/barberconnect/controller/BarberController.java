@@ -164,4 +164,20 @@ public class BarberController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // NEW: GET /barbers/{barberProfileId}/income
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/{barberProfileId}/income")
+    public ResponseEntity<ApiResponse<List<edu.cit.cabasag.barberconnect.model.IncomeRecord>>> getBarberIncome(
+            @PathVariable String barberProfileId) {
+        try {
+            List<edu.cit.cabasag.barberconnect.model.IncomeRecord> records = barberService.getIncomeRecords(barberProfileId);
+            return ResponseEntity.ok(ApiResponse.success(records));
+        } catch (Exception e) {
+            log.error("Failed to fetch income records for barber {}: {}", barberProfileId, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

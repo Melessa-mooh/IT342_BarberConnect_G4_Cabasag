@@ -41,5 +41,23 @@ export const appointmentService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch appointments');
     }
+  },
+
+  getBarberAppointments: async (barberProfileId: string): Promise<Appointment[]> => {
+    try {
+      const response = await api.get<Appointment[]>(`/appointments/barber/${barberProfileId}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch appointments');
+    }
+  },
+
+  updateAppointmentStatus: async (appointmentId: string, status: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<Appointment>(`/appointments/${appointmentId}/status`, { status });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update appointment status');
+    }
   }
 };

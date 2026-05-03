@@ -1,17 +1,121 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { incomeService, leaveService, type IncomeRecord, type LeaveRequest } from '../../../services/barberFeatureService';
+import { appointmentService, type Appointment } from '../../../services/appointmentService';
+import { barberService, type Barber } from '../../../services/barberService';
+import { haircutStyleService, type HaircutStyle } from '../../../services/haircutStyleService';
 
 interface OverviewPanelProps {
   setActiveTab?: (tab: string) => void;
 }
 
 const OverviewPanel: React.FC<OverviewPanelProps> = () => {
+  const { user } = useAuth();
+  const barberProfileId = user?.barberProfile?.id?.toString() ?? '';
+
+  const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [haircutStyles, setHaircutStyles] = useState<HaircutStyle[]>([]);
+  const [profile, setProfile] = useState<Barber | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!barberProfileId) return;
+
+    const loadData = async () => {
+      try {
+        const [inc, appts, leaves, styles, prof] = await Promise.all([
+          incomeService.getIncomeForBarber(barberProfileId),
+          appointmentService.getBarberAppointments(barberProfileId),
+          leaveService.getLeaveRequests(barberProfileId),
+          haircutStyleService.getHaircutStylesForBarber(barberProfileId),
+          barberService.getBarberById(Number(barberProfileId))
+        ]);
+
+        setIncomeRecords(inc);
+        setAppointments(appts);
+        setLeaveRequests(leaves);
+        setHaircutStyles(styles);
+        setProfile(prof);
+      } catch (err) {
+        console.error('Failed to load overview data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [barberProfileId]);
+
+  // Calculations
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const currentMonthIncome = incomeRecords
+    .filter(r => {
+      const d = new Date(r.recordedAt);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .reduce((sum, r) => sum + r.netAmount, 0);
+
+  const thisMonthAppointments = appointments.filter(a => {
+    const d = new Date(a.appointmentDateTime);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const rating = profile?.rating ?? '0.0';
+  const totalReviews = profile?.totalReviews ?? 0;
+
+  const usedLeaveDays = leaveRequests.filter(l => l.status === 'APPROVED').length;
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+
+  const todayAppointments = appointments.filter(a => {
+    const d = new Date(a.appointmentDateTime);
+    return d >= todayStart && d < todayEnd;
+  });
+
+  const pendingBookings = appointments.filter(a => a.status === 'PENDING');
+
+  const todayIncome = incomeRecords
+    .filter(r => {
+      const d = new Date(r.recordedAt);
+      return d >= todayStart && d < todayEnd;
+    })
+    .reduce((sum, r) => sum + r.netAmount, 0);
+
+  // Simple "This Week" calculation (last 7 days including today)
+  const weekAgo = new Date(todayStart);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  const weekIncome = incomeRecords
+    .filter(r => {
+      const d = new Date(r.recordedAt);
+      return d >= weekAgo && d < todayEnd;
+    })
+    .reduce((sum, r) => sum + r.netAmount, 0);
+
+  const activeStylesCount = haircutStyles.filter(s => s.isActive).length;
+
+  // Sorting recent appointments (nearest upcoming or just recent)
+  const recentAppointments = [...appointments]
+    .sort((a, b) => new Date(b.appointmentDateTime).getTime() - new Date(a.appointmentDateTime).getTime())
+    .slice(0, 4);
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500">Loading overview...</div>;
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in w-full pb-10">
       
       {/* Header */}
       <div className="mb-2">
         <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Overview</h2>
-        <p className="text-sm text-slate-500 mt-1 font-medium">Welcome back! Here's your business summary.</p>
+        <p className="text-sm text-slate-500 mt-1 font-medium">Welcome back, {user?.firstName}! Here's your business summary.</p>
       </div>
 
       {/* Overview Cards Row (4 Columns exactly as Figma) */}
@@ -28,7 +132,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
             </span>
           </div>
           <div>
-            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">₱24,500</h2>
+            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">₱{currentMonthIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
             <p className="text-[11px] text-slate-400 font-medium">80% share this month</p>
           </div>
         </div>
@@ -44,7 +148,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
             </span>
           </div>
           <div>
-            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">142</h2>
+            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">{thisMonthAppointments.length}</h2>
             <p className="text-[11px] text-slate-400 font-medium">This month</p>
           </div>
         </div>
@@ -60,8 +164,8 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
             </span>
           </div>
           <div>
-            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">4.8</h2>
-            <p className="text-[11px] text-slate-400 font-medium">Based on 87 reviews</p>
+            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">{rating}</h2>
+            <p className="text-[11px] text-slate-400 font-medium">Based on {totalReviews} reviews</p>
           </div>
         </div>
 
@@ -77,8 +181,8 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
             </span>
           </div>
           <div>
-            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">3</h2>
-            <p className="text-[11px] text-slate-400 font-medium">Out of 12 days</p>
+            <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">{usedLeaveDays}</h2>
+            <p className="text-[11px] text-slate-400 font-medium">Approved leaves</p>
           </div>
         </div>
       </div>
@@ -91,55 +195,34 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
           <h3 className="text-[15px] font-semibold text-slate-900 mb-6">Recent Appointments</h3>
           
           <div className="flex flex-col gap-5">
+            {recentAppointments.length === 0 && (
+              <p className="text-sm text-slate-500">No recent appointments.</p>
+            )}
             
-            {/* List Item 1 */}
-            <div className="flex items-center justify-between border-b border-slate-50 pb-5">
-              <div>
-                <h4 className="text-[13px] font-bold text-slate-900 mb-0.5">John Smith</h4>
-                <p className="text-xs text-slate-500 font-medium mb-0.5">Classic Fade</p>
-                <p className="text-[11px] text-slate-400">Today, 2:00 PM</p>
-              </div>
-              <span className="bg-[#dcfce7] text-[#16a34a] px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                confirmed
-              </span>
-            </div>
-            
-            {/* List Item 2 */}
-            <div className="flex items-center justify-between border-b border-slate-50 pb-5">
-              <div>
-                <h4 className="text-[13px] font-bold text-slate-900 mb-0.5">Mike Johnson</h4>
-                <p className="text-xs text-slate-500 font-medium mb-0.5">Beard Trim</p>
-                <p className="text-[11px] text-slate-400">Today, 3:30 PM</p>
-              </div>
-              <span className="bg-[#dcfce7] text-[#16a34a] px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                confirmed
-              </span>
-            </div>
+            {recentAppointments.map((appt, idx) => {
+              const d = new Date(appt.appointmentDateTime);
+              const isToday = d.toDateString() === now.toDateString();
+              const dateStr = isToday ? 'Today' : d.toLocaleDateString();
+              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              
+              let statusClass = "bg-[#f1f5f9] text-slate-600";
+              if (appt.status === 'CONFIRMED' || appt.status === 'COMPLETED') statusClass = "bg-[#dcfce7] text-[#16a34a]";
+              if (appt.status === 'PENDING') statusClass = "bg-[#fef3c7] text-[#d97706]";
+              if (appt.status === 'CANCELLED') statusClass = "bg-[#fee2e2] text-[#ef4444]";
 
-            {/* List Item 3 */}
-            <div className="flex items-center justify-between border-b border-slate-50 pb-5">
-              <div>
-                <h4 className="text-[13px] font-bold text-slate-900 mb-0.5">David Lee</h4>
-                <p className="text-xs text-slate-500 font-medium mb-0.5">Premium Cut</p>
-                <p className="text-[11px] text-slate-400">Tomorrow, 10:00 AM</p>
-              </div>
-              <span className="bg-[#fef3c7] text-[#d97706] px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                pending
-              </span>
-            </div>
-
-            {/* List Item 4 */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-[13px] font-bold text-slate-900 mb-0.5">Robert Chen</h4>
-                <p className="text-xs text-slate-500 font-medium mb-0.5">Classic Fade + Beard</p>
-                <p className="text-[11px] text-slate-400">Tomorrow, 1:00 PM</p>
-              </div>
-              <span className="bg-[#dcfce7] text-[#16a34a] px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                confirmed
-              </span>
-            </div>
-
+              return (
+                <div key={appt.appointment_id} className={`flex items-center justify-between ${idx < recentAppointments.length - 1 ? 'border-b border-slate-50 pb-5' : ''}`}>
+                  <div>
+                    <h4 className="text-[13px] font-bold text-slate-900 mb-0.5">Customer {appt.customer_id.substring(0, 4)}</h4>
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Haircut Style ID: {appt.haircut_style_id.substring(0, 4)}</p>
+                    <p className="text-[11px] text-slate-400">{dateStr}, {timeStr}</p>
+                  </div>
+                  <span className={`${statusClass} px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider`}>
+                    {appt.status}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -151,27 +234,27 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
             
             <div className="flex justify-between items-center pb-4 border-b border-slate-50">
               <span className="text-xs font-medium text-slate-500">Today's Appointments</span>
-              <span className="text-[13px] font-bold text-slate-900">8</span>
+              <span className="text-[13px] font-bold text-slate-900">{todayAppointments.length}</span>
             </div>
             
             <div className="flex justify-between items-center py-4 border-b border-slate-50">
               <span className="text-xs font-medium text-slate-500">Pending Bookings</span>
-              <span className="text-[13px] font-bold text-slate-900">3</span>
+              <span className="text-[13px] font-bold text-slate-900">{pendingBookings.length}</span>
             </div>
             
             <div className="flex justify-between items-center py-4 border-b border-slate-50">
               <span className="text-xs font-medium text-slate-500">Today's Income</span>
-              <span className="text-[13px] font-bold text-slate-900">₱1,840</span>
+              <span className="text-[13px] font-bold text-slate-900">₱{todayIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
             
             <div className="flex justify-between items-center py-4 border-b border-slate-50">
               <span className="text-xs font-medium text-slate-500">This Week</span>
-              <span className="text-[13px] font-bold text-slate-900">₱6,240</span>
+              <span className="text-[13px] font-bold text-slate-900">₱{weekIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
             
             <div className="flex justify-between items-center py-4 w-full text-xs">
               <span className="font-medium text-slate-500">Active Haircut Styles</span>
-              <span className="text-[13px] font-bold text-slate-900">12</span>
+              <span className="text-[13px] font-bold text-slate-900">{activeStylesCount}</span>
             </div>
 
           </div>

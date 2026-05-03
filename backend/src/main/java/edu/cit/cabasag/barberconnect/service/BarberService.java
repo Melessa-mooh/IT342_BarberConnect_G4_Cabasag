@@ -2,6 +2,7 @@ package edu.cit.cabasag.barberconnect.service;
 
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
 import edu.cit.cabasag.barberconnect.model.BarberProfile;
+import edu.cit.cabasag.barberconnect.model.IncomeRecord;
 import edu.cit.cabasag.barberconnect.model.User;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
@@ -49,18 +50,28 @@ public class BarberService {
     }
     
     public AuthResponse.BarberProfileResponse getBarberById(String id) {
-        // For now, return a mock barber since we need to implement proper ID handling
-        // In a real implementation, you'd query Firestore by barber profile ID
-        // Implemented using the Creational Builder Pattern
-        return AuthResponse.BarberProfileResponse.builder()
-                .id(id)
-                .bio("Professional barber with years of experience")
-                .yearsExperience(5)
-                .rating("4.5")
-                .totalReviews(100)
-                .profileImageUrl(null)
-                .isAvailable(true)
-                .build();
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            var query = db.collection("barber_profiles")
+                    .whereEqualTo("barber_profile_id", id)
+                    .get()
+                    .get();
+
+            if (query.isEmpty()) {
+                throw new RuntimeException("Barber profile not found");
+            }
+
+            BarberProfile profile = query.getDocuments().get(0).toObject(BarberProfile.class);
+
+            // Also fetch user to ensure it exists and get names if needed, but the response only needs profile data as per mapToBarberResponse
+            return mapToBarberResponse(profile);
+
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error fetching barber by ID: {}", e.getMessage());
+            throw new RuntimeException("Error fetching barber by ID", e);
+        }
     }
     
     private AuthResponse.BarberProfileResponse mapToBarberResponse(BarberProfile barber) {
@@ -119,6 +130,29 @@ public class BarberService {
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to update Barber Profile in Firestore", e);
             throw new RuntimeException("DB Error", e);
+        }
+    }
+
+    public List<IncomeRecord> getIncomeRecords(String barberProfileId) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            var query = db.collection("income_records")
+                    .whereEqualTo("barber_profile_id", barberProfileId)
+                    .orderBy("recordedAt", com.google.cloud.firestore.Query.Direction.DESCENDING)
+                    .get()
+                    .get();
+
+            List<IncomeRecord> records = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : query.getDocuments()) {
+                records.add(doc.toObject(IncomeRecord.class));
+            }
+            return records;
+
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Failed to fetch income records for barber {}: {}", barberProfileId, e.getMessage());
+            throw new RuntimeException("Failed to fetch income records", e);
         }
     }
 }

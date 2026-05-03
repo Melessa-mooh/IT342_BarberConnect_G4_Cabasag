@@ -37,7 +37,8 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun setupViewModel() {
         val tokenManager = TokenManager(this)
-        val repository   = AuthRepository(RetrofitClient.apiService, tokenManager)
+        val apiService   = (application as edu.cit.cabasag.barberconnect.BarberConnectApp).retrofitClient.apiService
+        val repository   = AuthRepository(apiService, tokenManager)
         viewModel = ViewModelProvider(this, AuthViewModelFactory(repository))[AuthViewModel::class.java]
     }
 

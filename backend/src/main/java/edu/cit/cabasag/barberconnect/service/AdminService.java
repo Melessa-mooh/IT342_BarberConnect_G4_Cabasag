@@ -441,4 +441,92 @@ public class AdminService {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+    // ──────────────────────────────────────────────────────────────────────────────
+    // NEW: GET /api/v1/admin/income/barbers
+    // ──────────────────────────────────────────────────────────────────────────────
+
+    @Data
+    @AllArgsConstructor
+    public static class BarberIncomeSummary {
+        private String barberProfileId;
+        private String firstName;
+        private String lastName;
+        private java.math.BigDecimal totalNetAmount;
+        private java.math.BigDecimal totalPlatformFee;
+        private int totalAppointments;
+    }
+
+    public List<BarberIncomeSummary> getBarberIncomeSummaries() {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            // Fetch all income records
+            QuerySnapshot incomeSnap = db.collection("income_records").get().get();
+
+            // Group by barber_profile_id
+            Map<String, BarberIncomeSummary> summaries = new HashMap<>();
+
+            for (QueryDocumentSnapshot doc : incomeSnap.getDocuments()) {
+                String barberProfileId = doc.getString("barber_profile_id");
+                if (barberProfileId == null) continue;
+
+                java.math.BigDecimal netAmount = java.math.BigDecimal.ZERO;
+                Object netObj = doc.get("netAmount");
+                if (netObj instanceof Number) {
+                    netAmount = new java.math.BigDecimal(netObj.toString());
+                }
+
+                java.math.BigDecimal platformFee = java.math.BigDecimal.ZERO;
+                Object feeObj = doc.get("platformFee");
+                if (feeObj instanceof Number) {
+                    platformFee = new java.math.BigDecimal(feeObj.toString());
+                }
+
+                BarberIncomeSummary summary = summaries.getOrDefault(barberProfileId,
+                        new BarberIncomeSummary(barberProfileId, "Unknown", "Barber", java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, 0));
+
+                summary.setTotalNetAmount(summary.getTotalNetAmount().add(netAmount));
+                summary.setTotalPlatformFee(summary.getTotalPlatformFee().add(platformFee));
+                summary.setTotalAppointments(summary.getTotalAppointments() + 1);
+
+                summaries.put(barberProfileId, summary);
+            }
+
+            // Fetch barber names
+            // 1. barber_profiles to get user_id
+            // 2. users to get firstName and lastName
+            QuerySnapshot profilesSnap = db.collection("barber_profiles").get().get();
+            Map<String, String> profileToUserId = new HashMap<>();
+            for (QueryDocumentSnapshot doc : profilesSnap.getDocuments()) {
+                String pid = doc.getString("barber_profile_id");
+                String uid = doc.getString("user_id");
+                if (pid != null && uid != null) {
+                    profileToUserId.put(pid, uid);
+                }
+            }
+
+            QuerySnapshot usersSnap = db.collection("users").get().get();
+            Map<String, QueryDocumentSnapshot> userMap = new HashMap<>();
+            for (QueryDocumentSnapshot doc : usersSnap.getDocuments()) {
+                userMap.put(doc.getId(), doc);
+            }
+
+            for (BarberIncomeSummary summary : summaries.values()) {
+                String userId = profileToUserId.get(summary.getBarberProfileId());
+                if (userId != null && userMap.containsKey(userId)) {
+                    QueryDocumentSnapshot userDoc = userMap.get(userId);
+                    summary.setFirstName(userDoc.getString("firstName"));
+                    summary.setLastName(userDoc.getString("lastName"));
+                }
+            }
+
+            return new ArrayList<>(summaries.values());
+
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Failed to fetch barber income summaries: {}", e.getMessage());
+            throw new RuntimeException("Failed to fetch barber income summaries: " + e.getMessage());
+        }
+    }
 }
