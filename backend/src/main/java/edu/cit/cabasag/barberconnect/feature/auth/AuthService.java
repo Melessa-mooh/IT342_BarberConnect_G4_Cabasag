@@ -1,0 +1,174 @@
+package edu.cit.cabasag.barberconnect.feature.auth;
+
+import edu.cit.cabasag.barberconnect.dto.request.LoginRequest;
+import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
+import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
+import edu.cit.cabasag.barberconnect.factory.UserFactory;
+import edu.cit.cabasag.barberconnect.security.JwtUtil;
+import edu.cit.cabasag.barberconnect.service.UserService;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
+import com.google.firebase.auth.UserRecord;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+/**
+ * Vertical Slice Architecture — Auth Feature
+ * Handles user registration, login, and Firebase token authentication.
+ * Delegates to UserService (shared infrastructure) for persistence.
+ */
+@Service("featureAuthService")
+@Primary
+@RequiredArgsConstructor
+@Slf4j
+public class AuthService {
+
+    private final UserService userService;
+    private final FirebaseAuth firebaseAuth;
+    private final JwtUtil jwtUtil;
+    private final UserFactory userFactory;
+
+    public AuthResponse register(RegisterRequest request) {
+        try {
+            if (userService.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Email already registered");
+            }
+
+            UserRecord.CreateRequest createRequest = new UserRecord.CreateRequest()
+                    .setEmail(request.getEmail())
+                    .setPassword(request.getPassword())
+                    .setDisplayName(request.getFirstName() + " " + request.getLastName())
+                    .setEmailVerified(false);
+
+            UserRecord userRecord = firebaseAuth.createUser(createRequest);
+
+            edu.cit.cabasag.barberconnect.model.User user = userFactory.createUser(
+                userRecord.getUid(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.getRole()
+            );
+
+            user = userService.save(user);
+
+            String token = jwtUtil.generateToken(
+                    user.getUser_id(),
+                    user.getEmail(),
+                    user.getRole().name());
+
+            AuthResponse response = mapToAuthResponse(user);
+            response.setToken(token);
+
+            log.info("User registered successfully: {}", user.getEmail());
+            return response;
+
+        } catch (FirebaseAuthException e) {
+            log.error("Firebase registration failed: {}", e.getMessage());
+            if (String.valueOf(e.getErrorCode()).equals("EMAIL_ALREADY_EXISTS")) {
+                throw new RuntimeException("Email already registered");
+            }
+            throw new RuntimeException("Registration failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Registration failed: {}", e.getMessage());
+            throw new RuntimeException("Registration failed: " + e.getMessage());
+        }
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        try {
+            Optional<edu.cit.cabasag.barberconnect.model.User> userOpt = userService.findByEmail(request.getEmail());
+            if (userOpt.isEmpty()) {
+                throw new RuntimeException("Invalid email or password");
+            }
+
+            edu.cit.cabasag.barberconnect.model.User user = userOpt.get();
+
+            if (!user.getIsActive()) {
+                throw new RuntimeException("Account is deactivated");
+            }
+
+            String token = jwtUtil.generateToken(
+                    user.getUser_id(),
+                    user.getEmail(),
+                    user.getRole().name());
+
+            AuthResponse response = mapToAuthResponse(user);
+            response.setToken(token);
+
+            log.info("User login successful: {}", user.getEmail());
+            return response;
+
+        } catch (Exception e) {
+            log.error("Login failed: {}", e.getMessage());
+            throw new RuntimeException("Invalid email or password");
+        }
+    }
+
+    public AuthResponse loginWithFirebaseToken(String idToken) {
+        try {
+            FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
+            String uid = decodedToken.getUid();
+
+            Optional<edu.cit.cabasag.barberconnect.model.User> userOpt = userService.findById(uid);
+            if (userOpt.isEmpty()) {
+                throw new RuntimeException("User not found. Please register first.");
+            }
+
+            edu.cit.cabasag.barberconnect.model.User user = userOpt.get();
+
+            if (!user.getIsActive()) {
+                throw new RuntimeException("Account is deactivated");
+            }
+
+            String token = jwtUtil.generateToken(
+                    user.getUser_id(),
+                    user.getEmail(),
+                    user.getRole().name());
+
+            AuthResponse response = mapToAuthResponse(user);
+            response.setToken(token);
+
+            log.info("Firebase token login successful: {}", user.getEmail());
+            return response;
+
+        } catch (FirebaseAuthException e) {
+            log.error("Firebase token verification failed: {}", e.getMessage());
+            throw new RuntimeException("Invalid authentication token");
+        } catch (Exception e) {
+            log.error("Firebase token login failed: {}", e.getMessage());
+            throw new RuntimeException("Login failed: " + e.getMessage());
+        }
+    }
+
+    private AuthResponse mapToAuthResponse(edu.cit.cabasag.barberconnect.model.User user) {
+        AuthResponse response = new AuthResponse();
+        response.setFirebaseUid(user.getUser_id());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setRole(user.getRole());
+        response.setActive(user.getIsActive());
+
+        if (user.getBarberProfile() != null) {
+            var bp = user.getBarberProfile();
+            AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
+            barberResponse.setId(bp.getBarber_profile_id());
+            barberResponse.setBio(bp.getBio());
+            barberResponse.setYearsExperience(bp.getYearsExperience());
+            barberResponse.setRating(bp.getRating().toString());
+            barberResponse.setTotalReviews(bp.getTotalReviews());
+            barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
+            barberResponse.setIsAvailable(bp.getIsAvailable());
+            response.setBarberProfile(barberResponse);
+        }
+
+        return response;
+    }
+}
