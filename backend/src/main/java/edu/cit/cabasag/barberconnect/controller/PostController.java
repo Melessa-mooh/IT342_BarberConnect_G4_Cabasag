@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,6 +46,7 @@ public class PostController {
 
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             MediaType.APPLICATION_JSON_VALUE})
+    @PreAuthorize("isAuthenticated()")
     @SuppressWarnings("null")
     public ResponseEntity<ApiResponse<Post>> createPost(
             @RequestParam("barberProfileId") String barberProfileId,
@@ -152,6 +154,7 @@ public class PostController {
     // ─────────────────────────────────────────────────────────────────────────
 
     @PostMapping("/{postId}/reactions")
+    @PreAuthorize("isAuthenticated()")
     @SuppressWarnings("null")
     public ResponseEntity<ApiResponse<Reaction>> addReaction(
             @PathVariable String postId,
@@ -221,6 +224,7 @@ public class PostController {
     // ─────────────────────────────────────────────────────────────────────────
 
     @PostMapping("/{postId}/comments")
+    @PreAuthorize("isAuthenticated()")
     @SuppressWarnings("null")
     public ResponseEntity<ApiResponse<Comment>> addComment(
             @PathVariable String postId,

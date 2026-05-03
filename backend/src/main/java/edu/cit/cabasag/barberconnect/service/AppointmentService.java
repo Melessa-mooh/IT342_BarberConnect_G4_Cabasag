@@ -95,6 +95,28 @@ public class AppointmentService {
         }
     }
 
+    public java.util.List<Appointment> getAppointmentsByBarberProfileId(String barberProfileId) {
+        log.info("Fetching appointments for Barber ID: {}", barberProfileId);
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("appointments")
+                    .whereEqualTo("barber_profile_id", barberProfileId)
+                    .orderBy("appointmentDateTime", com.google.cloud.firestore.Query.Direction.DESCENDING)
+                    .get()
+                    .get();
+
+            return querySnapshot.getDocuments().stream()
+                    .map(doc -> doc.toObject(Appointment.class))
+                    .collect(java.util.stream.Collectors.toList());
+                    
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Failed to fetch appointments for barber from Firestore", e);
+            throw new RuntimeException("Failed to fetch appointments for barber", e);
+        }
+    }
+
     public Appointment completeAppointment(String appointmentId) {
         log.info("Completing appointment: {} and processing income distribution.", appointmentId);
         try {
@@ -151,6 +173,32 @@ public class AppointmentService {
         } catch (Exception e) {
             log.error("Failed to process appointment completion", e);
             throw new RuntimeException("Failed to complete appointment and process income", e);
+        }
+    }
+
+    public Appointment updateAppointmentStatus(String appointmentId, String status) {
+        log.info("Updating appointment status: {} to {}", appointmentId, status);
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            com.google.cloud.firestore.DocumentReference docRef = db.collection("appointments").document(java.util.Objects.requireNonNull(appointmentId));
+            com.google.cloud.firestore.DocumentSnapshot doc = docRef.get().get();
+            if (!doc.exists()) {
+                throw new RuntimeException("Appointment not found");
+            }
+
+            docRef.update("status", status).get();
+
+            Appointment updated = doc.toObject(Appointment.class);
+            if (updated != null) {
+                updated.setStatus(Appointment.AppointmentStatus.valueOf(status));
+            }
+            return updated;
+
+        } catch (Exception e) {
+            log.error("Failed to update appointment status", e);
+            throw new RuntimeException("DB Error", e);
         }
     }
 }
