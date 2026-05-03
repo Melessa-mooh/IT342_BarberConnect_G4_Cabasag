@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/appointments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "*"})
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -37,11 +37,33 @@ public class AppointmentController {
         }
     }
 
+    @GetMapping("/barber/{barberProfileId}")
+    public ResponseEntity<?> getBarberAppointments(@PathVariable String barberProfileId) {
+        try {
+            java.util.List<Appointment> appointments = appointmentService.getAppointmentsByBarberProfileId(barberProfileId);
+            return ResponseEntity.ok(appointments);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : "Unknown error"));
+        }
+    }
+
     @PutMapping("/{appointmentId}/complete")
     public ResponseEntity<Appointment> completeAppointment(@PathVariable String appointmentId) {
         try {
             Appointment completedAppointment = appointmentService.completeAppointment(appointmentId);
             return ResponseEntity.ok(completedAppointment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/{appointmentId}/status")
+    public ResponseEntity<Appointment> updateAppointmentStatus(@PathVariable String appointmentId, @RequestBody java.util.Map<String, String> body) {
+        try {
+            String status = body.get("status");
+            Appointment updated = appointmentService.updateAppointmentStatus(appointmentId, status);
+            return ResponseEntity.ok(updated);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }

@@ -43,7 +43,10 @@ public class SecurityConfig {
                     "/auth/firebase-login",
                     "/oauth2/**",
                     "/login/oauth2/**",
-                    "/error"
+                    "/error",
+                    "/barbers/public/**",
+                    "/haircuts/barber/**",
+                    "/haircuts/*/options"
                 ).permitAll()
                 // Admin endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")

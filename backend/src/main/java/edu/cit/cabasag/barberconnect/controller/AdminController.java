@@ -151,4 +151,20 @@ public class AdminController {
             return ResponseEntity.internalServerError().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /api/v1/admin/income/barbers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/income/barbers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<AdminService.BarberIncomeSummary>>> getBarberIncomeSummaries() {
+        try {
+            List<AdminService.BarberIncomeSummary> summaries = adminService.getBarberIncomeSummaries();
+            return ResponseEntity.ok(ApiResponse.success(summaries));
+        } catch (RuntimeException e) {
+            log.error("Failed to get barber income summaries: {}", e.getMessage());
+            return ResponseEntity.internalServerError().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }
