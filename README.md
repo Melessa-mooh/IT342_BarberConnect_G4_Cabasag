@@ -209,8 +209,8 @@ npm run test
 
 ## 📄 License & Credits
 
-Designed and developed for academic requirements (IT342 — Software Engineering) showcasing modern full-stack software engineering practices including Vertical Slice Architecture and Regression Testing.
+Designed and developed for academic requirements (IT342 — Systems Integration and Architecture 1) showcasing modern full-stack software engineering practices including Vertical Slice Architecture and Regression Testing.
 
-**Author:** Cabasag, Ma. Melessa V. — Group 4
+**Author:** Cabasag, Ma. Melessa V. — G4
 
 ✨ *BarberConnect – Connecting Barbers and Customers Seamlessly.*
