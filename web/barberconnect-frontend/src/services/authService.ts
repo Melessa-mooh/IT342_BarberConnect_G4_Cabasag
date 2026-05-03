@@ -34,8 +34,6 @@ export interface User {
   };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 export const authService = {
   /**
    * Register with email and password
@@ -44,12 +42,12 @@ export const authService = {
     try {
       const response = await api.post('/auth/register', data);
       const authResponse = response.data.data;
-      
+
       // Store JWT token
       if (authResponse.token) {
         authService.setToken(authResponse.token);
       }
-      
+
       return authResponse;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || error.message);
@@ -63,12 +61,12 @@ export const authService = {
     try {
       const response = await api.post('/auth/login', data);
       const authResponse = response.data.data;
-      
+
       // Store JWT token
       if (authResponse.token) {
         authService.setToken(authResponse.token);
       }
-      
+
       return authResponse;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || error.message);
@@ -76,10 +74,40 @@ export const authService = {
   },
 
   /**
-   * Redirect to Google OAuth2 login
+   * Sign in with Google using Firebase popup.
+   * Flow: Google Popup → Firebase idToken → POST /auth/firebase-login → JWT stored
    */
-  loginWithGoogle(): void {
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+  async loginWithGoogle(): Promise<User> {
+    try {
+      const { auth } = await import('../assets/firebase/firebaseConfig');
+      const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      // 1. Open Google sign-in popup
+      const result = await signInWithPopup(auth, provider);
+
+      // 2. Get Firebase ID token (not the Google OAuth token)
+      const firebaseIdToken = await result.user.getIdToken();
+
+      // 3. Exchange Firebase ID token for our backend JWT
+      const response = await api.post('/auth/firebase-login', { idToken: firebaseIdToken });
+      const authResponse = response.data.data;
+
+      // 4. Store our JWT
+      if (authResponse.token) {
+        authService.setToken(authResponse.token);
+      }
+
+      return authResponse;
+    } catch (error: any) {
+      // User closed the popup — don't treat as fatal
+      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+        throw new Error('Google Sign-In was cancelled.');
+      }
+      throw new Error(error.response?.data?.error || error.message || 'Google Sign-In failed.');
+    }
   },
 
   /**
@@ -101,7 +129,7 @@ export const authService = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await api.post('/auth/profile/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
