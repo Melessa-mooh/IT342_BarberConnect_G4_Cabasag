@@ -1,7 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { incomeService, type IncomeRecord } from '../../../services/barberFeatureService';
+import { appointmentService, type Appointment } from '../../../services/appointmentService';
 
 const IncomePanel: React.FC = () => {
+  const { user } = useAuth();
+  const barberProfileId = user?.barberProfile?.id?.toString() ?? '';
+  
   const [activeTab, setActiveTab] = useState('charts');
+  const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!barberProfileId) return;
+
+    const loadData = async () => {
+      try {
+        const [inc, appts] = await Promise.all([
+          incomeService.getIncomeForBarber(barberProfileId),
+          appointmentService.getBarberAppointments(barberProfileId)
+        ]);
+        setIncomeRecords(inc);
+        setAppointments(appts);
+      } catch (err) {
+        console.error('Failed to load income data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [barberProfileId]);
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const thisMonthIncomeRecords = incomeRecords.filter(r => {
+    const d = new Date(r.recordedAt);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const thisMonthGross = thisMonthIncomeRecords.reduce((sum, r) => sum + r.grossAmount, 0);
+  const thisMonthNet = thisMonthIncomeRecords.reduce((sum, r) => sum + r.netAmount, 0);
+
+  const thisMonthAppointments = appointments.filter(a => {
+    const d = new Date(a.appointmentDateTime);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const avgPerAppointment = thisMonthAppointments.length > 0 
+    ? thisMonthGross / thisMonthAppointments.length 
+    : 0;
+
+  const currentMonthName = now.toLocaleString('default', { month: 'long' });
   
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-10">
@@ -16,49 +69,53 @@ const IncomePanel: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Total Income */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+          {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><span className="text-xs text-slate-500">Loading...</span></div>}
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-sm font-semibold text-slate-500">Total Income (March)</h3>
+            <h3 className="text-sm font-semibold text-slate-500">Total Income ({currentMonthName})</h3>
             <span className="text-emerald-500 text-lg">＄</span>
           </div>
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">₱24,500</h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">₱{thisMonthGross.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
             <p className="text-xs font-semibold text-slate-400">Shop total</p>
           </div>
         </div>
 
         {/* Your Share */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+          {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><span className="text-xs text-slate-500">Loading...</span></div>}
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-sm font-semibold text-slate-500">Your Share (80%)</h3>
             <span className="text-blue-500 text-lg">💰</span>
           </div>
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">₱19,600</h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">₱{thisMonthNet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
             <p className="text-xs font-semibold text-slate-400">Your earnings</p>
           </div>
         </div>
 
         {/* Total Appointments */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+          {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><span className="text-xs text-slate-500">Loading...</span></div>}
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-sm font-semibold text-slate-500">Total Appointments</h3>
             <span className="text-purple-500 text-lg">📅</span>
           </div>
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">8</h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">{thisMonthAppointments.length}</h2>
             <p className="text-xs font-semibold text-slate-400">This month</p>
           </div>
         </div>
 
         {/* Avg per Appointment */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+          {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><span className="text-xs text-slate-500">Loading...</span></div>}
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-sm font-semibold text-slate-500">Avg per Appointment</h3>
             <span className="text-orange-500 text-lg">📈</span>
           </div>
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">₱3,063</h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 mb-1">₱{avgPerAppointment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
             <p className="text-xs font-semibold text-slate-400">Average earning</p>
           </div>
         </div>

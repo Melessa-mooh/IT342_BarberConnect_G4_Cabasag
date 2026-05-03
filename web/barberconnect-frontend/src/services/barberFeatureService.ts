@@ -61,6 +61,16 @@ export interface AttendanceRecord {
   attendanceStatus: 'WORKING' | 'ON_LEAVE' | 'ABSENT';
 }
 
+export interface IncomeRecord {
+  incomeRecordId: string;
+  appointmentId: string;
+  barberProfileId: string;
+  grossAmount: number;
+  platformFee: number;
+  netAmount: number;
+  recordedAt: string;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const unwrap = <T>(res: { data: { success: boolean; data: T; error: string | null } }): T => {
@@ -197,6 +207,16 @@ export const adminBarberService = {
   /** Admin: deactivate a barber */
   deleteBarber: async (userId: string) => {
     const res = await api.delete(`/api/v1/admin/barbers/${userId}`);
+    return unwrap(res);
+  },
+};
+
+// ─── Income ───────────────────────────────────────────────────────────────────
+
+export const incomeService = {
+  /** Get all income records for a barber */
+  getIncomeForBarber: async (barberProfileId: string): Promise<IncomeRecord[]> => {
+    const res = await api.get(`/barbers/${barberProfileId}/income`);
     return unwrap(res);
   },
 };
