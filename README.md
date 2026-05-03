@@ -19,7 +19,7 @@ By combining a sleek, customer-facing mobile application with a powerful managem
 |---|---|
 | **Backend** | Java 17, Spring Boot 3.5, Maven |
 | **Database** | Cloud Firestore (Firebase NoSQL) |
-| **Authentication** | Firebase Auth + Custom JWT (jjwt 0.12.3) |
+| **Authentication** | Google Aoth2 + Custom JWT (jjwt 0.12.3) |
 | **Image Storage** | Cloudinary |
 | **Web Frontend** | React 18, TypeScript, Vite, Axios |
 | **Mobile** | Android (Kotlin), MVVM, Retrofit2, OkHttp3 |
