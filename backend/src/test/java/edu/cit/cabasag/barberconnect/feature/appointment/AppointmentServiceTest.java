@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -23,6 +23,10 @@ import static org.mockito.Mockito.*;
 /**
  * Unit Tests — Appointment Feature Slice
  * TC-APT-01 through TC-APT-03
+ *
+ * Note: Firestore ApiFuture is avoided in mocks by using doReturn() with
+ * CompletableFuture-backed stubs. The real Firestore calls are fully mocked
+ * at the CollectionReference + DocumentReference level.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Appointment Feature — AppointmentService Tests")
@@ -33,18 +37,20 @@ class AppointmentServiceTest {
     @Mock private Firestore mockDb;
     @Mock private CollectionReference appointmentsRef;
     @Mock private DocumentReference docRef;
-    @Mock private ApiFuture<WriteResult> writeFuture;
     @Mock private WriteResult writeResult;
 
     @InjectMocks private AppointmentService appointmentService;
 
+    @SuppressWarnings("null")
     @BeforeEach
     void setUp() throws Exception {
         when(firebaseService.getFirestore()).thenReturn(mockDb);
         when(mockDb.collection("appointments")).thenReturn(appointmentsRef);
         when(appointmentsRef.document(anyString())).thenReturn(docRef);
-        when(docRef.set(any())).thenReturn(writeFuture);
-        when(writeFuture.get()).thenReturn(writeResult);
+
+        // Use a real CompletableFuture-based Future to avoid raw ApiFuture generics
+        var future = CompletableFuture.completedFuture(writeResult);
+        doReturn(future).when(docRef).set(any());
     }
 
     @Test
@@ -91,7 +97,7 @@ class AppointmentServiceTest {
     }
 
     @Test
-    @DisplayName("TC-APT-03: bookAppointment() notifies observer after booking")
+    @DisplayName("TC-APT-03: bookAppointment() notifies the event manager after booking")
     void bookAppointment_notifiesEventManager() throws Exception {
         // Arrange
         CreateAppointmentRequest request = new CreateAppointmentRequest();

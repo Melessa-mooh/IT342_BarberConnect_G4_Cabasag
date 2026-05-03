@@ -2,7 +2,7 @@ package edu.cit.cabasag.barberconnect.feature.appointment;
 
 import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
-import edu.cit.cabasag.barberconnect.model.IncomeRecord;
+
 import edu.cit.cabasag.barberconnect.observer.AppointmentEventManager;
 import com.google.cloud.firestore.Firestore;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;

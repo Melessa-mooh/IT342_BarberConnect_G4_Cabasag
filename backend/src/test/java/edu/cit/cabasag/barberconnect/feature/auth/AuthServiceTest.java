@@ -1,14 +1,12 @@
 package edu.cit.cabasag.barberconnect.feature.auth;
 
 import edu.cit.cabasag.barberconnect.dto.request.LoginRequest;
-import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
 import edu.cit.cabasag.barberconnect.factory.UserFactory;
 import edu.cit.cabasag.barberconnect.model.User;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import edu.cit.cabasag.barberconnect.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.UserRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,8 +51,11 @@ class AuthServiceTest {
     @Test
     @DisplayName("TC-AUTH-01: login() returns AuthResponse on valid credentials")
     void login_validCredentials_returnsAuthResponse() throws Exception {
-        // Arrange
-        LoginRequest request = new LoginRequest("juan@test.com", "password123");
+        // Arrange — LoginRequest uses @Data (setters, no all-args constructor)
+        LoginRequest request = new LoginRequest();
+        request.setEmail("juan@test.com");
+        request.setPassword("password123");
+
         when(userService.findByEmail("juan@test.com")).thenReturn(Optional.of(mockUser));
         when(jwtUtil.generateToken(anyString(), anyString(), anyString())).thenReturn("mocked.jwt.token");
 
@@ -72,7 +73,9 @@ class AuthServiceTest {
     @DisplayName("TC-AUTH-02: login() throws RuntimeException when user not found")
     void login_userNotFound_throwsException() {
         // Arrange
-        LoginRequest request = new LoginRequest("notfound@test.com", "password");
+        LoginRequest request = new LoginRequest();
+        request.setEmail("notfound@test.com");
+        request.setPassword("password");
         when(userService.findByEmail(anyString())).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -86,7 +89,9 @@ class AuthServiceTest {
     void login_deactivatedAccount_throwsException() {
         // Arrange
         mockUser.setIsActive(false);
-        LoginRequest request = new LoginRequest("juan@test.com", "password123");
+        LoginRequest request = new LoginRequest();
+        request.setEmail("juan@test.com");
+        request.setPassword("password123");
         when(userService.findByEmail("juan@test.com")).thenReturn(Optional.of(mockUser));
 
         // Act & Assert

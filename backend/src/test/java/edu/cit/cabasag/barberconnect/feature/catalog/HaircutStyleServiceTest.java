@@ -1,7 +1,9 @@
 package edu.cit.cabasag.barberconnect.feature.catalog;
 
-import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
 import edu.cit.cabasag.barberconnect.model.HaircutStyle;
+import edu.cit.cabasag.barberconnect.service.HaircutStyleService;
+import edu.cit.cabasag.barberconnect.service.FirebaseService;
+import edu.cit.cabasag.barberconnect.service.CloudinaryService;
 import com.google.cloud.firestore.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,11 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -23,32 +24,35 @@ import static org.mockito.Mockito.*;
 /**
  * Unit Tests — Catalog Feature Slice
  * TC-CAT-01 through TC-CAT-03
+ *
+ * Uses CompletableFuture-backed doReturn() stubs to avoid raw ApiFuture generic issues.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Catalog Feature — HaircutStyleService Tests")
 class HaircutStyleServiceTest {
 
     @Mock private FirebaseService firebaseService;
-    @Mock private edu.cit.cabasag.barberconnect.feature.shared.CloudinaryService cloudinaryService;
+    @Mock private CloudinaryService cloudinaryService;
     @Mock private Firestore mockDb;
     @Mock private CollectionReference collectionRef;
     @Mock private DocumentReference docRef;
-    @Mock private ApiFuture<WriteResult> writeFuture;
     @Mock private WriteResult writeResult;
     @Mock private Query query;
-    @Mock private ApiFuture<QuerySnapshot> queryFuture;
     @Mock private QuerySnapshot querySnapshot;
 
     @InjectMocks
-    private edu.cit.cabasag.barberconnect.service.HaircutStyleService haircutStyleService;
+    private HaircutStyleService haircutStyleService;
 
+    @SuppressWarnings("null")
     @BeforeEach
     void setUp() throws Exception {
         when(firebaseService.getFirestore()).thenReturn(mockDb);
         when(mockDb.collection("haircut_styles")).thenReturn(collectionRef);
         when(collectionRef.document(anyString())).thenReturn(docRef);
-        when(docRef.set(any())).thenReturn(writeFuture);
-        when(writeFuture.get()).thenReturn(writeResult);
+
+        // Avoid raw ApiFuture: use CompletableFuture-backed doReturn
+        var writeFuture = CompletableFuture.completedFuture(writeResult);
+        doReturn(writeFuture).when(docRef).set(any());
     }
 
     @Test
@@ -80,13 +84,15 @@ class HaircutStyleServiceTest {
     }
 
     @Test
+    @SuppressWarnings("null")
     @DisplayName("TC-CAT-03: getHaircutStylesForBarber() returns empty list when none exist")
     void getHaircutStylesForBarber_noStyles_returnsEmptyList() throws Exception {
         // Arrange
         when(collectionRef.whereEqualTo(anyString(), any())).thenReturn(query);
         when(query.whereEqualTo(anyString(), any())).thenReturn(query);
-        when(query.get()).thenReturn(queryFuture);
-        when(queryFuture.get()).thenReturn(querySnapshot);
+
+        var queryFuture = CompletableFuture.completedFuture(querySnapshot);
+        doReturn(queryFuture).when(query).get();
         when(querySnapshot.getDocuments()).thenReturn(List.of());
 
         // Act
