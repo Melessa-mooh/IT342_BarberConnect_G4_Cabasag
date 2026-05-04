@@ -1,9 +1,9 @@
 package edu.cit.cabasag.barberconnect.service;
 
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
-import edu.cit.cabasag.barberconnect.model.BarberProfile;
-import edu.cit.cabasag.barberconnect.model.IncomeRecord;
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.barber.BarberProfile;
+import edu.cit.cabasag.barberconnect.feature.income.IncomeRecord;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import lombok.RequiredArgsConstructor;

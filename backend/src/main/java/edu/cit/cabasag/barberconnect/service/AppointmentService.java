@@ -6,7 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
-import edu.cit.cabasag.barberconnect.model.Appointment;
+import edu.cit.cabasag.barberconnect.feature.appointment.Appointment;
+import edu.cit.cabasag.barberconnect.feature.income.IncomeRecord;
 import com.google.cloud.firestore.Firestore;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -139,7 +140,7 @@ public class AppointmentService {
             java.math.BigDecimal netAmount = total.multiply(new java.math.BigDecimal("0.80"));
 
             // 3. Generate Income Record
-            edu.cit.cabasag.barberconnect.model.IncomeRecord incomeRecord = new edu.cit.cabasag.barberconnect.model.IncomeRecord();
+            IncomeRecord incomeRecord = new IncomeRecord();
             incomeRecord.setIncome_record_id(UUID.randomUUID().toString());
             incomeRecord.setBarber_profile_id(appointment.getBarber_profile_id());
             incomeRecord.setAppointment_id(appointment.getAppointment_id());
@@ -149,9 +150,9 @@ public class AppointmentService {
             
             // Map payment method safely
             try {
-                incomeRecord.setPaymentMethod(edu.cit.cabasag.barberconnect.model.IncomeRecord.PaymentMethod.valueOf(appointment.getPaymentMethod().name()));
+                incomeRecord.setPaymentMethod(IncomeRecord.PaymentMethod.valueOf(appointment.getPaymentMethod().name()));
             } catch (Exception e) {
-                incomeRecord.setPaymentMethod(edu.cit.cabasag.barberconnect.model.IncomeRecord.PaymentMethod.CASH);
+                incomeRecord.setPaymentMethod(IncomeRecord.PaymentMethod.CASH);
             }
             
             incomeRecord.setRecordedAt(LocalDateTime.now());

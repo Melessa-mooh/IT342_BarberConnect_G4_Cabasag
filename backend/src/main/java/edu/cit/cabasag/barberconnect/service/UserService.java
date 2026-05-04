@@ -1,6 +1,6 @@
 package edu.cit.cabasag.barberconnect.service;
 
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.DocumentSnapshot;
 import lombok.RequiredArgsConstructor;

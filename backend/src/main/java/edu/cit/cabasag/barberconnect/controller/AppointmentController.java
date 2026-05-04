@@ -1,7 +1,7 @@
 package edu.cit.cabasag.barberconnect.controller;
 
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
-import edu.cit.cabasag.barberconnect.model.Appointment;
+import edu.cit.cabasag.barberconnect.feature.appointment.Appointment;
 import edu.cit.cabasag.barberconnect.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

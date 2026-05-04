@@ -3,7 +3,7 @@ package edu.cit.cabasag.barberconnect.service;
 import edu.cit.cabasag.barberconnect.dto.request.LoginRequest;
 import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import edu.cit.cabasag.barberconnect.factory.UserFactory;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import com.google.firebase.auth.FirebaseAuth;

@@ -47,7 +47,7 @@ public class AuthService {
 
             UserRecord userRecord = firebaseAuth.createUser(createRequest);
 
-            edu.cit.cabasag.barberconnect.model.User user = userFactory.createUser(
+            User user = userFactory.createUser(
                 userRecord.getUid(),
                 request.getFirstName(),
                 request.getLastName(),
@@ -82,12 +82,12 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         try {
-            Optional<edu.cit.cabasag.barberconnect.model.User> userOpt = userService.findByEmail(request.getEmail());
+            Optional<User> userOpt = userService.findByEmail(request.getEmail());
             if (userOpt.isEmpty()) {
                 throw new RuntimeException("Invalid email or password");
             }
 
-            edu.cit.cabasag.barberconnect.model.User user = userOpt.get();
+            User user = userOpt.get();
 
             if (!user.getIsActive()) {
                 throw new RuntimeException("Account is deactivated");
@@ -115,12 +115,12 @@ public class AuthService {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
             String uid = decodedToken.getUid();
 
-            Optional<edu.cit.cabasag.barberconnect.model.User> userOpt = userService.findById(uid);
+            Optional<User> userOpt = userService.findById(uid);
             if (userOpt.isEmpty()) {
                 throw new RuntimeException("User not found. Please register first.");
             }
 
-            edu.cit.cabasag.barberconnect.model.User user = userOpt.get();
+            User user = userOpt.get();
 
             if (!user.getIsActive()) {
                 throw new RuntimeException("Account is deactivated");
@@ -146,7 +146,7 @@ public class AuthService {
         }
     }
 
-    private AuthResponse mapToAuthResponse(edu.cit.cabasag.barberconnect.model.User user) {
+    private AuthResponse mapToAuthResponse(User user) {
         AuthResponse response = new AuthResponse();
         response.setFirebaseUid(user.getUser_id());
         response.setFirstName(user.getFirstName());

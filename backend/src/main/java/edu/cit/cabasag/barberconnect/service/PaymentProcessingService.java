@@ -1,6 +1,6 @@
 package edu.cit.cabasag.barberconnect.service;
 
-import edu.cit.cabasag.barberconnect.model.Appointment.PaymentMethod;
+import edu.cit.cabasag.barberconnect.feature.appointment.Appointment.PaymentMethod;
 import edu.cit.cabasag.barberconnect.service.strategy.PaymentStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

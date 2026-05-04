@@ -2,8 +2,8 @@ package edu.cit.cabasag.barberconnect.controller;
 
 import edu.cit.cabasag.barberconnect.dto.request.CreateBarberRequest;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
-import edu.cit.cabasag.barberconnect.model.LeaveRequest;
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.admin.LeaveRequest;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import edu.cit.cabasag.barberconnect.service.AdminService;
 import edu.cit.cabasag.barberconnect.service.AdminService.AttendanceRecord;
 import lombok.RequiredArgsConstructor;

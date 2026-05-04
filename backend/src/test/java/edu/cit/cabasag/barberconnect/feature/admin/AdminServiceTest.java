@@ -1,7 +1,7 @@
 package edu.cit.cabasag.barberconnect.feature.admin;
 
 import edu.cit.cabasag.barberconnect.service.AdminService;
-import edu.cit.cabasag.barberconnect.service.FirebaseService;
+import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
 import com.google.cloud.firestore.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

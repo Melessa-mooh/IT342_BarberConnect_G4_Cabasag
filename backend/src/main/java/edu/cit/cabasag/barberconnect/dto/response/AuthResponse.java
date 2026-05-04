@@ -1,6 +1,6 @@
 package edu.cit.cabasag.barberconnect.dto.response;
 
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

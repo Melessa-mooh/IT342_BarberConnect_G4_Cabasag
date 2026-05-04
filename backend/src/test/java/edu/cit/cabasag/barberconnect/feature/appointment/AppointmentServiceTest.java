@@ -1,7 +1,7 @@
 package edu.cit.cabasag.barberconnect.feature.appointment;
 
 import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
-import edu.cit.cabasag.barberconnect.model.Appointment;
+import edu.cit.cabasag.barberconnect.feature.appointment.Appointment;
 import edu.cit.cabasag.barberconnect.observer.AppointmentEventManager;
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
 import com.google.cloud.firestore.*;

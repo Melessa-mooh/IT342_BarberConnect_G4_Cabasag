@@ -1,8 +1,8 @@
 package edu.cit.cabasag.barberconnect.controller;
 
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
-import edu.cit.cabasag.barberconnect.model.HaircutStyle;
-import edu.cit.cabasag.barberconnect.model.StyleOption;
+import edu.cit.cabasag.barberconnect.feature.catalog.HaircutStyle;
+import edu.cit.cabasag.barberconnect.feature.catalog.StyleOption;
 import edu.cit.cabasag.barberconnect.service.HaircutStyleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

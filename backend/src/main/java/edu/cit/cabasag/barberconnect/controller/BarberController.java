@@ -5,7 +5,7 @@ import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
-import edu.cit.cabasag.barberconnect.model.LeaveRequest;
+import edu.cit.cabasag.barberconnect.feature.admin.LeaveRequest;
 import edu.cit.cabasag.barberconnect.service.BarberService;
 import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import lombok.RequiredArgsConstructor;
@@ -170,10 +170,10 @@ public class BarberController {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GetMapping("/{barberProfileId}/income")
-    public ResponseEntity<ApiResponse<List<edu.cit.cabasag.barberconnect.model.IncomeRecord>>> getBarberIncome(
+    public ResponseEntity<ApiResponse<List<edu.cit.cabasag.barberconnect.feature.income.IncomeRecord>>> getBarberIncome(
             @PathVariable String barberProfileId) {
         try {
-            List<edu.cit.cabasag.barberconnect.model.IncomeRecord> records = barberService.getIncomeRecords(barberProfileId);
+            List<edu.cit.cabasag.barberconnect.feature.income.IncomeRecord> records = barberService.getIncomeRecords(barberProfileId);
             return ResponseEntity.ok(ApiResponse.success(records));
         } catch (Exception e) {
             log.error("Failed to fetch income records for barber {}: {}", barberProfileId, e.getMessage());

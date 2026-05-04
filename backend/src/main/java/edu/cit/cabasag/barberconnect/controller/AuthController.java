@@ -5,7 +5,7 @@ import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
 import edu.cit.cabasag.barberconnect.dto.request.UpdateProfileRequest;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import edu.cit.cabasag.barberconnect.service.AuthService;
 import edu.cit.cabasag.barberconnect.service.CloudinaryService;
