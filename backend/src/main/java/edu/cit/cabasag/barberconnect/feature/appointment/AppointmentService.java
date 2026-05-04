@@ -1,6 +1,6 @@
 package edu.cit.cabasag.barberconnect.feature.appointment;
 
-import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
+import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
 
 import edu.cit.cabasag.barberconnect.observer.AppointmentEventManager;

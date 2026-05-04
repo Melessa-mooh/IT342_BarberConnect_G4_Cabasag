@@ -2,7 +2,7 @@ package edu.cit.cabasag.barberconnect.feature.catalog;
 
 import edu.cit.cabasag.barberconnect.feature.catalog.HaircutStyle;
 import edu.cit.cabasag.barberconnect.service.HaircutStyleService;
-import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
+import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import edu.cit.cabasag.barberconnect.service.CloudinaryService;
 import com.google.cloud.firestore.*;
 import org.junit.jupiter.api.BeforeEach;
