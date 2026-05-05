@@ -69,6 +69,42 @@ public class BarberController {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // NEW: GET /barbers/public/{barberProfileId}/leave-dates
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns all APPROVED leave dates for a specific barber.
+     * Used by customer booking page to block unavailable dates.
+     * Public endpoint — no auth required.
+     */
+    @GetMapping("/public/{barberProfileId}/leave-dates")
+    public ResponseEntity<ApiResponse<List<String>>> getApprovedLeaveDates(
+            @PathVariable String barberProfileId) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Firestore not available"));
+
+            QuerySnapshot snapshot = db.collection("leave_requests")
+                    .whereEqualTo("barberProfileId", barberProfileId)
+                    .whereEqualTo("status", "APPROVED")
+                    .get().get();
+
+            List<String> dates = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
+                String d = doc.getString("requestedDate");
+                if (d != null) dates.add(d);
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(dates));
+
+        } catch (Exception e) {
+            log.error("Failed to fetch approved leave dates for barber {}: {}", barberProfileId, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // NEW: POST /barbers/{barberProfileId}/leave-request
     // ─────────────────────────────────────────────────────────────────────────
 

@@ -442,6 +442,25 @@
   box-shadow: none;
 }
 
+.calendar-day.leave-day {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.leave-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 12px;
+  background: white;
+  border-radius: 50%;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .selected-date-display {
   margin-top: 1.5rem;
   padding: 1rem;

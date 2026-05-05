@@ -25,7 +25,15 @@ const CatalogPanel: React.FC = () => {
 
   const handleCreateStyle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!barberProfileId || !newName || !newBasePrice) return;
+    
+    // FIX: Guard against missing barberProfileId with a clear error
+    if (!barberProfileId) {
+      alert('Your barber profile is not loaded yet. Please refresh the page and try again.');
+      return;
+    }
+    if (!newName || !newBasePrice) return;
+    
+    console.log('Creating style with barberProfileId:', barberProfileId); // keep for debugging
     
     setIsSubmitting(true);
     try {

@@ -52,8 +52,12 @@ const BarberLoginPage: React.FC = () => {
         setLoading(false);
         return;
       }
-      if (refreshUser) await refreshUser();
-      navigate('/dashboard');
+      
+      // FIX: ensure barberProfile is populated
+      if (refreshUser) {
+        await refreshUser();
+      }
+      navigate('/barber/dashboard');
     } catch (err: any) {
       setErrors({ general: err.message || 'Login failed. Please check your credentials.' });
     } finally {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentService } from '../../services/appointmentService';
+import { barberService } from '../../services/barberService';
 import api from '../../services/api';
 import './BookingPage.css';
 
@@ -46,6 +47,7 @@ const BookingPage: React.FC = () => {
   const [haircutStyles, setHaircutStyles] = useState<HaircutStyle[]>([]);
   const [loadingStyles, setLoadingStyles] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [approvedLeaveDates, setApprovedLeaveDates] = useState<string[]>([]);
   
   const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([
     { id: '1', name: 'Beard Trim', price: 10, selected: false },
@@ -71,8 +73,12 @@ const BookingPage: React.FC = () => {
           price: s.basePrice ?? s.base_price ?? 0,
           image: s.imageUrl ?? '/api/placeholder/150/150'
         })));
+
+        // FIX: Also fetch approved leave dates
+        const leaveDates = await barberService.getApprovedLeaveDates(selectedBarber.id);
+        setApprovedLeaveDates(leaveDates);
       } catch (e) {
-        console.error('Failed to fetch haircut styles:', e);
+        console.error('Failed to fetch data:', e);
         setHaircutStyles([]);
       } finally {
         setLoadingStyles(false);
@@ -209,7 +215,13 @@ const BookingPage: React.FC = () => {
   const isDateDisabled = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date < today;
+    if (date < today) return true;
+
+    // FIX: Block approved leave dates
+    const dateStr = date.toLocaleDateString('en-CA'); // "yyyy-MM-dd"
+    if (approvedLeaveDates.includes(dateStr)) return true;
+
+    return false;
   };
 
   const isSameDate = (date1: Date | null, date2: Date) => {
@@ -245,14 +257,21 @@ const BookingPage: React.FC = () => {
       const isDisabled = isDateDisabled(date);
       const isSelected = isSameDate(selectedDate, date);
 
+      const isLeaveDay = approvedLeaveDates.includes(
+        new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+          .toLocaleDateString('en-CA')
+      );
+
       days.push(
         <button
           key={day}
-          className={`calendar-day ${isDisabled ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`}
+          className={`calendar-day ${isDisabled ? 'disabled' : ''} ${isSelected ? 'selected' : ''} ${isLeaveDay ? 'leave-day' : ''}`}
           onClick={() => !isDisabled && setSelectedDate(date)}
           disabled={isDisabled}
+          title={isLeaveDay ? 'Barber is on leave this day' : ''}
         >
           {day}
+          {isLeaveDay && <span className="leave-indicator" title="Day Off">🚫</span>}
         </button>
       );
     }
@@ -425,6 +444,11 @@ const BookingPage: React.FC = () => {
                   </svg>
                   Select Time
                 </h2>
+                {approvedLeaveDates.includes(selectedDate?.toLocaleDateString('en-CA') ?? '') && (
+                  <div style={{ padding: '16px', background: '#fee2e2', borderRadius: '8px', color: '#991b1b', fontWeight: '600', marginBottom: '16px' }}>
+                    🚫 This barber is on approved leave on this day. Please select a different date.
+                  </div>
+                )}
                 <div className="time-selector">
                   {timeSlots.map((time) => (
                     <button

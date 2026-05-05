@@ -192,16 +192,21 @@ public class AuthController {
         response.setActive(user.getIsActive());
         response.setProfileImageUrl(user.getProfileImageUrl());
         
-        if (user.getBarberProfile() != null) {
-            var bp = user.getBarberProfile();
+        // Load barberProfile — might be null on the User object if not embedded in Firestore
+        var bp = user.getBarberProfile();
+        if (bp == null && user.getRole() == User.UserRole.BARBER) {
+            bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
+        }
+
+        if (bp != null) {
             AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
             barberResponse.setId(bp.getBarber_profile_id());
             barberResponse.setBio(bp.getBio());
             barberResponse.setYearsExperience(bp.getYearsExperience());
-            barberResponse.setRating(bp.getRating().toString());
-            barberResponse.setTotalReviews(bp.getTotalReviews());
+            barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
+            barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
             barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
-            barberResponse.setIsAvailable(bp.getIsAvailable());
+            barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
             
             response.setBarberProfile(barberResponse);
         }

@@ -138,4 +138,25 @@ public class UserService {
             throw new RuntimeException("Failed to update profile picture in database");
         }
     }
+
+    public Optional<edu.cit.cabasag.barberconnect.feature.barber.BarberProfile> findBarberProfileByUserId(String userId) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) return Optional.empty();
+            var query = db.collection("barber_profiles")
+                    .whereEqualTo("user_id", userId)
+                    .limit(1)
+                    .get()
+                    .get();
+            if (!query.isEmpty()) {
+                return Optional.of(query.getDocuments().get(0).toObject(
+                    edu.cit.cabasag.barberconnect.feature.barber.BarberProfile.class
+                ));
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("Error finding barber profile by userId: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
 }

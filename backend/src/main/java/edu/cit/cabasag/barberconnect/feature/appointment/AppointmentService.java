@@ -43,6 +43,24 @@ public class AppointmentService {
             appointment.setHaircut_style_id(request.getHaircutStyleId());
 
             java.time.Instant instant = java.time.Instant.parse(request.getAppointmentDateTime());
+
+            // Extract the date portion from the appointment datetime
+            java.time.LocalDate appointmentDate = instant.atZone(java.time.ZoneId.of("Asia/Manila")).toLocalDate();
+            String appointmentDateStr = appointmentDate.toString(); // "yyyy-MM-dd"
+
+            // Check if barber has an APPROVED leave on this date
+            com.google.cloud.firestore.QuerySnapshot leaveSnap = db.collection("leave_requests")
+                .whereEqualTo("barberProfileId", request.getBarberProfileId())
+                .whereEqualTo("requestedDate", appointmentDateStr)
+                .whereEqualTo("status", "APPROVED")
+                .get().get();
+
+            if (!leaveSnap.isEmpty()) {
+                throw new RuntimeException(
+                    "This barber is on approved leave on " + appointmentDateStr + ". Please choose a different date."
+                );
+            }
+
             appointment.setAppointmentDateTime(Date.from(instant));
             appointment.setTotalPrice(request.getTotalPrice());
 

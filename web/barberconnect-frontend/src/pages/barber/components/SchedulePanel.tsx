@@ -75,7 +75,15 @@ const SchedulePanel: React.FC = () => {
 
   const getDayClass = (day: number) => {
     if (isDateSelected(day)) return 'bg-[#D2691E] text-white shadow-md font-bold';
-    if (day === 6) return 'bg-[#F4E4BC] text-[#8B4513] font-semibold';
+    
+    // Check if this day is an approved leave
+    const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toLocaleDateString('en-CA');
+    const isApprovedLeave = leaveRequests.some(lr => lr.requestedDate === dateStr && lr.status === 'APPROVED');
+    const isPendingLeave = leaveRequests.some(lr => lr.requestedDate === dateStr && lr.status === 'PENDING');
+    
+    if (isApprovedLeave) return 'bg-[#F4E4BC] text-[#8B4513] font-semibold';
+    if (isPendingLeave) return 'bg-amber-100 text-amber-700 font-semibold';
+    
     return 'text-slate-700 hover:bg-slate-100 hover:text-[#8B4513] font-medium';
   };
 
@@ -99,10 +107,10 @@ const SchedulePanel: React.FC = () => {
   }, [barberProfileId]);
 
   useEffect(() => {
-    if (barberProfileId && activeTab === 'leave') {
+    if (barberProfileId) {
       fetchLeaveRequests();
     }
-  }, [activeTab, barberProfileId]);
+  }, [barberProfileId]);
 
   const fetchAppointments = async () => {
     setLoadingAppointments(true);
