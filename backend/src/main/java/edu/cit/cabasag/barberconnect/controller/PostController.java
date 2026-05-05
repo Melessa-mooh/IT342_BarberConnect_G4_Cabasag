@@ -111,8 +111,8 @@ public class PostController {
                     .body(ApiResponse.error("Firestore not available"));
 
             QuerySnapshot snap = db.collection(POSTS_COL)
-                    .whereEqualTo("isActive", true)
                     .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .limit(50)
                     .get().get();
 
             List<Post> posts = mapPosts(snap);

@@ -8,6 +8,45 @@ const CatalogPanel: React.FC = () => {
   const [styles, setStyles] = useState<HaircutStyle[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newBasePrice, setNewBasePrice] = useState('');
+  const [newDuration, setNewDuration] = useState('');
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreateStyle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barberProfileId || !newName || !newBasePrice) return;
+    
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('barberProfileId', barberProfileId);
+      formData.append('name', newName);
+      formData.append('description', newDescription);
+      formData.append('basePrice', newBasePrice);
+      if (newDuration) formData.append('durationMinutes', newDuration);
+      if (newImageFile) formData.append('file', newImageFile);
+      
+      const newStyle = await haircutStyleService.createHaircutStyle(formData);
+      setStyles(prev => [newStyle, ...prev]);
+      
+      setIsAddModalOpen(false);
+      setNewName('');
+      setNewDescription('');
+      setNewBasePrice('');
+      setNewDuration('');
+      setNewImageFile(null);
+    } catch (err) {
+      console.error('Failed to create style', err);
+      alert('Failed to create style. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     if (!barberProfileId) return;
     const fetchStyles = async () => {
@@ -32,7 +71,10 @@ const CatalogPanel: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-800">Haircut Catalog</h2>
           <p className="text-sm text-slate-500 mt-1">Manage your services and set your prices</p>
         </div>
-        <button className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-all">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-all"
+        >
           + Add New Style
         </button>
       </div>
@@ -102,6 +144,102 @@ const CatalogPanel: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Add Style Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden animate-fade-in">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-slate-800">Add New Style</h3>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateStyle} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Style Name *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                  placeholder="e.g. Classic Fade"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Description</label>
+                <textarea 
+                  value={newDescription}
+                  onChange={e => setNewDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                  placeholder="Brief description of the style"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Price (₱) *</label>
+                  <input 
+                    type="number" 
+                    required
+                    min="0"
+                    step="0.01"
+                    value={newBasePrice}
+                    onChange={e => setNewBasePrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                    placeholder="250.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Duration (min)</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={newDuration}
+                    onChange={e => setNewDuration(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                    placeholder="30"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Image Reference</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={e => setNewImageFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#D2691E]/10 file:text-[#D2691E] hover:file:bg-[#D2691E]/20"
+                />
+              </div>
+              
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-lg border border-slate-300 font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-2.5 rounded-lg bg-[#D2691E] hover:bg-[#8B4513] text-white font-semibold shadow-sm transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Style'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentService } from '../../services/appointmentService';
+import api from '../../services/api';
 import './BookingPage.css';
 
 interface HaircutStyle {
@@ -42,6 +43,10 @@ const BookingPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
+  const [haircutStyles, setHaircutStyles] = useState<HaircutStyle[]>([]);
+  const [loadingStyles, setLoadingStyles] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  
   const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([
     { id: '1', name: 'Beard Trim', price: 10, selected: false },
     { id: '2', name: 'Hot Towel Shave', price: 15, selected: false },
@@ -50,10 +55,64 @@ const BookingPage: React.FC = () => {
     { id: '5', name: 'Hair Styling', price: 12, selected: false }
   ]);
 
-  const haircutStyles: HaircutStyle[] = [
-    { id: '1', name: 'Classic Fade', price: 25, image: '/api/placeholder/150/150' },
-    { id: '2', name: 'Modern Pompadour', price: 30, image: '/api/placeholder/150/150' }
-  ];
+  useEffect(() => {
+    if (!selectedBarber?.id) return;
+    const fetchStyles = async () => {
+      setLoadingStyles(true);
+      try {
+        const res = await api.get(`/haircuts/barber/${selectedBarber.id}`);
+        const styles = res.data?.data ?? [];
+        setHaircutStyles(styles.map((s: any) => ({
+          id: s.haircutStyleId ?? s.haircut_style_id,
+          name: s.name,
+          price: s.basePrice ?? s.base_price ?? 0,
+          image: s.imageUrl ?? '/api/placeholder/150/150'
+        })));
+      } catch (e) {
+        console.error('Failed to fetch haircut styles:', e);
+        setHaircutStyles([]);
+      } finally {
+        setLoadingStyles(false);
+      }
+    };
+    fetchStyles();
+  }, [selectedBarber]);
+
+  useEffect(() => {
+    if (!selectedBarber?.id || !selectedDate) return;
+    const fetchBookedSlots = async () => {
+      try {
+        const res = await api.get(
+          `/appointments/barber/${selectedBarber.id}`
+        );
+        const appointments: any[] = res.data?.data ?? [];
+        const selectedDateStr = new Date(selectedDate)
+          .toLocaleDateString('en-CA'); // "YYYY-MM-DD"
+        
+        const booked = appointments
+          .filter((apt) => {
+            if (apt.status === 'CANCELLED') return false;
+            const aptDate = new Date(apt.appointmentDateTime)
+              .toLocaleDateString('en-CA');
+            return aptDate === selectedDateStr;
+          })
+          .map((apt) => {
+            // Convert the stored ISO datetime back to "H:MM AM/PM" format
+            return new Date(apt.appointmentDateTime)
+              .toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              });
+          });
+        setBookedSlots(booked);
+      } catch (e) {
+        console.error('Failed to fetch booked slots:', e);
+        setBookedSlots([]);
+      }
+    };
+    fetchBookedSlots();
+  }, [selectedBarber, selectedDate]);
   
   const timeSlots = [
     '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM',
@@ -252,17 +311,23 @@ const BookingPage: React.FC = () => {
               <section className="form-section">
                 <h2>Select Haircut Style</h2>
                 <div className="haircut-styles">
-                  {haircutStyles.map((style) => (
-                    <div
-                      key={style.id}
-                      className={`style-card ${selectedStyle?.id === style.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedStyle(style)}
-                    >
-                      <img src={style.image} alt={style.name} />
-                      <h4>{style.name}</h4>
-                      <span>${style.price}</span>
-                    </div>
-                  ))}
+                  {loadingStyles ? (
+                    <div style={{ padding: '20px', color: '#888' }}>Loading styles...</div>
+                  ) : haircutStyles.length === 0 ? (
+                    <div style={{ padding: '20px', color: '#888' }}>No styles available for this barber yet.</div>
+                  ) : (
+                    haircutStyles.map((style) => (
+                      <div
+                        key={style.id}
+                        className={`style-card ${selectedStyle?.id === style.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedStyle(style)}
+                      >
+                        <img src={style.image} alt={style.name} />
+                        <h4>{style.name}</h4>
+                        <span>₱{style.price}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </section>
 
@@ -281,7 +346,7 @@ const BookingPage: React.FC = () => {
                         <span className="checkmark"></span>
                         <span className="service-name">{service.name}</span>
                       </label>
-                      <span className="service-price">+${service.price}</span>
+                      <span className="service-price">+₱{service.price}</span>
                     </div>
                   ))}
                 </div>
@@ -361,10 +426,25 @@ const BookingPage: React.FC = () => {
                   {timeSlots.map((time) => (
                     <button
                       key={time}
-                      className={`time-btn ${selectedTime === time ? 'selected' : ''}`}
-                      onClick={() => setSelectedTime(time)}
+                      className={`time-btn ${
+                        selectedTime === time
+                          ? 'selected'
+                          : bookedSlots.includes(time)
+                          ? 'booked'
+                          : ''
+                      }`}
+                      onClick={() => {
+                        if (!bookedSlots.includes(time)) setSelectedTime(time);
+                      }}
+                      disabled={bookedSlots.includes(time)}
+                      title={bookedSlots.includes(time) ? 'This slot is already booked' : ''}
                     >
                       {time}
+                      {bookedSlots.includes(time) && (
+                        <span style={{ fontSize: '10px', display: 'block', color: '#999' }}>
+                          Booked
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -419,7 +499,7 @@ const BookingPage: React.FC = () => {
               {additionalServices.filter(s => s.selected).map(service => (
                 <div key={service.id} className="summary-item">
                   <span className="label">{service.name}</span>
-                  <span className="value">+${service.price}</span>
+                  <span className="value">+₱{service.price}</span>
                 </div>
               ))}
 
@@ -430,7 +510,7 @@ const BookingPage: React.FC = () => {
 
               <div className="summary-total">
                 <span className="label">Total</span>
-                <span className="value">${calculateTotal()}</span>
+                <span className="value">₱{calculateTotal()}</span>
               </div>
 
               <button 

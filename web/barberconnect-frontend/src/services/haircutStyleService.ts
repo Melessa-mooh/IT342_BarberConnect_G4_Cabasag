@@ -20,5 +20,19 @@ export const haircutStyleService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch haircut styles');
     }
+  },
+
+  createHaircutStyle: async (data: FormData): Promise<HaircutStyle> => {
+    try {
+      const response = await api.post<{ success: boolean; data: HaircutStyle }>('/haircuts', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      if (!response.data.success) throw new Error('Failed to create haircut style');
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to create haircut style');
+    }
   }
 };

@@ -46,7 +46,9 @@ public class SecurityConfig {
                     "/error",
                     "/barbers/public/**",
                     "/haircuts/barber/**",
-                    "/haircuts/*/options"
+                    "/haircuts/*/options",
+                    "/posts",
+                    "/posts/**"
                 ).permitAll()
                 // Admin endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
