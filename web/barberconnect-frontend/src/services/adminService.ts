@@ -9,7 +9,7 @@ export interface AdminStats {
 
 const adminService = {
   getDashboardStats: async (): Promise<AdminStats> => {
-    const res = await api.get('/api/v1/admin/dashboard-stats');
+    const res = await api.get('/admin/dashboard-stats');
     return res.data;
   }
 };

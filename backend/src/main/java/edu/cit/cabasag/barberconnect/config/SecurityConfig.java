@@ -50,8 +50,8 @@ public class SecurityConfig {
                 ).permitAll()
                 // Admin endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                // Barber endpoints
-                .requestMatchers("/barbers/profile/**").hasRole("BARBER")
+                // Barber profile update — matches PUT /barbers/{userId}/profile
+                .requestMatchers("/barbers/*/profile").hasRole("BARBER")
                 // Protected endpoints
                 .anyRequest().authenticated()
             )

@@ -65,7 +65,7 @@ export interface IncomeRecord {
   incomeRecordId: string;
   appointmentId: string;
   barberProfileId: string;
-  grossAmount: number;
+  amount: number;
   platformFee: number;
   netAmount: number;
   recordedAt: string;
@@ -173,25 +173,25 @@ export const feedbackService = {
 export const adminBarberService = {
   /** Admin: get all PENDING leave requests */
   getPendingLeaveRequests: async (): Promise<LeaveRequest[]> => {
-    const res = await api.get('/api/v1/admin/leave-requests');
+    const res = await api.get('/admin/leave-requests');
     return unwrap(res);
   },
 
   /** Admin: approve a leave request */
   approveLeaveRequest: async (leaveRequestId: string): Promise<LeaveRequest> => {
-    const res = await api.put(`/api/v1/admin/leave-requests/${leaveRequestId}/approve`);
+    const res = await api.put(`/admin/leave-requests/${leaveRequestId}/approve`);
     return unwrap(res);
   },
 
   /** Admin: decline a leave request */
   declineLeaveRequest: async (leaveRequestId: string): Promise<LeaveRequest> => {
-    const res = await api.put(`/api/v1/admin/leave-requests/${leaveRequestId}/decline`);
+    const res = await api.put(`/admin/leave-requests/${leaveRequestId}/decline`);
     return unwrap(res);
   },
 
   /** Admin: get today's attendance */
   getTodayAttendance: async (): Promise<AttendanceRecord[]> => {
-    const res = await api.get('/api/v1/admin/attendance/today');
+    const res = await api.get('/admin/attendance/today');
     return unwrap(res);
   },
 
@@ -200,13 +200,13 @@ export const adminBarberService = {
     firstName: string; lastName: string;
     email: string; password: string; phoneNumber: string;
   }) => {
-    const res = await api.post('/api/v1/admin/barbers/create', payload);
+    const res = await api.post('/admin/barbers/create', payload);
     return unwrap(res);
   },
 
   /** Admin: deactivate a barber */
   deleteBarber: async (userId: string) => {
-    const res = await api.delete(`/api/v1/admin/barbers/${userId}`);
+    const res = await api.delete(`/admin/barbers/${userId}`);
     return unwrap(res);
   },
 };

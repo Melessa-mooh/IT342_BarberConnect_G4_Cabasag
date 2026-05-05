@@ -1,7 +1,7 @@
 import api from './api';
 
 export interface Barber {
-  id: number;
+  id: string;
   bio: string;
   yearsExperience: number;
   rating: string;
@@ -20,7 +20,7 @@ export const barberService = {
     }
   },
 
-  async getBarberById(id: number): Promise<Barber> {
+  async getBarberById(id: string): Promise<Barber> {
     try {
       const response = await api.get(`/barbers/public/${id}`);
       return response.data.data;

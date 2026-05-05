@@ -65,46 +65,44 @@ const FeedbackPanel: React.FC = () => {
   const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-10">
+    <div className="flex flex-col gap-6 animate-fade-in pb-10">
 
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Ratings &amp; Feedback</h2>
-        <p className="text-slate-500 font-medium mt-1">See what your customers are saying</p>
+        <h2 className="text-2xl font-bold text-slate-800">Ratings & Feedback</h2>
+        <p className="text-sm text-slate-500 mt-1">See what your customers are saying</p>
       </div>
 
-      {loading && <p className="text-slate-400 text-sm">Loading feedback…</p>}
+      {loading && <p className="text-slate-400 text-sm">Loading...</p>}
       {error   && <p className="text-red-500 text-sm">{error}</p>}
 
       {/* Overview Row */}
       {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* Average Rating */}
-          <div className="md:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col justify-center hover:shadow-md transition-shadow">
-            <h3 className="text-sm font-bold text-slate-800 mb-6 border-b border-slate-50 pb-2">Average Rating</h3>
-            <div className="flex flex-col items-center">
-              <h2 className="text-6xl font-black text-slate-900 tracking-tighter mb-2">{avgRating}</h2>
-              <div className="flex text-amber-400 text-xl tracking-widest drop-shadow-sm mb-2">★★★★★</div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">
-                Based on {totalReviews} review{totalReviews !== 1 ? 's' : ''}
-              </p>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center">
+            <h3 className="text-sm font-semibold text-slate-600 mb-4">Average Rating</h3>
+            <h2 className="text-5xl font-black text-slate-900 mb-2">{avgRating}</h2>
+            <div className="flex text-[#D2691E] text-lg mb-2">★★★★★</div>
+            <p className="text-xs text-slate-500">
+              {totalReviews} review{totalReviews !== 1 ? 's' : ''}
+            </p>
           </div>
 
           {/* Distribution */}
-          <div className="md:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col hover:shadow-md transition-shadow">
-            <h3 className="text-sm font-bold text-slate-800 mb-6 border-b border-slate-50 pb-2">Rating Distribution</h3>
+          <div className="md:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-sm font-semibold text-slate-800 mb-5">Rating Distribution</h3>
             <div className="flex flex-col gap-3">
               {dist.map(({ star, count, pct }) => (
-                <div key={star} className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-slate-600 w-8 flex justify-between">
-                    {star} <span className="text-amber-400">★</span>
+                <div key={star} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-600 w-6">
+                    {star}★
                   </span>
-                  <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                    <div className="h-full bg-slate-900 rounded-full" style={{ width: `${pct}%` }} />
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#D2691E] rounded-full transition-all" style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="text-xs font-semibold text-slate-500 w-20 text-right">
+                  <span className="text-xs font-semibold text-slate-500 w-16 text-right">
                     {count} ({pct}%)
                   </span>
                 </div>
@@ -116,44 +114,49 @@ const FeedbackPanel: React.FC = () => {
 
       {/* Review List */}
       {!loading && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-          <h3 className="text-sm font-bold text-slate-800 mb-8 border-b border-slate-50 pb-2">Customer Reviews</h3>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-base font-bold text-slate-800">All reviews</h3>
+            <button className="text-sm text-slate-600 hover:text-slate-800 font-semibold">
+              Filter
+            </button>
+          </div>
 
           {feedback.length === 0 && (
-            <p className="text-slate-400 text-sm text-center py-6">No reviews yet. Keep up the great work!</p>
+            <p className="text-slate-400 text-sm text-center py-6">No reviews yet</p>
           )}
 
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-5">
             {feedback.map(fb => (
-              <div key={fb.feedbackId} className="flex gap-5 border-b border-slate-50 pb-8 last:border-0 last:pb-0">
+              <div key={fb.feedbackId} className="flex gap-4 pb-5 border-b border-slate-100 last:border-0 last:pb-0">
 
                 {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex flex-shrink-0 items-center justify-center text-slate-600 font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex flex-shrink-0 items-center justify-center text-slate-600 font-bold text-sm">
                   {(fb.customerId ?? '?').charAt(0).toUpperCase()}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
+                  <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-bold text-slate-800 text-sm">{fb.customerId}</h4>
-                      <p className="text-xs font-semibold text-slate-400">
+                      <p className="text-xs text-slate-400">
                         {fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : ''}
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-amber-400 text-sm tracking-widest mt-2 mb-3">
+                  <div className="text-[#D2691E] text-sm mb-2">
                     {stars(fb.rating ?? 0)}
                   </div>
 
-                  <p className="text-sm font-medium text-slate-700 leading-relaxed italic border-l-2 border-slate-200 pl-3">
-                    "{fb.comment}"
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    {fb.comment}
                   </p>
 
                   {/* Existing reply */}
                   {fb.replyContent && (
-                    <div className="mt-3 ml-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                    <div className="mt-3 ml-4 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
                       <p className="text-xs font-bold text-slate-500 mb-1">Your reply:</p>
                       <p className="text-sm text-slate-700">{fb.replyContent}</p>
                     </div>
@@ -165,15 +168,15 @@ const FeedbackPanel: React.FC = () => {
                       <input
                         value={replyInput[fb.feedbackId] ?? ''}
                         onChange={e => setReplyInput(prev => ({ ...prev, [fb.feedbackId]: e.target.value }))}
-                        placeholder="Write a reply…"
-                        className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-slate-400"
+                        placeholder="Write a reply..."
+                        className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#D2691E] focus:ring-1 focus:ring-[#D2691E]"
                       />
                       <button
                         onClick={() => handleReply(fb.feedbackId)}
                         disabled={replying[fb.feedbackId]}
-                        className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-50 transition"
+                        className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50 transition-all"
                       >
-                        {replying[fb.feedbackId] ? '…' : 'Reply'}
+                        {replying[fb.feedbackId] ? '...' : 'Reply'}
                       </button>
                     </div>
                   )}

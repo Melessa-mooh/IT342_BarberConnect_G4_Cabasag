@@ -5,7 +5,7 @@ import { appointmentService, type Appointment } from '../../../services/appointm
 
 const IncomePanel: React.FC = () => {
   const { user } = useAuth();
-  const barberProfileId = user?.barberProfile?.id?.toString() ?? '';
+  const barberProfileId = user?.barberProfile?.id ?? user?.firebaseUid ?? '';
   
   const [activeTab, setActiveTab] = useState('charts');
   const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>([]);
@@ -42,7 +42,7 @@ const IncomePanel: React.FC = () => {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 
-  const thisMonthGross = thisMonthIncomeRecords.reduce((sum, r) => sum + r.grossAmount, 0);
+  const thisMonthGross = thisMonthIncomeRecords.reduce((sum, r) => sum + r.amount, 0);
   const thisMonthNet = thisMonthIncomeRecords.reduce((sum, r) => sum + r.netAmount, 0);
 
   const thisMonthAppointments = appointments.filter(a => {

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { barberService } from '../../services/barberService';
 import type { Barber } from '../../services/barberService';
 import { appointmentService } from '../../services/appointmentService';
+import { feedbackService } from '../../services/barberFeatureService';
 import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
 import './CustomerDashboard.css';
 
@@ -13,6 +14,14 @@ const CustomerDashboard: React.FC = () => {
   const [calendarAppointments, setCalendarAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Feedback State
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackAppointmentId, setFeedbackAppointmentId] = useState('');
+  const [feedbackBarberId, setFeedbackBarberId] = useState('');
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   useEffect(() => {
     fetchBarbers();
@@ -72,6 +81,34 @@ const CustomerDashboard: React.FC = () => {
 
   const isProfileIncomplete = () => {
     return !user?.phoneNumber || user.phoneNumber.trim() === '';
+  };
+
+  const handleLeaveFeedback = (appointmentId: string, barberId: string) => {
+    setFeedbackAppointmentId(appointmentId);
+    setFeedbackBarberId(barberId);
+    setFeedbackRating(5);
+    setFeedbackComment('');
+    setFeedbackModalOpen(true);
+  };
+
+  const submitFeedback = async () => {
+    if (!user?.firebaseUid) return;
+    setSubmittingFeedback(true);
+    try {
+      await feedbackService.submitFeedback({
+        appointmentId: feedbackAppointmentId,
+        customerId: user.firebaseUid,
+        barberProfileId: feedbackBarberId,
+        rating: feedbackRating,
+        comment: feedbackComment
+      });
+      alert('Thank you! Your feedback has been submitted successfully.');
+      setFeedbackModalOpen(false);
+    } catch (err: any) {
+      alert('Failed to submit feedback: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSubmittingFeedback(false);
+    }
   };
 
   if (loading) {
@@ -324,9 +361,9 @@ const CustomerDashboard: React.FC = () => {
                       </div>
                       <div className="barber-info">
                         <h4>
-                          {barber.id === 1 ? 'Marcus Johnson' : 
-                           barber.id === 2 ? 'David Chen' : 
-                           barber.id === 3 ? 'James Wilson' : 'Alex Rivera'}
+                          {barber.id === '1' ? 'Marcus Johnson' : 
+                           barber.id === '2' ? 'David Chen' : 
+                           barber.id === '3' ? 'James Wilson' : 'Alex Rivera'}
                         </h4>
                         <div className="barber-rating">
                           ⭐ {parseFloat(barber.rating).toFixed(1)} ({barber.totalReviews})
@@ -335,12 +372,25 @@ const CustomerDashboard: React.FC = () => {
                           {barber.yearsExperience} years exp.
                         </div>
                         <div className="barber-specialties">
-                          {barber.id === 1 ? 'Fade • Beard Trim' :
-                           barber.id === 2 ? 'Modern Cuts • Hair Design' : 
-                           barber.id === 3 ? 'Traditional • Hot Towel Shave' : 'Undercut • Textured Crop'}
+                          {barber.id === '1' ? 'Fade • Beard Trim' :
+                           barber.id === '2' ? 'Modern Cuts • Hair Design' : 
+                           barber.id === '3' ? 'Traditional • Hot Towel Shave' : 'Undercut • Textured Crop'}
                         </div>
                       </div>
-                      <Link to="/booking" className="book-btn">Book Now</Link>
+                      <Link 
+                        to="/booking" 
+                        state={{ 
+                          selectedBarber: {
+                            id: barber.id,
+                            name: 'Professional Barber', // Names aren't in Barber model currently
+                            specialties: barber.bio || 'General Haircuts',
+                            experience: `${barber.yearsExperience} years exp.`
+                          }
+                        }}
+                        className="book-btn"
+                      >
+                        Book Now
+                      </Link>
                     </div>
                   ))
                 ) : (
@@ -376,12 +426,68 @@ const CustomerDashboard: React.FC = () => {
                       haircutName
                     };
                   })}
+                  onLeaveFeedback={handleLeaveFeedback}
                 />
               </div>
             </aside>
           </div>
         </div>
       </main>
+
+      {/* Feedback Modal Overlay */}
+      {feedbackModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: '#fff', padding: '2rem', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ marginTop: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: 700 }}>Rate Your Experience</h3>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>How was your recent haircut? Your feedback helps us improve.</p>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Rating</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button 
+                    key={star} 
+                    onClick={() => setFeedbackRating(star)}
+                    style={{ 
+                      background: 'none', border: 'none', cursor: 'pointer', 
+                      fontSize: '2rem', color: star <= feedbackRating ? '#f59e0b' : '#e2e8f0',
+                      transition: 'color 0.2s ease'
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Comment (Optional)</label>
+              <textarea 
+                value={feedbackComment}
+                onChange={e => setFeedbackComment(e.target.value)}
+                placeholder="Tell us what you liked or what could be better..."
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '100px', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setFeedbackModalOpen(false)}
+                style={{ padding: '0.5rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={submitFeedback}
+                disabled={submittingFeedback}
+                style={{ padding: '0.5rem 1.25rem', border: 'none', borderRadius: '6px', background: '#f59e0b', color: '#fff', fontWeight: 600, cursor: submittingFeedback ? 'not-allowed' : 'pointer', opacity: submittingFeedback ? 0.7 : 1 }}
+              >
+                {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

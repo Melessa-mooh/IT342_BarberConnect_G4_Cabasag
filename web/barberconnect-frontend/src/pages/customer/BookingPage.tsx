@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentService } from '../../services/appointmentService';
 import './BookingPage.css';
@@ -23,11 +23,17 @@ const BookingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [selectedBarber] = useState({
-    id: '1',
-    name: 'Marcus Johnson',
-    specialties: 'Fade, Beard Trim, Classic Cut',
-    experience: '5 years experience'
+  const location = useLocation();
+  const [selectedBarber] = useState(() => {
+    if (location.state?.selectedBarber) {
+      return location.state.selectedBarber;
+    }
+    return {
+      id: '1', // Fallback for direct navigation
+      name: 'Marcus Johnson',
+      specialties: 'Fade, Beard Trim, Classic Cut',
+      experience: '5 years experience'
+    };
   });
 
   const [selectedStyle, setSelectedStyle] = useState<HaircutStyle | null>(null);

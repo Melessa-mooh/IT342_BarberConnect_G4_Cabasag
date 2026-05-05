@@ -36,9 +36,21 @@ public class BarberService {
             List<AuthResponse.BarberProfileResponse> barbers = new ArrayList<>();
             
             for (QueryDocumentSnapshot document : query.getDocuments()) {
-                User user = document.toObject(User.class);
-                if (user.getBarberProfile() != null && user.getBarberProfile().getIsAvailable()) {
-                    barbers.add(mapToBarberResponse(user.getBarberProfile()));
+                try {
+                    User user = document.toObject(User.class);
+                    if (user.getBarberProfile() != null && user.getBarberProfile().getIsAvailable()) {
+                        barbers.add(mapToBarberResponse(user.getBarberProfile()));
+                    }
+                } catch (Exception e) {
+                    // Log and skip barbers with deserialization issues
+                    log.warn("Failed to deserialize barber profile for document {}: {}", document.getId(), e.getMessage());
+                    // Try to fix the document by updating it
+                    try {
+                        fixBarberProfileTimestamps(db, document.getId());
+                        log.info("Fixed timestamps for barber: {}", document.getId());
+                    } catch (Exception fixError) {
+                        log.error("Failed to fix timestamps for barber {}: {}", document.getId(), fixError.getMessage());
+                    }
                 }
             }
             
@@ -47,6 +59,34 @@ public class BarberService {
             log.error("Error fetching available barbers: {}", e.getMessage());
             return new ArrayList<>();
         }
+    }
+    
+    /**
+     * Helper method to fix timestamp fields in existing barber profiles
+     */
+    private void fixBarberProfileTimestamps(Firestore db, String userId) throws ExecutionException, InterruptedException {
+        var docRef = db.collection(USERS_COLLECTION).document(java.util.Objects.requireNonNullElse(userId, ""));
+        var doc = docRef.get().get();
+        
+        if (!doc.exists()) return;
+        
+        var data = doc.getData();
+        if (data == null) return;
+        
+        @SuppressWarnings("unchecked")
+        var barberProfile = (java.util.Map<String, Object>) data.get("barberProfile");
+        if (barberProfile == null) return;
+        
+        // Replace any HashMap timestamps with proper Date objects
+        if (barberProfile.get("createdAt") instanceof java.util.Map) {
+            barberProfile.put("createdAt", new java.util.Date());
+        }
+        if (barberProfile.get("updatedAt") instanceof java.util.Map) {
+            barberProfile.put("updatedAt", new java.util.Date());
+        }
+        
+        data.put("barberProfile", barberProfile);
+        docRef.set(data).get();
     }
     
     public AuthResponse.BarberProfileResponse getBarberById(String id) {
@@ -109,27 +149,32 @@ public class BarberService {
                 profile = new BarberProfile();
                 profile.setBarber_profile_id(user.getUser_id());
                 profile.setUser_id(user.getUser_id());
+                profile.setCreatedAt(new java.util.Date());
                 user.setBarberProfile(profile);
             }
             
-            // 3. Map request data
+            // 3. Map request data - Use Date for compatibility
             profile.setBio(request.getBio());
             profile.setYearsExperience(request.getExperience());
             profile.setGcashNumber(request.getGcash());
-            profile.setUpdatedAt(java.time.LocalDateTime.now());
+            profile.setUpdatedAt(new java.util.Date());
             user.setUpdatedAt(new java.util.Date());
             
             // 4. Update the Firestore User document (which contains the nested profile structure)
             db.collection(USERS_COLLECTION)
-              .document(java.util.Objects.requireNonNull(userId)) // use explicitly not-null identifier
+              .document(java.util.Objects.requireNonNull(userId))
               .set(user) 
               .get();
               
+            log.info("Successfully updated barber profile for user: {}", userId);
             return mapToBarberResponse(profile);
             
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to update Barber Profile in Firestore", e);
-            throw new RuntimeException("DB Error", e);
+            throw new RuntimeException("DB Error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error updating barber profile", e);
+            throw new RuntimeException("Failed to update profile: " + e.getMessage(), e);
         }
     }
 

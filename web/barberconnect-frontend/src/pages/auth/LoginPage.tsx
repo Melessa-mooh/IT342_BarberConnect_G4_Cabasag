@@ -97,21 +97,9 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    setErrors({});
-    try {
-      await authService.loginWithGoogle();
-      await refreshUser();
-      navigate('/dashboard');
-    } catch (error: any) {
-      // Silently ignore if user just closed the popup
-      if (error?.message !== 'Google Sign-In was cancelled.') {
-        setErrors({ general: error.message || 'Google Sign-In failed. Please try again.' });
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  const handleGoogleLogin = () => {
+    // Redirect to Spring Boot OAuth2 endpoint
+    authService.loginWithGoogle();
   };
 
   return (

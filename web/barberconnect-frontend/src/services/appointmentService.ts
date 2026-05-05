@@ -59,5 +59,14 @@ export const appointmentService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update appointment status');
     }
+  },
+
+  completeAppointment: async (appointmentId: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<Appointment>(`/appointments/${appointmentId}/complete`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to complete appointment');
+    }
   }
 };

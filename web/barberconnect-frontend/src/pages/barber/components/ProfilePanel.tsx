@@ -3,7 +3,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { barberService } from '../../../services/barberService';
 
 const ProfilePanel = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -46,13 +46,17 @@ const ProfilePanel = () => {
         experience: parseInt(formData.experience) || 0,
         gcash: formData.gcash
       });
-      
+
+      // Refresh the AuthContext so stale user data doesn't re-populate the form
+      await refreshUser();
+
       setSaveSuccess(true);
       // Hide success message after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save profile", error);
-      alert("Failed to save profile. Please try again.");
+      const message = error?.response?.data?.error || error?.message || 'Unknown error';
+      alert(`Failed to save profile: ${message}. Please check your connection and try again.`);
     } finally {
       setIsSaving(false);
     }
@@ -152,7 +156,7 @@ const ProfilePanel = () => {
               <button 
                 type="submit" 
                 disabled={isSaving}
-                className={`px-8 py-2 text-white font-bold rounded-lg shadow-sm transition ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8B4513] hover:bg-[#D2691E]'}`}
+                className={`px-8 py-2 text-white font-bold rounded-lg shadow-sm transition ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B4513] to-[#D2691E] hover:from-[#A0522D] hover:to-[#CD853F]'}`}
               >
                 {isSaving ? 'Saving...' : 'Save Profile'}
               </button>

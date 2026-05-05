@@ -23,7 +23,7 @@ export interface User {
   isActive: boolean;
   profileImageUrl?: string;
   barberProfile?: {
-    id: number;
+    id: string;       // Firebase UID string returned by BarberProfileResponse
     bio: string;
     yearsExperience: number;
     rating: string;
@@ -74,40 +74,13 @@ export const authService = {
   },
 
   /**
-   * Sign in with Google using Firebase popup.
-   * Flow: Google Popup → Firebase idToken → POST /auth/firebase-login → JWT stored
+   * Sign in with Google using Spring Boot OAuth2.
+   * Flow: Redirect to backend OAuth2 endpoint → Google login → Callback with JWT
    */
-  async loginWithGoogle(): Promise<User> {
-    try {
-      const { auth } = await import('../assets/firebase/firebaseConfig');
-      const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
-
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-
-      // 1. Open Google sign-in popup
-      const result = await signInWithPopup(auth, provider);
-
-      // 2. Get Firebase ID token (not the Google OAuth token)
-      const firebaseIdToken = await result.user.getIdToken();
-
-      // 3. Exchange Firebase ID token for our backend JWT
-      const response = await api.post('/auth/firebase-login', { idToken: firebaseIdToken });
-      const authResponse = response.data.data;
-
-      // 4. Store our JWT
-      if (authResponse.token) {
-        authService.setToken(authResponse.token);
-      }
-
-      return authResponse;
-    } catch (error: any) {
-      // User closed the popup — don't treat as fatal
-      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
-        throw new Error('Google Sign-In was cancelled.');
-      }
-      throw new Error(error.response?.data?.error || error.message || 'Google Sign-In failed.');
-    }
+  async loginWithGoogle(): Promise<void> {
+    // Redirect to Spring Boot OAuth2 endpoint
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+    window.location.href = `${backendUrl}/oauth2/authorization/google`;
   },
 
   /**

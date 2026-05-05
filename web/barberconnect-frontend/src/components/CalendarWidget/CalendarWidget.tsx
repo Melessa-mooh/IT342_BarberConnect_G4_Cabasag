@@ -11,14 +11,21 @@ export interface Appointment {
   haircutName?: string;
   totalPrice?: number;
   paymentMethod?: string;
+  status?: string;
+  barberId?: string;
 }
 
 interface CalendarWidgetProps {
   isBarberView?: boolean;
   appointments?: Appointment[];
+  onLeaveFeedback?: (appointmentId: string, barberId: string) => void;
 }
 
-const CalendarWidget: React.FC<CalendarWidgetProps> = ({ isBarberView = false, appointments = [] }) => {
+const CalendarWidget: React.FC<CalendarWidgetProps> = ({ 
+  isBarberView = false, 
+  appointments = [],
+  onLeaveFeedback
+}) => {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // Generate a mock 35-day calendar grid (5 weeks)
@@ -99,7 +106,36 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ isBarberView = false, a
                     <div className="modal-appt-detail">💰 Total: ₱{app.totalPrice.toFixed(2)} ({app.paymentMethod === 'DIGITAL_WALLET' ? 'E-Cash' : app.paymentMethod || 'CASH'})</div>
                   )}
 
-                  <div className="modal-appt-status" style={{ marginTop: '0.5rem' }}>✅ Confirmed Booking</div>
+                  <div className="modal-appt-status" style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ 
+                      padding: '4px 8px', 
+                      borderRadius: '4px', 
+                      fontSize: '0.8rem', 
+                      fontWeight: 'bold',
+                      backgroundColor: app.status === 'COMPLETED' ? '#dcfce7' : '#f3f4f6',
+                      color: app.status === 'COMPLETED' ? '#166534' : '#374151'
+                    }}>
+                      {app.status === 'COMPLETED' ? '✅ Completed' : app.status === 'PENDING' ? '⏳ Pending' : app.status || 'Confirmed'}
+                    </span>
+                    
+                    {!isBarberView && app.status === 'COMPLETED' && onLeaveFeedback && app.barberId && (
+                      <button 
+                        onClick={() => onLeaveFeedback(app.id, app.barberId!)}
+                        style={{
+                          backgroundColor: '#f59e0b',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ★ Leave Feedback
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
