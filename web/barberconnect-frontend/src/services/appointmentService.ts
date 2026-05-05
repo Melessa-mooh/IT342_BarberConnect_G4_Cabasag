@@ -37,7 +37,8 @@ export const appointmentService = {
   getCustomerAppointments: async (customerId: string): Promise<Appointment[]> => {
     try {
       const response = await api.get<{ success: boolean; data: Appointment[]; error: string | null }>(`/appointments/customer/${customerId}`);
-      return response.data.data;
+      // FIX: Add ?? [] guard
+      return response.data.data ?? [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch appointments');
     }
@@ -46,7 +47,8 @@ export const appointmentService = {
   getBarberAppointments: async (barberProfileId: string): Promise<Appointment[]> => {
     try {
       const response = await api.get<{ success: boolean; data: Appointment[]; error: string | null }>(`/appointments/barber/${barberProfileId}`);
-      return response.data.data;
+      // FIX: Add ?? [] guard
+      return response.data.data ?? [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch appointments');
     }

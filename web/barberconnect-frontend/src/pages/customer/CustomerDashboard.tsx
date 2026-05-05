@@ -14,6 +14,8 @@ const CustomerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [calendarAppointments, setCalendarAppointments] = useState<any[]>([]);
+  // FIX: Add calendar error state
+  const [calendarError, setCalendarError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -54,8 +56,11 @@ const CustomerDashboard: React.FC = () => {
 
   const fetchAppointments = async () => {
     try {
+      setCalendarError(null);
       const data = await appointmentService.getCustomerAppointments(user!.firebaseUid);
-      const formatted = data.map(app => {
+      // FIX: Add array guard
+      const safeData = Array.isArray(data) ? data : [];
+      const formatted = safeData.map(app => {
         const d = new Date(app.appointmentDateTime);
         return {
           id: app.appointment_id,
@@ -70,12 +75,10 @@ const CustomerDashboard: React.FC = () => {
         };
       });
       setCalendarAppointments(formatted);
-      if (data.length === 0) {
-         // Silently ignore if empty, or notify
-      }
     } catch (err: any) {
       console.error('Failed to fetch appointments:', err);
-      alert('CRITICAL ERROR FETCHING CALENDAR: ' + err.message);
+      // FIX: Set error state instead of blocking alert
+      setCalendarError('Failed to load your appointments. Please refresh.');
     }
   };
 
@@ -311,6 +314,12 @@ const CustomerDashboard: React.FC = () => {
                 <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
                   {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </h2>
+                {/* FIX: Show inline calendar error */}
+                {calendarError && (
+                  <div style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fef2f2', borderRadius: '0.375rem' }}>
+                    {calendarError}
+                  </div>
+                )}
                 <CalendarWidget 
                   isBarberView={false} 
                   appointments={calendarAppointments.map(app => {

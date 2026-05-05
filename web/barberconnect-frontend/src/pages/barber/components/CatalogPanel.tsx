@@ -16,6 +16,13 @@ const CatalogPanel: React.FC = () => {
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // FIX: Add edit state
+  const [editingStyle, setEditingStyle] = useState<HaircutStyle | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editBasePrice, setEditBasePrice] = useState('');
+  const [editDuration, setEditDuration] = useState('');
+
   const handleCreateStyle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!barberProfileId || !newName || !newBasePrice) return;
@@ -23,6 +30,8 @@ const CatalogPanel: React.FC = () => {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
+      // FIX: Add console.log before append to verify barberProfileId
+      console.log('barberProfileId before append:', barberProfileId);
       formData.append('barberProfileId', barberProfileId);
       formData.append('name', newName);
       formData.append('description', newDescription);
@@ -30,8 +39,11 @@ const CatalogPanel: React.FC = () => {
       if (newDuration) formData.append('durationMinutes', newDuration);
       if (newImageFile) formData.append('file', newImageFile);
       
-      const newStyle = await haircutStyleService.createHaircutStyle(formData);
-      setStyles(prev => [newStyle, ...prev]);
+      await haircutStyleService.createHaircutStyle(formData);
+      
+      // FIX: Refetch fresh server data instead of just pushing response
+      const freshStyles = await haircutStyleService.getHaircutStylesForBarber(barberProfileId);
+      setStyles(freshStyles);
       
       setIsAddModalOpen(false);
       setNewName('');
@@ -42,6 +54,32 @@ const CatalogPanel: React.FC = () => {
     } catch (err) {
       console.error('Failed to create style', err);
       alert('Failed to create style. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // FIX: Add update handler
+  const handleUpdateStyle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStyle || !editName || !editBasePrice) return;
+    
+    setIsSubmitting(true);
+    try {
+      await haircutStyleService.updateHaircutStyle(editingStyle.haircut_style_id, {
+        name: editName,
+        description: editDescription,
+        basePrice: parseFloat(editBasePrice),
+        durationMinutes: editDuration ? parseInt(editDuration, 10) : undefined
+      });
+      
+      const freshStyles = await haircutStyleService.getHaircutStylesForBarber(barberProfileId);
+      setStyles(freshStyles);
+      
+      setEditingStyle(null);
+    } catch (err) {
+      console.error('Failed to update style', err);
+      alert('Failed to update style. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -131,10 +169,32 @@ const CatalogPanel: React.FC = () => {
               
               {/* Actions */}
               <div className="flex gap-2">
-                <button className="flex-1 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                <button 
+                  onClick={() => {
+                    // FIX: Wire edit button
+                    setEditingStyle(style);
+                    setEditName(style.name);
+                    setEditDescription(style.description || '');
+                    setEditBasePrice(String(style.basePrice));
+                    setEditDuration(String(style.durationMinutes ?? ''));
+                  }}
+                  className="flex-1 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+                >
                   Edit
                 </button>
-                <button className="w-11 h-11 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition-all shadow-sm">
+                <button 
+                  onClick={async () => {
+                    // FIX: Wire delete button
+                    if (!confirm('Delete this style?')) return;
+                    try {
+                      await haircutStyleService.deleteHaircutStyle(style.haircut_style_id);
+                      setStyles(prev => prev.filter(s => s.haircut_style_id !== style.haircut_style_id));
+                    } catch (err) {
+                      alert('Failed to delete style');
+                    }
+                  }}
+                  className="w-11 h-11 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition-all shadow-sm"
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
                   </svg>
@@ -234,6 +294,89 @@ const CatalogPanel: React.FC = () => {
                   className="flex-1 py-2.5 rounded-lg bg-[#D2691E] hover:bg-[#8B4513] text-white font-semibold shadow-sm transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Style'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Style Modal */}
+      {/* FIX: Add Edit Modal */}
+      {editingStyle && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden animate-fade-in">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-slate-800">Edit Style</h3>
+              <button 
+                onClick={() => setEditingStyle(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateStyle} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Style Name *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Description</label>
+                <textarea 
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Price (₱) *</label>
+                  <input 
+                    type="number" 
+                    required
+                    min="0"
+                    step="0.01"
+                    value={editBasePrice}
+                    onChange={e => setEditBasePrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Duration (min)</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={editDuration}
+                    onChange={e => setEditDuration(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D2691E]/50"
+                  />
+                </div>
+              </div>
+              
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setEditingStyle(null)}
+                  className="flex-1 py-2.5 rounded-lg border border-slate-300 font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-2.5 rounded-lg bg-[#D2691E] hover:bg-[#8B4513] text-white font-semibold shadow-sm transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Saving...' : 'Update Style'}
                 </button>
               </div>
             </form>

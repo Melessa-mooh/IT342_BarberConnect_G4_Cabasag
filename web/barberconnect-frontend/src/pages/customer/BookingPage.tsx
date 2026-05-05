@@ -59,11 +59,14 @@ const BookingPage: React.FC = () => {
     if (!selectedBarber?.id) return;
     const fetchStyles = async () => {
       setLoadingStyles(true);
+      // FIX: Add console.log to compare with stored Firestore ID
+      console.log('Fetching styles for barber ID:', selectedBarber.id);
       try {
         const res = await api.get(`/haircuts/barber/${selectedBarber.id}`);
         const styles = res.data?.data ?? [];
         setHaircutStyles(styles.map((s: any) => ({
-          id: s.haircutStyleId ?? s.haircut_style_id,
+          // FIX: Use snake_case ID
+          id: s.haircut_style_id,
           name: s.name,
           price: s.basePrice ?? s.base_price ?? 0,
           image: s.imageUrl ?? '/api/placeholder/150/150'

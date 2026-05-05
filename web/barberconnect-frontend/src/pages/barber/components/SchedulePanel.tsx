@@ -11,7 +11,13 @@ const STATUS_COLORS: Record<string, string> = {
 
 const SchedulePanel: React.FC = () => {
   const { user } = useAuth();
-  const barberProfileId = user?.barberProfile?.id ?? user?.firebaseUid ?? '';
+  // FIX: Remove fallback to firebaseUid
+  const barberProfileId = user?.barberProfile?.id ?? '';
+
+  // FIX: Add early return guard
+  if (!barberProfileId) {
+    return <div className="text-slate-500 text-sm p-8">Loading schedule...</div>;
+  }
 
   const [activeTab, setActiveTab] = useState('calendar');
   
@@ -25,7 +31,6 @@ const SchedulePanel: React.FC = () => {
   const getCalendarDates = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     
@@ -86,12 +91,16 @@ const SchedulePanel: React.FC = () => {
   const [appointments, setAppointments]     = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
+  // FIX: Fetch appointments on mount for the calendar
+  useEffect(() => {
+    if (barberProfileId) {
+      fetchAppointments();
+    }
+  }, [barberProfileId]);
+
   useEffect(() => {
     if (barberProfileId && activeTab === 'leave') {
       fetchLeaveRequests();
-    }
-    if (barberProfileId && activeTab === 'appointments') {
-      fetchAppointments();
     }
   }, [activeTab, barberProfileId]);
 
@@ -156,6 +165,18 @@ const SchedulePanel: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // FIX: Dynamic slot booking logic
+  const isSlotBooked = (timeStr: string): boolean => {
+    if (!selectedDate) return false;
+    return appointments.some(app => {
+      const appDate = new Date(app.appointmentDateTime);
+      const appDateStr = appDate.toLocaleDateString('en-CA');
+      const selectedStr = selectedDate.toLocaleDateString('en-CA');
+      const appHour = appDate.getHours().toString().padStart(2, '0') + ':00';
+      return appDateStr === selectedStr && appHour === timeStr && app.status !== 'CANCELLED';
+    });
   };
 
   return (
@@ -283,8 +304,11 @@ const SchedulePanel: React.FC = () => {
                     </div>
                     <span className="font-semibold text-slate-800">{t}</span>
                   </div>
-                  <span className="bg-[#D2691E] text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full">
-                    Open Now
+                  <span className={isSlotBooked(t) 
+                    ? 'bg-red-500 text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full'
+                    : 'bg-[#D2691E] text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full'
+                  }>
+                    {isSlotBooked(t) ? 'Booked' : 'Open'}
                   </span>
                 </div>
               ))}
