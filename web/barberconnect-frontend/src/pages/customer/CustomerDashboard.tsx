@@ -5,6 +5,8 @@ import { barberService } from '../../services/barberService';
 import type { Barber } from '../../services/barberService';
 import { appointmentService } from '../../services/appointmentService';
 import { feedbackService } from '../../services/barberFeatureService';
+import { postService } from '../../services/barberFeatureService';
+import type { Post } from '../../services/barberFeatureService';
 import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
 import './CustomerDashboard.css';
 
@@ -14,6 +16,10 @@ const CustomerDashboard: React.FC = () => {
   const [calendarAppointments, setCalendarAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Posts State
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
   // Feedback State
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -25,7 +31,20 @@ const CustomerDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchBarbers();
+    fetchPosts();
   }, []);
+
+  const fetchPosts = async () => {
+    setPostsLoading(true);
+    try {
+      const data = await postService.getAllPosts();
+      setPosts(data);
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user?.firebaseUid) {
@@ -180,172 +199,64 @@ const CustomerDashboard: React.FC = () => {
           </div>
 
           <div className="dashboard-grid">
-            <section className="barber-feed">
+                        <section className="barber-feed">
               <h2>Barber Feed</h2>
               <div className="feed-posts">
-                <div className="post-card">
-                  <div className="post-header">
-                    <div className="post-avatar">
-                      <img src="/api/placeholder/40/40" alt="Marcus Johnson" />
-                    </div>
-                    <div className="post-info">
-                      <h4>Marcus Johnson</h4>
-                      <span>2h ago</span>
-                    </div>
+                {postsLoading ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                    Loading posts...
                   </div>
-                  <div className="post-content">
-                    <p>Fresh fade for the week! ✂️ #FadeGame #BarberLife</p>
-                    <div className="post-image">
-                      <img src="/api/placeholder/400/300" alt="Fresh fade haircut" />
+                ) : posts.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                    No posts yet. Check back soon!
+                  </div>
+                ) : (
+                  posts.map((post) => (
+                    <div key={post.post_id} className="post-card">
+                      <div className="post-header">
+                        <div className="post-avatar">
+                          <img src="/api/placeholder/40/40" alt="Barber" />
+                        </div>
+                        <div className="post-info">
+                          <h4>Barber Post</h4>
+                          <span>
+                            {post.createdAt
+                              ? new Date(post.createdAt).toLocaleDateString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric'
+                                })
+                              : 'Recently'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="post-content">
+                        <p>{post.content}</p>
+                        {post.imageUrl && (
+                          <div className="post-image">
+                            <img
+                              src={post.imageUrl}
+                              alt="Post"
+                              style={{ width: '100%', borderRadius: '8px', marginTop: '10px' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="post-actions">
+                        <button className="action-btn">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                          {post.likesCount ?? 0}
+                        </button>
+                        <button className="action-btn">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                          {post.commentsCount ?? 0}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="post-actions">
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      234
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      18
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="post-card">
-                  <div className="post-header">
-                    <div className="post-avatar">
-                      <img src="/api/placeholder/40/40" alt="David Chen" />
-                    </div>
-                    <div className="post-info">
-                      <h4>David Chen</h4>
-                      <span>5h ago</span>
-                    </div>
-                  </div>
-                  <div className="post-content">
-                    <p>Classic pompadour never goes out of style 🔥</p>
-                    <div className="post-image">
-                      <img src="/api/placeholder/400/300" alt="Classic pompadour haircut" />
-                    </div>
-                  </div>
-                  <div className="post-actions">
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      189
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      12
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="post-card">
-                  <div className="post-header">
-                    <div className="post-avatar">
-                      <img src="/api/placeholder/40/40" alt="James Wilson" />
-                    </div>
-                    <div className="post-info">
-                      <h4>James Wilson</h4>
-                      <span>1d ago</span>
-                    </div>
-                  </div>
-                  <div className="post-content">
-                    <p>Textured crop with a clean lineup ✨</p>
-                    <div className="post-image">
-                      <img src="/api/placeholder/400/300" alt="Textured crop haircut" />
-                    </div>
-                  </div>
-                  <div className="post-actions">
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      312
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      24
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="post-card">
-                  <div className="post-header">
-                    <div className="post-avatar">
-                      <img src="/api/placeholder/40/40" alt="Alex Rivera" />
-                    </div>
-                    <div className="post-info">
-                      <h4>Alex Rivera</h4>
-                      <span>2d ago</span>
-                    </div>
-                  </div>
-                  <div className="post-content">
-                    <p>Sharp undercut transformation 💯</p>
-                    <div className="post-image">
-                      <img src="/api/placeholder/400/300" alt="Sharp undercut haircut" />
-                    </div>
-                  </div>
-                  <div className="post-actions">
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      156
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      9
-                    </button>
-                    <button className="action-btn">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                  ))
+                )}
               </div>
             </section>
 
@@ -361,9 +272,7 @@ const CustomerDashboard: React.FC = () => {
                       </div>
                       <div className="barber-info">
                         <h4>
-                          {barber.id === '1' ? 'Marcus Johnson' : 
-                           barber.id === '2' ? 'David Chen' : 
-                           barber.id === '3' ? 'James Wilson' : 'Alex Rivera'}
+                          {`${barber.firstName ?? ''} ${barber.lastName ?? ''}`.trim() || 'Barber'}
                         </h4>
                         <div className="barber-rating">
                           ⭐ {parseFloat(barber.rating).toFixed(1)} ({barber.totalReviews})
@@ -372,9 +281,7 @@ const CustomerDashboard: React.FC = () => {
                           {barber.yearsExperience} years exp.
                         </div>
                         <div className="barber-specialties">
-                          {barber.id === '1' ? 'Fade • Beard Trim' :
-                           barber.id === '2' ? 'Modern Cuts • Hair Design' : 
-                           barber.id === '3' ? 'Traditional • Hot Towel Shave' : 'Undercut • Textured Crop'}
+                          {barber.bio || 'Professional Barber'}
                         </div>
                       </div>
                       <Link 
@@ -408,10 +315,6 @@ const CustomerDashboard: React.FC = () => {
                   isBarberView={false} 
                   appointments={calendarAppointments.map(app => {
                     let barberName = 'Barber';
-                    if (app.barberId == 1) barberName = 'Marcus Johnson';
-                    else if (app.barberId == 2) barberName = 'David Chen';
-                    else if (app.barberId == 3) barberName = 'James Wilson';
-                    else if (app.barberId == 4) barberName = 'Alex Rivera';
 
                     let haircutName = 'Haircut';
                     if (app.haircutId == 1) haircutName = 'Classic Fade';

@@ -12,4 +12,5 @@ public class UpdateBarberProfileRequest {
     private String bio;
     private Integer experience;
     private String gcash;
+    private Boolean isAvailable;
 }

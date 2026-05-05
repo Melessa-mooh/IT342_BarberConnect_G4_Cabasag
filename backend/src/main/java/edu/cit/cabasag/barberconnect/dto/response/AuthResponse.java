@@ -29,6 +29,8 @@ public class AuthResponse {
     @AllArgsConstructor
     public static class BarberProfileResponse {
         private String id;
+        private String firstName;
+        private String lastName;
         private String bio;
         private Integer yearsExperience;
         private String rating;

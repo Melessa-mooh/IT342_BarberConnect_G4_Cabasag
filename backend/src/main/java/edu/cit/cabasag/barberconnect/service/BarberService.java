@@ -39,7 +39,7 @@ public class BarberService {
                 try {
                     User user = document.toObject(User.class);
                     if (user.getBarberProfile() != null && user.getBarberProfile().getIsAvailable()) {
-                        barbers.add(mapToBarberResponse(user.getBarberProfile()));
+                        barbers.add(mapToBarberResponse(user.getBarberProfile(), user));
                     }
                 } catch (Exception e) {
                     // Log and skip barbers with deserialization issues
@@ -64,6 +64,7 @@ public class BarberService {
     /**
      * Helper method to fix timestamp fields in existing barber profiles
      */
+    @SuppressWarnings("null")
     private void fixBarberProfileTimestamps(Firestore db, String userId) throws ExecutionException, InterruptedException {
         var docRef = db.collection(USERS_COLLECTION).document(java.util.Objects.requireNonNullElse(userId, ""));
         var doc = docRef.get().get();
@@ -105,8 +106,16 @@ public class BarberService {
 
             BarberProfile profile = query.getDocuments().get(0).toObject(BarberProfile.class);
 
-            // Also fetch user to ensure it exists and get names if needed, but the response only needs profile data as per mapToBarberResponse
-            return mapToBarberResponse(profile);
+            // After getting profile, fetch the user to get the name
+            String uid = profile.getUser_id();
+            User userDoc = null;
+            if (uid != null) {
+                var userSnap = db.collection("users").document(uid).get().get();
+                if (userSnap.exists()) {
+                    userDoc = userSnap.toObject(User.class);
+                }
+            }
+            return mapToBarberResponse(profile, userDoc);
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error fetching barber by ID: {}", e.getMessage());
@@ -114,10 +123,13 @@ public class BarberService {
         }
     }
     
-    private AuthResponse.BarberProfileResponse mapToBarberResponse(BarberProfile barber) {
+    
+    private AuthResponse.BarberProfileResponse mapToBarberResponse(BarberProfile barber, User user) {
         // Implemented using the Creational Builder Pattern
         return AuthResponse.BarberProfileResponse.builder()
                 .id(barber.getBarber_profile_id())
+                .firstName(user != null ? user.getFirstName() : "")
+                .lastName(user != null ? user.getLastName() : "")
                 .bio(barber.getBio())
                 .yearsExperience(barber.getYearsExperience())
                 .rating(barber.getRating() != null ? barber.getRating().toString() : "0.0")
@@ -166,8 +178,31 @@ public class BarberService {
               .set(user) 
               .get();
               
+            // Also sync to the separate barber_profiles collection
+            try {
+                var profileQuery = db.collection("barber_profiles")
+                        .whereEqualTo("user_id", userId)
+                        .get().get();
+                if (!profileQuery.isEmpty()) {
+                    String profileDocId = profileQuery.getDocuments().get(0).getId();
+                    java.util.Map<String, Object> profileUpdate = new java.util.HashMap<>();
+                    profileUpdate.put("bio", request.getBio());
+                    profileUpdate.put("yearsExperience", request.getExperience());
+                    profileUpdate.put("gcashNumber", request.getGcash());
+                    profileUpdate.put("updatedAt", new java.util.Date().toString());
+                    if (request.getIsAvailable() != null) {
+                        profileUpdate.put("isAvailable", request.getIsAvailable());
+                    }
+                    db.collection("barber_profiles").document(profileDocId)
+                      .update(profileUpdate).get();
+                    log.info("Synced barber_profiles doc {} for user {}", profileDocId, userId);
+                }
+            } catch (Exception syncEx) {
+                log.warn("Could not sync barber_profiles for user {}: {}", userId, syncEx.getMessage());
+            }
+              
             log.info("Successfully updated barber profile for user: {}", userId);
-            return mapToBarberResponse(profile);
+            return mapToBarberResponse(profile, user);
             
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to update Barber Profile in Firestore", e);

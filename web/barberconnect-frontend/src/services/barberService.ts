@@ -2,6 +2,8 @@ import api from './api';
 
 export interface Barber {
   id: string;
+  firstName?: string;
+  lastName?: string;
   bio: string;
   yearsExperience: number;
   rating: string;
