@@ -31,7 +31,7 @@ interface AddOnCategory {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const BookingPage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -160,8 +160,6 @@ const BookingPage: React.FC = () => {
     '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
     '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM',
   ];
-
-  const handleLogout = () => { logout(); };
 
   const toggleAddOn = (categoryName: string, itemId: string) => {
     setAddOnCategories(prev =>
