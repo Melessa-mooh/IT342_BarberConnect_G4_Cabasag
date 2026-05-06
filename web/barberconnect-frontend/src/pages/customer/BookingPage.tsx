@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentService } from '../../services/appointmentService';
 import { barberService } from '../../services/barberService';
 import api from '../../services/api';
+import CustomerNavbar from '../../components/CustomerNavbar';
 import './BookingPage.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -278,21 +279,8 @@ const BookingPage: React.FC = () => {
 
   return (
     <div className="booking-page">
-      {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-content">
-          <div className="logo">
-            <span className="logo-icon">✂</span>
-            <span className="logo-text">BarberConnect</span>
-          </div>
-          <nav className="header-nav">
-            <Link to="/dashboard" className="nav-btn">🏠 Dashboard</Link>
-            <Link to="/booking"   className="nav-btn">📅 My Bookings</Link>
-            <Link to="/profile"   className="nav-btn">👤 Profile</Link>
-            <button className="nav-btn logout-btn" onClick={handleLogout}>🚪 Logout</button>
-          </nav>
-        </div>
-      </header>
+      {/* ── Single shared navbar ── */}
+      <CustomerNavbar showSearch={false} />
 
       <main className="booking-main">
         <div className="booking-container">
