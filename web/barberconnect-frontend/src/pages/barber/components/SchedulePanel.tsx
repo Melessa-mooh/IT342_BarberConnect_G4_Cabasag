@@ -425,158 +425,150 @@ const SchedulePanel: React.FC = () => {
         </div>
       )}
 
-      {/* ── Appointment Popup Modal (Barber view) ─────────────────────────────── */}
+      {/* ── Appointment Popup Modal — matches reference design exactly ─────────── */}
       {popupDate && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
           onClick={() => setPopupDate(null)}
         >
+          {/* 2× size: max-w-2xl */}
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden"
             style={{ animation: 'modalIn 0.2s ease-out' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="px-6 py-5 bg-gradient-to-r from-[#8B4513] to-[#D2691E]">
-              <div className="flex items-center justify-between">
+            {/* ── Orange header (matches reference) ── */}
+            <div className="px-8 py-6 flex items-center justify-between"
+              style={{ background: 'linear-gradient(135deg,#E8650A 0%,#F07820 100%)' }}>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="white" className="w-7 h-7">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                </div>
                 <div>
-                  <p className="text-[#F4E4BC] text-xs font-semibold uppercase tracking-widest mb-1">Appointments</p>
-                  <h3 className="text-white text-xl font-bold">
+                  <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Appointments</p>
+                  <h3 className="text-white text-2xl font-bold leading-tight">
                     {popupDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                   </h3>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full">
-                    {getAppointmentsForDate(popupDate).length} booking{getAppointmentsForDate(popupDate).length !== 1 ? 's' : ''}
-                  </span>
-                  <button
-                    onClick={() => setPopupDate(null)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white text-lg transition"
-                  >
-                    ×
-                  </button>
-                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="bg-white/20 text-white text-sm font-bold px-4 py-1.5 rounded-full">
+                  {getAppointmentsForDate(popupDate).length} booking{getAppointmentsForDate(popupDate).length !== 1 ? 's' : ''}
+                </span>
+                <button
+                  onClick={() => setPopupDate(null)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white text-2xl font-light transition"
+                >
+                  ×
+                </button>
               </div>
             </div>
 
-            {/* Appointments list */}
-            <div className="px-6 py-4 max-h-[65vh] overflow-y-auto space-y-4">
-              {getAppointmentsForDate(popupDate).map((app, idx) => {
+            {/* ── Appointment cards ── */}
+            <div className="px-8 py-6 max-h-[65vh] overflow-y-auto space-y-6">
+              {getAppointmentsForDate(popupDate).map((app) => {
                 const time = new Date(app.appointmentDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 const customerName = customerNames[app.customer_id] || 'Loading...';
                 const styleName    = styleNames[app.haircut_style_id] || 'Loading...';
                 const addOnNames   = (app.selectedOptionIds ?? []).map(id => addOnMap[id]).filter(Boolean);
-                const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-                  PENDING:    { bg: 'bg-amber-50',   text: 'text-amber-700',  label: '⏳ Pending' },
-                  CONFIRMED:  { bg: 'bg-blue-50',    text: 'text-blue-700',   label: '✔ Confirmed' },
-                  COMPLETED:  { bg: 'bg-emerald-50', text: 'text-emerald-700',label: '✅ Completed' },
-                  CANCELLED:  { bg: 'bg-red-50',     text: 'text-red-700',    label: '✕ Cancelled' },
-                  IN_PROGRESS:{ bg: 'bg-purple-50',  text: 'text-purple-700', label: '🔄 In Progress' },
+
+                const statusConfig: Record<string, { icon: string; color: string; label: string }> = {
+                  PENDING:    { icon: '⏳', color: '#F59E0B', label: 'Pending' },
+                  CONFIRMED:  { icon: '✔',  color: '#3B82F6', label: 'Confirmed' },
+                  COMPLETED:  { icon: '✅', color: '#10B981', label: 'Completed' },
+                  CANCELLED:  { icon: '✕',  color: '#EF4444', label: 'Cancelled' },
+                  IN_PROGRESS:{ icon: '🔄', color: '#8B5CF6', label: 'In Progress' },
                 };
-                const sc = statusConfig[app.status] ?? { bg: 'bg-slate-50', text: 'text-slate-700', label: app.status };
+                const sc = statusConfig[app.status] ?? { icon: '•', color: '#6B7280', label: app.status };
 
                 return (
-                  <div key={app.appointment_id} className="rounded-xl border border-slate-200 overflow-hidden">
-                    {/* Card header — time + status */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-[#FFF8F0] border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-[#D2691E] flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="white" className="w-4 h-4">
+                  <div key={app.appointment_id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+                    {/* Time + status row */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#E8650A" className="w-6 h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <span className="text-base font-bold text-[#4A3F35]">{time}</span>
+                        <span className="text-2xl font-bold text-gray-900">{time}</span>
                       </div>
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${sc.bg} ${sc.text}`}>
-                        {sc.label}
+                      <span className="text-base font-bold flex items-center gap-1.5" style={{ color: sc.color }}>
+                        {sc.icon} {sc.label}
                       </span>
                     </div>
 
-                    {/* Card body */}
-                    <div className="px-4 py-4 space-y-3 bg-white">
+                    {/* Details */}
+                    <div className="px-6 py-5 space-y-5">
                       {/* Customer */}
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm flex-shrink-0">
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-lg flex-shrink-0">
                           {customerName.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-xs text-slate-400 font-medium">Customer</p>
-                          <p className="text-sm font-bold text-slate-800">{customerName}</p>
+                          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Customer</p>
+                          <p className="text-lg font-bold text-gray-900">{customerName}</p>
                         </div>
                       </div>
 
-                      <div className="h-px bg-slate-100" />
-
-                      {/* Style */}
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#FFF8F0] flex items-center justify-center text-[#D2691E] flex-shrink-0">
-                          ✂️
-                        </div>
+                      {/* Haircut Style */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-full bg-red-50 flex items-center justify-center text-xl flex-shrink-0">✂️</div>
                         <div>
-                          <p className="text-xs text-slate-400 font-medium">Haircut Style</p>
-                          <p className="text-sm font-bold text-slate-800">{styleName}</p>
+                          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Haircut Style</p>
+                          <p className="text-lg font-bold text-gray-900">{styleName}</p>
                         </div>
                       </div>
 
                       {/* Add-ons */}
                       {addOnNames.length > 0 && (
-                        <>
-                          <div className="h-px bg-slate-100" />
-                          <div className="flex items-start gap-3">
-                            <div className="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 flex-shrink-0 mt-0.5">
-                              ➕
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-400 font-medium mb-1">Add-on Services</p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {addOnNames.map((name, i) => (
-                                  <span key={i} className="text-xs bg-purple-50 text-purple-700 font-semibold px-2.5 py-1 rounded-full border border-purple-100">
-                                    {name}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
+                        <div className="flex items-start gap-4">
+                          <div className="w-11 h-11 rounded-full bg-purple-50 flex items-center justify-center text-xl flex-shrink-0">➕</div>
+                          <div>
+                            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Add-on Services</p>
+                            <p className="text-base font-semibold text-purple-600">{addOnNames.join(', ')}</p>
                           </div>
-                        </>
+                        </div>
                       )}
 
-                      <div className="h-px bg-slate-100" />
-
                       {/* Total + Payment */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
-                            💰
-                          </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-4">
+                          <div className="w-11 h-11 rounded-full bg-yellow-50 flex items-center justify-center text-xl flex-shrink-0">💰</div>
                           <div>
-                            <p className="text-xs text-slate-400 font-medium">Total</p>
-                            <p className="text-base font-bold text-emerald-700">₱{Number(app.totalPrice).toLocaleString()}</p>
+                            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Total</p>
+                            <p className="text-3xl font-black text-gray-900">₱{Number(app.totalPrice).toLocaleString()}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-slate-400 font-medium">Payment</p>
-                          <p className="text-sm font-bold text-slate-700">
+                          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Payment Method</p>
+                          <p className="text-lg font-bold text-gray-700">
                             {app.paymentMethod === 'DIGITAL_WALLET' ? '📱 E-Cash' : '💵 Cash'}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Action buttons */}
+                    {/* Action buttons — full width, large, matching reference */}
                     {(app.status === 'PENDING' || app.status === 'CONFIRMED') && (
-                      <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex gap-2">
+                      <div className="px-6 pb-5 flex gap-3">
                         {app.status === 'PENDING' && (
                           <>
                             <button
                               onClick={() => { handleAppointmentAction(app.appointment_id, 'CONFIRMED'); setPopupDate(null); }}
-                              className="flex-1 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition"
+                              className="flex-1 py-4 rounded-xl text-white text-base font-bold transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                              style={{ background: '#22C55E' }}
                             >
                               ✔ Accept
                             </button>
                             <button
                               onClick={() => { handleAppointmentAction(app.appointment_id, 'CANCELLED'); setPopupDate(null); }}
-                              className="flex-1 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition"
+                              className="flex-1 py-4 rounded-xl text-white text-base font-bold transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                              style={{ background: '#EF4444' }}
                             >
                               ✕ Decline
                             </button>
@@ -585,7 +577,8 @@ const SchedulePanel: React.FC = () => {
                         {app.status === 'CONFIRMED' && (
                           <button
                             onClick={() => { handleAppointmentAction(app.appointment_id, 'COMPLETED'); setPopupDate(null); }}
-                            className="flex-1 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition"
+                            className="flex-1 py-4 rounded-xl text-white text-base font-bold transition-all hover:opacity-90 active:scale-95"
+                            style={{ background: '#3B82F6' }}
                           >
                             ✅ Mark Completed
                           </button>
@@ -597,11 +590,11 @@ const SchedulePanel: React.FC = () => {
               })}
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50">
+            {/* Close button */}
+            <div className="px-8 pb-7">
               <button
                 onClick={() => setPopupDate(null)}
-                className="w-full py-2.5 rounded-xl bg-[#D2691E] hover:bg-[#8B4513] text-white font-semibold text-sm transition"
+                className="w-full py-4 rounded-xl border-2 border-gray-200 text-gray-700 font-bold text-base hover:bg-gray-50 transition"
               >
                 Close
               </button>
@@ -612,7 +605,7 @@ const SchedulePanel: React.FC = () => {
 
       <style>{`
         @keyframes modalIn {
-          from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+          from { opacity: 0; transform: translateY(-16px) scale(0.96); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
