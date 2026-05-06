@@ -70,5 +70,23 @@ export const appointmentService = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to complete appointment');
     }
+  },
+
+  cancelAppointment: async (appointmentId: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<{ success: boolean; data: Appointment; error: string | null }>(`/appointments/${appointmentId}/cancel`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to cancel appointment');
+    }
+  },
+
+  markNoShow: async (appointmentId: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<{ success: boolean; data: Appointment; error: string | null }>(`/appointments/${appointmentId}/no-show`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to mark no-show');
+    }
   }
 };

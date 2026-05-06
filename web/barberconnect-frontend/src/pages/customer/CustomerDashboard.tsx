@@ -43,6 +43,11 @@ const CustomerDashboard: React.FC = () => {
   const [posts,        setPosts]        = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [likedPosts,   setLikedPosts]   = useState<Set<string>>(new Set());
+  // Per-post comment state
+  const [openComments,    setOpenComments]    = useState<Record<string, boolean>>({});
+  const [postComments,    setPostComments]    = useState<Record<string, any[]>>({});
+  const [commentInput,    setCommentInput]    = useState<Record<string, string>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
 
   const [feedbackOpen,   setFeedbackOpen]   = useState(false);
   const [fbApptId,       setFbApptId]       = useState('');
@@ -118,12 +123,51 @@ const CustomerDashboard: React.FC = () => {
     finally { setLoading(false); }
   };
 
-  const toggleLike = (postId: string) => {
+  const toggleLike = async (postId: string) => {
+    if (!user?.firebaseUid) return;
+    // Optimistic update
     setLikedPosts(prev => {
       const next = new Set(prev);
       next.has(postId) ? next.delete(postId) : next.add(postId);
       return next;
     });
+    setPosts(prev => prev.map(p =>
+      p.post_id === postId
+        ? { ...p, likesCount: likedPosts.has(postId) ? (p.likesCount ?? 1) - 1 : (p.likesCount ?? 0) + 1 }
+        : p
+    ));
+    try {
+      await postService.addReaction(postId, user.firebaseUid, 'LIKE');
+    } catch { /* silent — optimistic already applied */ }
+  };
+
+  const toggleComments = async (postId: string) => {
+    const isOpen = !!openComments[postId];
+    setOpenComments(prev => ({ ...prev, [postId]: !isOpen }));
+    if (!isOpen && !postComments[postId]) {
+      setLoadingComments(prev => ({ ...prev, [postId]: true }));
+      try {
+        const data = await postService.getComments(postId);
+        setPostComments(prev => ({ ...prev, [postId]: data }));
+      } catch { /* silent */ }
+      finally { setLoadingComments(prev => ({ ...prev, [postId]: false })); }
+    }
+  };
+
+  const handleAddComment = async (postId: string) => {
+    if (!user?.firebaseUid) return;
+    const content = (commentInput[postId] ?? '').trim();
+    if (!content) return;
+    try {
+      const added = await postService.addComment(postId, user.firebaseUid, content);
+      setPostComments(prev => ({ ...prev, [postId]: [...(prev[postId] ?? []), added] }));
+      setCommentInput(prev => ({ ...prev, [postId]: '' }));
+      setPosts(prev => prev.map(p =>
+        p.post_id === postId ? { ...p, commentsCount: (p.commentsCount ?? 0) + 1 } : p
+      ));
+    } catch (err: any) {
+      alert('Failed to add comment: ' + (err.message || 'Unknown error'));
+    }
   };
 
   const openFeedback = (apptId: string, barberId: string) => {
@@ -243,11 +287,56 @@ const CustomerDashboard: React.FC = () => {
                         <IconHeart filled={liked} />
                         {(post.likesCount ?? 0) + (liked ? 1 : 0)}
                       </button>
-                      <button className="cd-action-btn">
+                      <button
+                        className="cd-action-btn"
+                        onClick={() => toggleComments(post.post_id)}
+                      >
                         <IconComment />
                         {post.commentsCount ?? 0}
                       </button>
                     </div>
+
+                    {/* Comments section */}
+                    {openComments[post.post_id] && (
+                      <div style={{ padding: '0 16px 14px', borderTop: '1px solid #F9FAFB' }}>
+                        {loadingComments[post.post_id] && (
+                          <p style={{ fontSize: 12, color: '#9CA3AF', padding: '8px 0' }}>Loading comments…</p>
+                        )}
+                        {(postComments[post.post_id] ?? []).map((c: any) => (
+                          <div key={c.comment_id} style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#6B7280', flexShrink: 0 }}>
+                              {(c.user_id ?? 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ background: '#F9FAFB', borderRadius: 10, padding: '7px 12px', flex: 1 }}>
+                              <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>{c.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Add comment input */}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFF7ED', border: '1.5px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#F97316', flexShrink: 0 }}>
+                            {(user?.firstName ?? 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+                            <input
+                              type="text"
+                              value={commentInput[post.post_id] ?? ''}
+                              onChange={e => setCommentInput(prev => ({ ...prev, [post.post_id]: e.target.value }))}
+                              onKeyDown={e => e.key === 'Enter' && handleAddComment(post.post_id)}
+                              placeholder="Write a comment…"
+                              style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 20, padding: '6px 14px', fontSize: 13, outline: 'none', fontFamily: 'inherit' }}
+                            />
+                            <button
+                              onClick={() => handleAddComment(post.post_id)}
+                              disabled={!(commentInput[post.post_id] ?? '').trim()}
+                              style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: (commentInput[post.post_id] ?? '').trim() ? 1 : 0.5, transition: 'opacity .15s' }}
+                            >
+                              Post
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })

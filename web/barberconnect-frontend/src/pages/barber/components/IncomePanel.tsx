@@ -153,9 +153,11 @@ const IncomePanel: React.FC = () => {
   const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const thisMonthRecs = incomeRecords.filter(r => { const d = new Date(r.recordedAt); return d.getMonth() === cm && d.getFullYear() === cy; });
-  const gross  = thisMonthRecs.reduce((s, r) => s + r.amount, 0);
-  const net    = thisMonthRecs.reduce((s, r) => s + r.netAmount, 0);
-  const fee    = thisMonthRecs.reduce((s, r) => s + r.platformFee, 0);
+  // Handle both `amount` and `grossAmount` field names from different backend versions
+  const getGross = (r: IncomeRecord) => r.amount ?? r.grossAmount ?? 0;
+  const gross  = thisMonthRecs.reduce((s, r) => s + getGross(r), 0);
+  const net    = thisMonthRecs.reduce((s, r) => s + (r.netAmount ?? 0), 0);
+  const fee    = thisMonthRecs.reduce((s, r) => s + (r.platformFee ?? 0), 0);
   const appts  = appointments.filter(a => { const d = new Date(a.appointmentDateTime); return d.getMonth() === cm && d.getFullYear() === cy; });
   const avg    = appts.length > 0 ? gross / appts.length : 0;
   const monthName = now.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -166,7 +168,7 @@ const IncomePanel: React.FC = () => {
     const label = d.toLocaleString('default', { month: 'short' });
     const n = incomeRecords
       .filter(r => { const rd = new Date(r.recordedAt); return rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear(); })
-      .reduce((s, r) => s + r.netAmount, 0);
+      .reduce((s, r) => s + (r.netAmount ?? 0), 0);
     return { label, net: n };
   });
   const maxNet = Math.max(...last6.map(m => m.net), 1);
@@ -291,7 +293,7 @@ const IncomePanel: React.FC = () => {
             recentRecords.map((r, idx) => {
               const d = new Date(r.recordedAt);
               return (
-                <div key={r.income_record_id ?? r.appointment_id} style={{
+                <div key={r.income_record_id ?? r.appointment_id ?? idx} style={{
                   display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px',
                   padding: '14px 1.5rem', alignItems: 'center',
                   borderBottom: idx < recentRecords.length - 1 ? '1px solid #F9FAFB' : 'none',

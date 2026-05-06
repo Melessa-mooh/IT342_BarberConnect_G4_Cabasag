@@ -704,7 +704,12 @@ const SchedulePanel: React.FC = () => {
       {/* ── Appointments Tab ─────────────────────────────────────────────────── */}
       {activeTab === 'appointments' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-          <h3 className="text-xl font-bold text-slate-800 mb-6">Your Appointments</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-slate-800">Your Appointments</h3>
+            <span className="text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full font-semibold">
+              {appointments.filter(a => a.status !== 'CANCELLED').length} active
+            </span>
+          </div>
           
           {loadingAppointments && <p className="text-slate-500 text-sm">Loading appointments...</p>}
           
@@ -712,40 +717,87 @@ const SchedulePanel: React.FC = () => {
             <p className="text-slate-500 text-center py-6">No appointments found.</p>
           )}
 
-          <div className="flex flex-col gap-4">
-            {appointments.map(app => (
-              <div key={app.appointment_id} className="border border-slate-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h4 className="font-bold text-slate-800">
-                    {new Date(app.appointmentDateTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {new Date(app.appointmentDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                  </h4>
-                  <p className="text-sm text-slate-600 mt-1">
-                    Price: ₱{app.totalPrice} • Payment: {app.paymentMethod}
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${app.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : app.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
-                    {app.status}
-                  </span>
-                  
-                  {app.status === 'PENDING' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleAppointmentAction(app.appointment_id, 'CONFIRMED')} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                        Accept
-                      </button>
-                      <button onClick={() => handleAppointmentAction(app.appointment_id, 'CANCELLED')} className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                        Decline
-                      </button>
+          <div className="flex flex-col gap-3">
+            {appointments.map(app => {
+              const d = new Date(app.appointmentDateTime);
+              const isToday = d.toDateString() === new Date().toDateString();
+              const customerName = customerNames[app.customer_id] || `Customer ···${app.customer_id.slice(-4)}`;
+              const styleName    = styleNames[app.haircut_style_id] || `Style ···${app.haircut_style_id.slice(-4)}`;
+
+              const statusColors: Record<string, string> = {
+                COMPLETED:   'bg-emerald-100 text-emerald-700',
+                CONFIRMED:   'bg-blue-100 text-blue-700',
+                PENDING:     'bg-amber-100 text-amber-700',
+                CANCELLED:   'bg-red-100 text-red-600',
+                NO_SHOW:     'bg-gray-100 text-gray-600',
+                IN_PROGRESS: 'bg-purple-100 text-purple-700',
+              };
+
+              return (
+                <div key={app.appointment_id} className="border border-slate-200 rounded-xl p-4 hover:border-slate-300 transition-all">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    {/* Left: info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-800 text-sm">{customerName}</span>
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${statusColors[app.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {app.status}
+                        </span>
+                        {isToday && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">Today</span>}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {styleName} · ₱{app.totalPrice} · {app.paymentMethod === 'DIGITAL_WALLET' ? 'E-Cash' : app.paymentMethod ?? 'Cash'}
+                      </p>
                     </div>
-                  )}
-                  {app.status === 'CONFIRMED' && (
-                    <button onClick={() => handleAppointmentAction(app.appointment_id, 'COMPLETED')} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-                      Mark Completed
-                    </button>
-                  )}
+
+                    {/* Right: action buttons */}
+                    <div className="flex flex-wrap gap-2 flex-shrink-0">
+                      {app.status === 'PENDING' && (
+                        <>
+                          <button
+                            onClick={() => handleAppointmentAction(app.appointment_id, 'CONFIRMED')}
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                          >
+                            ✔ Accept
+                          </button>
+                          <button
+                            onClick={() => handleAppointmentAction(app.appointment_id, 'CANCELLED')}
+                            className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                          >
+                            ✕ Decline
+                          </button>
+                        </>
+                      )}
+                      {app.status === 'CONFIRMED' && (
+                        <>
+                          <button
+                            onClick={() => handleAppointmentAction(app.appointment_id, 'COMPLETED')}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                          >
+                            ✅ Complete
+                          </button>
+                          <button
+                            onClick={() => handleAppointmentAction(app.appointment_id, 'NO_SHOW')}
+                            className="bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                          >
+                            No-Show
+                          </button>
+                          <button
+                            onClick={() => handleAppointmentAction(app.appointment_id, 'CANCELLED')}
+                            className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

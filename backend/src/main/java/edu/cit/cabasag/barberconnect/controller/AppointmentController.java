@@ -73,4 +73,24 @@ public class AppointmentController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PutMapping("/{appointmentId}/cancel")
+    public ResponseEntity<ApiResponse<Appointment>> cancelAppointment(@PathVariable String appointmentId) {
+        try {
+            Appointment updated = appointmentService.updateAppointmentStatus(appointmentId, "CANCELLED");
+            return ResponseEntity.ok(ApiResponse.success(updated));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{appointmentId}/no-show")
+    public ResponseEntity<ApiResponse<Appointment>> markNoShow(@PathVariable String appointmentId) {
+        try {
+            Appointment updated = appointmentService.updateAppointmentStatus(appointmentId, "NO_SHOW");
+            return ResponseEntity.ok(ApiResponse.success(updated));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

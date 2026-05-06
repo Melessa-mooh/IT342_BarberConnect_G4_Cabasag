@@ -63,12 +63,17 @@ export interface AttendanceRecord {
 }
 
 export interface IncomeRecord {
-  incomeRecordId: string;
-  appointmentId: string;
-  barberProfileId: string;
+  income_record_id?: string;
+  incomeRecordId?: string;
+  appointmentId?: string;
+  appointment_id?: string;
+  barberProfileId?: string;
+  barber_profile_id?: string;
   amount: number;
+  grossAmount?: number;   // alias — some records use this field name
   platformFee: number;
   netAmount: number;
+  paymentMethod?: string;
   recordedAt: string;
 }
 
