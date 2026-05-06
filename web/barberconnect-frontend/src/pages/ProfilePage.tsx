@@ -1,12 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 import { formatPhoneNumber, validatePhilippinePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import './ProfilePage.css';
+// Reuse the customer dashboard navbar styles
+import './customer/CustomerDashboard.css';
 
 const ProfilePage: React.FC = () => {
   const { user, logout, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -25,6 +28,7 @@ const ProfilePage: React.FC = () => {
   const handleLogout = async () => {
     try {
       logout();
+      navigate('/login');
     } catch (err) {
       console.error('Logout failed:', err);
     }
@@ -175,31 +179,54 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="profile-page">
-      {/* Navigation Header */}
-      <header className="dashboard-header">
-        <div className="header-content">
-          <div className="logo">
-            <span className="logo-icon">✂</span>
-            <span className="logo-text">BarberConnect</span>
+      {/* ── Unified Navbar (same as CustomerDashboard) ── */}
+      <nav className="cd-nav">
+        <div className="cd-nav-inner">
+          <Link to="/dashboard" className="cd-logo">
+            <div className="cd-logo-icon">✂</div>
+            <span className="cd-logo-text">BarberConnect</span>
+          </Link>
+
+          <div className="cd-search">
+            <span className="cd-search-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 16, height: 16 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </span>
+            <input type="text" placeholder="Search barbers or styles…" />
           </div>
-          <nav className="header-nav">
-            <Link to="/dashboard" className="nav-btn">🏠 Dashboard</Link>
+
+          <div className="cd-nav-links">
+            <Link to="/dashboard" className="cd-nav-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 18, height: 18 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+              <span>Dashboard</span>
+            </Link>
             {user?.role === 'CUSTOMER' && (
-              <Link to="/booking" className="nav-btn">📅 My Bookings</Link>
+              <Link to="/booking" className="cd-nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 18, height: 18 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                <span>Bookings</span>
+              </Link>
             )}
-            {user?.role === 'BARBER' && (
-              <>
-                <button className="nav-btn">📅 Appointments</button>
-                <button className="nav-btn">💰 Income</button>
-              </>
-            )}
-            <Link to="/profile" className="nav-btn active">👤 Profile</Link>
-            <button className="nav-btn logout-btn" onClick={handleLogout}>
-              🚪 Logout
+            <Link to="/profile" className="cd-nav-link active">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 18, height: 18 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              <span>Profile</span>
+            </Link>
+            <div className="cd-nav-divider" />
+            <button className="cd-logout-btn" onClick={handleLogout}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 15, height: 15 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+              Sign out
             </button>
-          </nav>
+          </div>
         </div>
-      </header>
+      </nav>
 
       <div className="profile-container">
         <div className="profile-header">

@@ -38,7 +38,7 @@ const BookingPage: React.FC = () => {
 
   const [selectedBarber] = useState(() => {
     if (location.state?.selectedBarber) return location.state.selectedBarber;
-    return { id: '1', name: 'Marcus Johnson', specialties: 'Fade, Beard Trim, Classic Cut', experience: '5 years experience' };
+    return null; // No fake fallback — prevents 400 errors on /barbers/public/1
   });
 
   const [selectedStyle,       setSelectedStyle]       = useState<HaircutStyle | null>(null);
@@ -139,6 +139,21 @@ const BookingPage: React.FC = () => {
   }, [selectedBarber, selectedDate]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  // Guard: if no barber was passed, redirect back to dashboard
+  if (!selectedBarber) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F5F7FB', gap: 16 }}>
+        <p style={{ fontSize: 16, color: '#6B7280' }}>No barber selected. Please choose a barber first.</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   const timeSlots = [
     '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',

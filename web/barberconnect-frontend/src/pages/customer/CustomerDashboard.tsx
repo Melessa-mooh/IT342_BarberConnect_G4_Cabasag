@@ -63,6 +63,7 @@ const CustomerDashboard: React.FC = () => {
   const [calendarError,        setCalendarError]        = useState<string | null>(null);
   const [loading,              setLoading]              = useState(true);
   const [addOnMap,             setAddOnMap]             = useState<Record<string, string>>({});
+  const [searchQuery,          setSearchQuery]          = useState('');
 
   const [posts,        setPosts]        = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -171,6 +172,16 @@ const CustomerDashboard: React.FC = () => {
 
   const isIncomplete = !user?.phoneNumber || user.phoneNumber.trim() === '';
 
+  // Filter barbers by search query (name or bio)
+  const filteredBarbers = searchQuery.trim()
+    ? barbers.filter(b => {
+        const name = `${b.firstName ?? ''} ${b.lastName ?? ''}`.toLowerCase();
+        const bio  = (b.bio ?? '').toLowerCase();
+        const q    = searchQuery.toLowerCase();
+        return name.includes(q) || bio.includes(q);
+      })
+    : barbers;
+
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="cd-loading">
@@ -195,7 +206,12 @@ const CustomerDashboard: React.FC = () => {
           {/* Search */}
           <div className="cd-search">
             <span className="cd-search-icon"><IconSearch /></span>
-            <input type="text" placeholder="Search barbers or styles…" />
+            <input
+              type="text"
+              placeholder="Search barbers or styles…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
           </div>
 
           {/* Nav links */}
@@ -310,13 +326,17 @@ const CustomerDashboard: React.FC = () => {
           <div className="cd-section">
             <div className="cd-section-header">
               <p className="cd-section-title">Available Barbers</p>
-              <span className="cd-section-sub">{barbers.length} online</span>
+              <span className="cd-section-sub">
+                {searchQuery ? `${filteredBarbers.length} result${filteredBarbers.length !== 1 ? 's' : ''}` : `${barbers.length} online`}
+              </span>
             </div>
             <div className="cd-barber-list">
-              {barbers.length === 0 ? (
-                <p className="cd-no-barbers">No barbers available right now.</p>
+              {filteredBarbers.length === 0 ? (
+                <p className="cd-no-barbers">
+                  {searchQuery ? `No barbers found for "${searchQuery}"` : 'No barbers available right now.'}
+                </p>
               ) : (
-                barbers.map(barber => {
+                filteredBarbers.map(barber => {
                   const name = `${barber.firstName ?? ''} ${barber.lastName ?? ''}`.trim() || 'Barber';
                   const initial = name.charAt(0).toUpperCase();
                   return (
