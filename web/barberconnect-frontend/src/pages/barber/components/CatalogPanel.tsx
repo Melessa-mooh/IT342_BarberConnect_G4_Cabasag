@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { haircutStyleService, type HaircutStyle } from '../../../services/haircutStyleService';
+import { haircutStyleService, type HaircutStyle, type StyleOption } from '../../../services/haircutStyleService';
+import api from '../../../services/api';
 
 // ─── Validation helpers ────────────────────────────────────────────────────────
 interface FormErrors { name?: string; basePrice?: string; }
@@ -58,6 +59,16 @@ const CatalogPanel: React.FC = () => {
   const [editDuration,    setEditDuration]    = useState('');
   const [editErrors,      setEditErrors]      = useState<FormErrors>({});
   const [editSubmitting,  setEditSubmitting]  = useState(false);
+
+  // ── Style Options modal state ─────────────────────────────────────────────────
+  const [optionsStyle,       setOptionsStyle]       = useState<HaircutStyle | null>(null);
+  const [styleOptions,       setStyleOptions]       = useState<StyleOption[]>([]);
+  const [loadingOptions,     setLoadingOptions]     = useState(false);
+  const [newOptName,         setNewOptName]         = useState('');
+  const [newOptDescription,  setNewOptDescription]  = useState('');
+  const [newOptPrice,        setNewOptPrice]        = useState('');
+  const [newOptTime,         setNewOptTime]         = useState('');
+  const [addingOption,       setAddingOption]       = useState(false);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const resetAddForm = () => {
@@ -163,6 +174,54 @@ const CatalogPanel: React.FC = () => {
     setFormErrors(validateForm(newName, newBasePrice));
   };
 
+  // ── Open style options modal ──────────────────────────────────────────────────
+  const openOptionsModal = async (style: HaircutStyle) => {
+    setOptionsStyle(style);
+    setLoadingOptions(true);
+    setStyleOptions([]);
+    try {
+      const opts = await haircutStyleService.getStyleOptionsForHaircut(style.haircut_style_id);
+      setStyleOptions(opts);
+    } catch (e) {
+      console.error('Failed to load options:', e);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
+
+  // ── Add a style option ────────────────────────────────────────────────────────
+  const handleAddOption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!optionsStyle || !newOptName.trim() || !newOptPrice) return;
+    setAddingOption(true);
+    try {
+      const res = await api.post(`/haircuts/${optionsStyle.haircut_style_id}/options`, {
+        name: newOptName.trim(),
+        description: newOptDescription.trim(),
+        additionalPrice: parseFloat(newOptPrice),
+        additionalTimeMinutes: newOptTime ? parseInt(newOptTime, 10) : 0,
+      });
+      const created: StyleOption = res.data?.data;
+      setStyleOptions(prev => [...prev, created]);
+      setNewOptName(''); setNewOptDescription(''); setNewOptPrice(''); setNewOptTime('');
+    } catch (e: any) {
+      alert(e.message || 'Failed to add option');
+    } finally {
+      setAddingOption(false);
+    }
+  };
+
+  // ── Delete a style option ─────────────────────────────────────────────────────
+  const handleDeleteOption = async (optionId: string) => {
+    if (!confirm('Remove this option?')) return;
+    try {
+      await api.delete(`/haircuts/options/${optionId}`);
+      setStyleOptions(prev => prev.filter(o => o.style_option_id !== optionId));
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete option');
+    }
+  };
+
   // ── JSX ──────────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-10">
@@ -244,6 +303,13 @@ const CatalogPanel: React.FC = () => {
                   className="flex-1 py-2.5 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
                 >
                   Edit
+                </button>
+                <button
+                  onClick={() => openOptionsModal(style)}
+                  className="flex-1 py-2.5 rounded-lg border border-[#D2691E] text-sm font-semibold text-[#D2691E] hover:bg-orange-50 transition-all"
+                  title="Manage add-on options for this style"
+                >
+                  + Options
                 </button>
                 <button
                   onClick={async () => {
@@ -515,6 +581,109 @@ const CatalogPanel: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Style Options Modal ───────────────────────────────────────────────── */}
+      {optionsStyle && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setOptionsStyle(null); }}
+        >
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ animation: 'modalIn 0.2s ease-out' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">Add-on Options</h3>
+                <p className="text-xs text-slate-400 mt-0.5">For: <span className="font-semibold text-slate-600">{optionsStyle.name}</span></p>
+              </div>
+              <button onClick={() => setOptionsStyle(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 text-lg">✕</button>
+            </div>
+
+            <div className="px-6 py-4 max-h-[60vh] overflow-y-auto space-y-4">
+              {/* Existing options */}
+              {loadingOptions ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading options...</p>
+              ) : styleOptions.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">No add-on options yet. Add one below.</p>
+              ) : (
+                <div className="space-y-2">
+                  {styleOptions.map(opt => (
+                    <div key={opt.style_option_id} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{opt.name}</p>
+                        {opt.description && <p className="text-xs text-slate-500">{opt.description}</p>}
+                        <p className="text-xs text-[#D2691E] font-bold mt-0.5">+₱{opt.additionalPrice} · +{opt.additionalTimeMinutes}min</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteOption(opt.style_option_id)}
+                        className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center text-sm transition-all"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new option form */}
+              <form onSubmit={handleAddOption} className="border-t border-slate-100 pt-4 space-y-3">
+                <p className="text-sm font-bold text-slate-700">Add New Option</p>
+                <input
+                  type="text"
+                  value={newOptName}
+                  onChange={e => setNewOptName(e.target.value)}
+                  placeholder="Option name (e.g. Beard Trim)"
+                  required
+                  className={inputCls()}
+                />
+                <input
+                  type="text"
+                  value={newOptDescription}
+                  onChange={e => setNewOptDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className={inputCls()}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Additional Price (₱)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newOptPrice}
+                      onChange={e => setNewOptPrice(e.target.value)}
+                      placeholder="50.00"
+                      required
+                      className={inputCls()}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Extra Time (min)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newOptTime}
+                      onChange={e => setNewOptTime(e.target.value)}
+                      placeholder="15"
+                      className={inputCls()}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={addingOption || !newOptName.trim() || !newOptPrice}
+                  className="w-full py-2.5 rounded-lg bg-[#D2691E] hover:bg-[#8B4513] text-white text-sm font-semibold disabled:opacity-50 transition-all"
+                >
+                  {addingOption ? 'Adding...' : '+ Add Option'}
+                </button>
+              </form>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50">
+              <button onClick={() => setOptionsStyle(null)} className="w-full py-2.5 rounded-xl border border-slate-300 bg-white font-semibold text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

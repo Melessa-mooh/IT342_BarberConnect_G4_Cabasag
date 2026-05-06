@@ -12,6 +12,16 @@ export interface HaircutStyle {
   isActive: boolean;
 }
 
+export interface StyleOption {
+  style_option_id: string;
+  haircut_style_id: string;
+  name: string;
+  description: string;
+  additionalPrice: number;
+  additionalTimeMinutes: number;
+  isActive: boolean;
+}
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
 
 /** Surface the actual backend error message instead of a generic string */
@@ -38,6 +48,22 @@ export const haircutStyleService = {
     } catch (error: any) {
       const msg = extractError(error, 'Failed to fetch haircut styles');
       console.error('[haircutStyleService] getHaircutStylesForBarber error:', msg, error);
+      throw new Error(msg);
+    }
+  },
+
+  /** GET /haircuts/:haircutStyleId/options - Fetch style options for a specific haircut */
+  getStyleOptionsForHaircut: async (haircutStyleId: string): Promise<StyleOption[]> => {
+    console.log('[haircutStyleService] GET /haircuts/' + haircutStyleId + '/options');
+    try {
+      const response = await api.get<{ success: boolean; data: StyleOption[] }>(
+        `/haircuts/${haircutStyleId}/options`
+      );
+      if (!response.data.success) throw new Error('Server returned success=false');
+      return response.data.data ?? [];
+    } catch (error: any) {
+      const msg = extractError(error, 'Failed to fetch style options');
+      console.error('[haircutStyleService] getStyleOptionsForHaircut error:', msg, error);
       throw new Error(msg);
     }
   },

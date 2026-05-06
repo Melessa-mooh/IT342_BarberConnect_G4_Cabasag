@@ -90,7 +90,10 @@ public class UserService {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
             
-            if (user.getCreatedAt() == null) {
+            // Check if this is a new user (no createdAt yet)
+            boolean isNewUser = (user.getCreatedAt() == null);
+
+            if (isNewUser) {
                 user.setCreatedAt(new Date());
             }
             user.setUpdatedAt(new Date());
@@ -101,6 +104,16 @@ public class UserService {
                     .document(Objects.requireNonNull(user.getUser_id()))
                     .set(Objects.requireNonNull(userData))
                     .get();
+
+            // Seed default haircut styles for new barbers
+            // We look up the barber_profile UUID (not Firebase UID) since haircut_styles
+            // are keyed by barber_profile_id (UUID), not the Firebase UID.
+            if (isNewUser && user.getRole() == User.UserRole.BARBER) {
+                log.info("New barber registered: {}. Will seed default haircut styles on first catalog fetch.", user.getUser_id());
+                // Note: seeding happens lazily in getHaircutStylesForBarber() when the
+                // barber_profile UUID is available. This avoids a timing issue where the
+                // barber_profiles document may not exist yet at registration time.
+            }
             
             return user;
         } catch (InterruptedException | ExecutionException e) {

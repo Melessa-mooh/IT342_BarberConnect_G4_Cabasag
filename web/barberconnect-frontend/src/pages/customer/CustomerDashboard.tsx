@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { barberService } from '../../services/barberService';
 import type { Barber } from '../../services/barberService';
@@ -7,17 +7,20 @@ import { appointmentService } from '../../services/appointmentService';
 import { feedbackService } from '../../services/barberFeatureService';
 import { postService } from '../../services/barberFeatureService';
 import type { Post } from '../../services/barberFeatureService';
+import api from '../../services/api';
 import CalendarWidget from '../../components/CalendarWidget/CalendarWidget';
 import './CustomerDashboard.css';
 
 const CustomerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [calendarAppointments, setCalendarAppointments] = useState<any[]>([]);
-  // FIX: Add calendar error state
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Map of add-on id → name for display in calendar popup
+  const [addOnMap, setAddOnMap] = useState<Record<string, string>>({});
 
   // Posts State
   const [posts, setPosts] = useState<Post[]>([]);
@@ -34,6 +37,7 @@ const CustomerDashboard: React.FC = () => {
   useEffect(() => {
     fetchBarbers();
     fetchPosts();
+    fetchAddOnMap();
   }, []);
 
   const fetchPosts = async () => {
@@ -48,18 +52,52 @@ const CustomerDashboard: React.FC = () => {
     }
   };
 
+  // Build a flat id→name map from the global add-ons endpoint
+  const fetchAddOnMap = async () => {
+    try {
+      const res = await api.get('/addons');
+      const cats: any[] = res.data?.data ?? [];
+      const map: Record<string, string> = {};
+      cats.forEach((cat: any) => {
+        (cat.items ?? []).forEach((item: any) => {
+          map[item.id] = item.name;
+        });
+      });
+      setAddOnMap(map);
+    } catch (e) {
+      console.error('Failed to fetch add-on map:', e);
+    }
+  };
+
+  // Re-fetch appointments on mount AND whenever navigating back from booking
   useEffect(() => {
     if (user?.firebaseUid) {
       fetchAppointments();
     }
-  }, [user]);
+  // location.state changes when navigating back from BookingPage with refreshCalendar:true
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, location.state]);
 
   const fetchAppointments = async () => {
     try {
       setCalendarError(null);
       const data = await appointmentService.getCustomerAppointments(user!.firebaseUid);
-      // FIX: Add array guard
       const safeData = Array.isArray(data) ? data : [];
+
+      // Fetch barber names for each unique barber_profile_id
+      const uniqueBarberIds = [...new Set(safeData.map(a => a.barber_profile_id).filter(Boolean))];
+      const barberNameMap: Record<string, string> = {};
+      await Promise.all(
+        uniqueBarberIds.map(async (bid) => {
+          try {
+            const b = await barberService.getBarberById(bid);
+            barberNameMap[bid] = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim() || 'Barber';
+          } catch {
+            barberNameMap[bid] = 'Barber';
+          }
+        })
+      );
+
       const formatted = safeData.map(app => {
         const d = new Date(app.appointmentDateTime);
         return {
@@ -68,16 +106,18 @@ const CustomerDashboard: React.FC = () => {
           fullDateText: d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
           time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           barberId: app.barber_profile_id,
+          barberName: barberNameMap[app.barber_profile_id] || 'Barber',
           haircutId: app.haircut_style_id,
+          haircutName: 'Haircut',
+          addOnNames: (app.selectedOptionIds ?? []).map((id: string) => addOnMap[id] || id).filter(Boolean),
           totalPrice: app.totalPrice,
           paymentMethod: app.paymentMethod,
-          status: app.status
+          status: app.status,
         };
       });
       setCalendarAppointments(formatted);
     } catch (err: any) {
       console.error('Failed to fetch appointments:', err);
-      // FIX: Set error state instead of blocking alert
       setCalendarError('Failed to load your appointments. Please refresh.');
     }
   };
@@ -271,7 +311,11 @@ const CustomerDashboard: React.FC = () => {
                   barbers.map((barber) => (
                     <div key={barber.id} className="barber-card">
                       <div className="barber-avatar">
-                        <img src="/api/placeholder/60/60" alt="Barber" />
+                        <img 
+                          src={barber.profileImageUrl || '/api/placeholder/60/60'} 
+                          alt={`${barber.firstName ?? ''} ${barber.lastName ?? ''}`.trim() || 'Barber'}
+                          onError={(e) => { (e.target as HTMLImageElement).src = '/api/placeholder/60/60'; }}
+                        />
                       </div>
                       <div className="barber-info">
                         <h4>
@@ -292,9 +336,10 @@ const CustomerDashboard: React.FC = () => {
                         state={{ 
                           selectedBarber: {
                             id: barber.id,
-                            name: 'Professional Barber', // Names aren't in Barber model currently
+                            name: `${barber.firstName ?? ''} ${barber.lastName ?? ''}`.trim() || 'Barber',
                             specialties: barber.bio || 'General Haircuts',
-                            experience: `${barber.yearsExperience} years exp.`
+                            experience: `${barber.yearsExperience} years exp.`,
+                            profileImageUrl: barber.profileImageUrl || null,
                           }
                         }}
                         className="book-btn"
@@ -322,22 +367,7 @@ const CustomerDashboard: React.FC = () => {
                 )}
                 <CalendarWidget 
                   isBarberView={false} 
-                  appointments={calendarAppointments.map(app => {
-                    let barberName = 'Barber';
-
-                    let haircutName = 'Haircut';
-                    if (app.haircutId == 1) haircutName = 'Classic Fade';
-                    else if (app.haircutId == 2) haircutName = 'Modern Pompadour';
-                    else if (app.haircutId == 3) haircutName = 'Buzz Cut';
-                    else if (app.haircutId == 4) haircutName = 'Textured Crop';
-                    else if (app.haircutId == 5) haircutName = 'Beard Trim & Line Up';
-
-                    return {
-                      ...app,
-                      barberName,
-                      haircutName
-                    };
-                  })}
+                  appointments={calendarAppointments}
                   onLeaveFeedback={handleLeaveFeedback}
                 />
               </div>

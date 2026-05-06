@@ -28,6 +28,11 @@ public class HaircutStyleService {
     private static final String HAIRCUTS_COLLECTION = "haircut_styles";
     private static final String OPTIONS_COLLECTION = "style_options";
 
+    /** Expose Firestore for controller-level single-doc lookups */
+    public com.google.cloud.firestore.Firestore getFirestore() {
+        return firebaseService.getFirestore();
+    }
+
     @SuppressWarnings("null")
     public HaircutStyle createHaircutStyle(String barberProfileId, String name, String description,
                                            java.math.BigDecimal basePrice, Integer durationMinutes,
@@ -77,17 +82,73 @@ public class HaircutStyleService {
 
             List<HaircutStyle> styles = new ArrayList<>();
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
-                HaircutStyle style = doc.toObject(HaircutStyle.class);
-                if (Boolean.TRUE.equals(style.getIsActive())) {
-                    styles.add(style);
+                try {
+                    HaircutStyle style = doc.toObject(HaircutStyle.class);
+                    if (Boolean.TRUE.equals(style.getIsActive())) {
+                        styles.add(style);
+                    }
+                } catch (Exception e) {
+                    log.warn("Skipping haircut style doc {} due to deserialization error: {}", doc.getId(), e.getMessage());
                 }
             }
+
+            // If no styles exist yet, seed the 4 defaults automatically
+            if (styles.isEmpty()) {
+                log.info("No styles found for barber {}. Seeding defaults...", barberProfileId);
+                styles = seedDefaultStyles(barberProfileId);
+            }
+
             return styles;
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch haircut styles: {}", e.getMessage());
             throw new RuntimeException("Failed to fetch haircut styles: " + e.getMessage());
         }
+    }
+
+    /**
+     * Seeds 4 default haircut styles for a new barber.
+     * Called automatically when a barber has no styles yet.
+     * NOTE: barberProfileId here is the UUID from barber_profiles collection,
+     * NOT the Firebase UID.
+     */
+    public List<HaircutStyle> seedDefaultStyles(String barberProfileId) {
+        // Define the 4 default styles matching AdminService defaults
+        record DefaultStyle(String name, String description, double price, int duration) {}
+
+        List<DefaultStyle> defaults = List.of(
+            new DefaultStyle("Classic Cut",
+                "A timeless and clean classic haircut suitable for all occasions.",
+                200.0, 30),
+            new DefaultStyle("Barber Cut",
+                "A professional barber-styled cut with precision and detail.",
+                400.0, 45),
+            new DefaultStyle("Trend Cut",
+                "A modern, on-trend cut following the latest barbering styles.",
+                500.0, 45),
+            new DefaultStyle("Premium Cut",
+                "A full premium experience with wash, cut, and styling finish.",
+                600.0, 60)
+        );
+
+        List<HaircutStyle> created = new ArrayList<>();
+        for (DefaultStyle d : defaults) {
+            try {
+                HaircutStyle style = createHaircutStyle(
+                    barberProfileId,
+                    d.name(),
+                    d.description(),
+                    java.math.BigDecimal.valueOf(d.price()),
+                    d.duration(),
+                    null  // no image file
+                );
+                created.add(style);
+                log.info("Seeded default style '{}' for barber {}", d.name(), barberProfileId);
+            } catch (Exception e) {
+                log.warn("Failed to seed style '{}' for barber {}: {}", d.name(), barberProfileId, e.getMessage());
+            }
+        }
+        return created;
     }
 
     @SuppressWarnings("null")

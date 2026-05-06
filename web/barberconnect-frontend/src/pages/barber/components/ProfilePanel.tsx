@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { barberService } from '../../../services/barberService';
+import api from '../../../services/api';
 
 const ProfilePanel = () => {
   const { user, refreshUser } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     phone: '',
@@ -15,7 +19,6 @@ const ProfilePanel = () => {
     email: ''
   });
 
-  // Pre-fill the form with real authenticated user data from Context
   useEffect(() => {
     if (user) {
       setFormData({
@@ -25,6 +28,7 @@ const ProfilePanel = () => {
         gcash: user.barberProfile?.gcashNumber || '',
         email: user.email || ''
       });
+      setPreviewUrl(user.barberProfile?.profileImageUrl || null);
     }
   }, [user]);
 
@@ -32,13 +36,38 @@ const ProfilePanel = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Show local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    setPreviewUrl(localUrl);
+
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post(`/barbers/${user.firebaseUid}/profile-picture`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const uploadedUrl: string = res.data?.data;
+      setPreviewUrl(uploadedUrl);
+      await refreshUser();
+    } catch (err: any) {
+      console.error('Photo upload failed:', err);
+      alert('Failed to upload photo: ' + (err?.response?.data?.error || err?.message || 'Unknown error'));
+      setPreviewUrl(user.barberProfile?.profileImageUrl || null);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
     setIsSaving(true);
     setSaveSuccess(false);
-
     try {
       await barberService.updateProfile(user.firebaseUid, {
         phone: formData.phone,
@@ -46,15 +75,11 @@ const ProfilePanel = () => {
         experience: parseInt(formData.experience) || 0,
         gcash: formData.gcash
       });
-
-      // Refresh the AuthContext so stale user data doesn't re-populate the form
       await refreshUser();
-
       setSaveSuccess(true);
-      // Hide success message after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error: any) {
-      console.error("Failed to save profile", error);
+      console.error('Failed to save profile', error);
       const message = error?.response?.data?.error || error?.message || 'Unknown error';
       alert(`Failed to save profile: ${message}. Please check your connection and try again.`);
     } finally {
@@ -69,13 +94,42 @@ const ProfilePanel = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
         {/* Profile Photo Upload */}
         <div className="flex items-center gap-6 mb-8 border-b border-gray-100 pb-8">
-          <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md flex items-center justify-center text-4xl text-gray-400">
-            👤
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md overflow-hidden flex items-center justify-center">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={() => setPreviewUrl(null)}
+                />
+              ) : (
+                <span className="text-4xl text-gray-400">👤</span>
+              )}
+            </div>
+            {uploadingPhoto && (
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Profile Photo</h3>
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
-              Upload New Photo (Cloudinary)
+            <h3 className="text-lg font-bold text-gray-800 mb-1">Profile Photo</h3>
+            <p className="text-sm text-gray-500 mb-3">This photo will be shown to customers when they book</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="bg-[#D2691E] hover:bg-[#8B4513] disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+            >
+              {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
             </button>
           </div>
         </div>

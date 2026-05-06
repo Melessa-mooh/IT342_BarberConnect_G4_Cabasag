@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { leaveService, type LeaveRequest } from '../../../services/barberFeatureService';
 import { appointmentService, type Appointment } from '../../../services/appointmentService';
+import api from '../../../services/api';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING:  'bg-amber-100 text-amber-700 border-amber-200',
@@ -31,6 +32,12 @@ const SchedulePanel: React.FC = () => {
 
   const [appointments, setAppointments]     = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  // Popup state for clicked date
+  const [popupDate, setPopupDate] = useState<Date | null>(null);
+  // Name resolution caches
+  const [customerNames, setCustomerNames]   = useState<Record<string, string>>({});
+  const [styleNames,    setStyleNames]      = useState<Record<string, string>>({});
+  const [addOnMap,      setAddOnMap]        = useState<Record<string, string>>({});
   
   const days  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
@@ -77,7 +84,24 @@ const SchedulePanel: React.FC = () => {
   
   // Handle date selection
   const handleDateClick = (day: number) => {
-    setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+    const clicked = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    setSelectedDate(clicked);
+    // Open popup if there are appointments on this date
+    const dateStr = clicked.toLocaleDateString('en-CA');
+    const hasAppts = appointments.some(a => {
+      const d = new Date(a.appointmentDateTime);
+      return d.toLocaleDateString('en-CA') === dateStr && a.status !== 'CANCELLED';
+    });
+    if (hasAppts) setPopupDate(clicked);
+  };
+
+  // Get appointments for a specific date
+  const getAppointmentsForDate = (date: Date): Appointment[] => {
+    const dateStr = date.toLocaleDateString('en-CA');
+    return appointments.filter(a => {
+      const d = new Date(a.appointmentDateTime);
+      return d.toLocaleDateString('en-CA') === dateStr && a.status !== 'CANCELLED';
+    });
   };
 
   const getDayClass = (day: number) => {
@@ -98,28 +122,84 @@ const SchedulePanel: React.FC = () => {
   useEffect(() => {
     if (barberProfileId) {
       fetchAppointments();
+      fetchLeaveRequests();
     }
   }, [barberProfileId]);
 
+  // Poll for new appointments every 30 seconds so calendar stays live
   useEffect(() => {
-    if (barberProfileId) {
-      fetchLeaveRequests();
-    }
+    if (!barberProfileId) return;
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [barberProfileId]);
 
   const fetchAppointments = async () => {
     setLoadingAppointments(true);
     try {
       const data = await appointmentService.getBarberAppointments(barberProfileId);
-      // Sort newest first
-      setAppointments(data.sort((a, b) => 
+      const sorted = data.sort((a, b) => 
         new Date(b.appointmentDateTime).getTime() - new Date(a.appointmentDateTime).getTime()
-      ));
+      );
+      setAppointments(sorted);
+      // Resolve names for all appointments
+      resolveNames(sorted);
     } catch (e: any) {
       console.error('Failed to load appointments:', e);
     } finally {
       setLoadingAppointments(false);
     }
+  };
+
+  // Fetch add-on map once
+  useEffect(() => {
+    const fetchAddOns = async () => {
+      try {
+        const res = await api.get('/addons');
+        const cats: any[] = res.data?.data ?? [];
+        const map: Record<string, string> = {};
+        cats.forEach((cat: any) => {
+          (cat.items ?? []).forEach((item: any) => { map[item.id] = item.name; });
+        });
+        setAddOnMap(map);
+      } catch { /* silent */ }
+    };
+    fetchAddOns();
+  }, []);
+
+  // Resolve customer names and style names for a list of appointments
+  const resolveNames = async (appts: Appointment[]) => {
+    // Unique customer IDs not yet resolved
+    const newCustomerIds = [...new Set(appts.map(a => a.customer_id))]
+      .filter(id => id && !customerNames[id]);
+    // Unique style IDs not yet resolved
+    const newStyleIds = [...new Set(appts.map(a => a.haircut_style_id))]
+      .filter(id => id && !styleNames[id]);
+
+    // Fetch customer names from /auth/me-like endpoint — use users collection via barber service
+    await Promise.all(newCustomerIds.map(async (cid) => {
+      try {
+        const res = await api.get(`/auth/user/${cid}`);
+        const u = res.data?.data ?? res.data;
+        const name = `${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim() || 'Customer';
+        setCustomerNames(prev => ({ ...prev, [cid]: name }));
+      } catch {
+        setCustomerNames(prev => ({ ...prev, [cid]: 'Customer' }));
+      }
+    }));
+
+    // Fetch haircut style names
+    await Promise.all(newStyleIds.map(async (sid) => {
+      try {
+        const res = await api.get(`/haircuts/${sid}`);
+        const s = res.data?.data ?? res.data;
+        const name = s?.name || 'Haircut';
+        setStyleNames(prev => ({ ...prev, [sid]: name }));
+      } catch {
+        setStyleNames(prev => ({ ...prev, [sid]: 'Haircut' }));
+      }
+    }));
   };
 
   const handleAppointmentAction = async (id: string, newStatus: string) => {
@@ -271,9 +351,19 @@ const SchedulePanel: React.FC = () => {
                   <div key={day} className="flex justify-center items-center">
                     <button 
                       onClick={() => handleDateClick(day)}
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all font-semibold text-base ${getDayClass(day)}`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all font-semibold text-base relative ${getDayClass(day)}`}
                     >
                       {day}
+                      {/* Dot indicator for booked appointments */}
+                      {(() => {
+                        const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toLocaleDateString('en-CA');
+                        const hasAppt = appointments.some(a =>
+                          new Date(a.appointmentDateTime).toLocaleDateString('en-CA') === dateStr && a.status !== 'CANCELLED'
+                        );
+                        return hasAppt ? (
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white opacity-90" />
+                        ) : null;
+                      })()}
                     </button>
                   </div>
                 ))}
@@ -334,6 +424,198 @@ const SchedulePanel: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── Appointment Popup Modal (Barber view) ─────────────────────────────── */}
+      {popupDate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setPopupDate(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            style={{ animation: 'modalIn 0.2s ease-out' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-[#8B4513] to-[#D2691E]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[#F4E4BC] text-xs font-semibold uppercase tracking-widest mb-1">Appointments</p>
+                  <h3 className="text-white text-xl font-bold">
+                    {popupDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full">
+                    {getAppointmentsForDate(popupDate).length} booking{getAppointmentsForDate(popupDate).length !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    onClick={() => setPopupDate(null)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white text-lg transition"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Appointments list */}
+            <div className="px-6 py-4 max-h-[65vh] overflow-y-auto space-y-4">
+              {getAppointmentsForDate(popupDate).map((app, idx) => {
+                const time = new Date(app.appointmentDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const customerName = customerNames[app.customer_id] || 'Loading...';
+                const styleName    = styleNames[app.haircut_style_id] || 'Loading...';
+                const addOnNames   = (app.selectedOptionIds ?? []).map(id => addOnMap[id]).filter(Boolean);
+                const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+                  PENDING:    { bg: 'bg-amber-50',   text: 'text-amber-700',  label: '⏳ Pending' },
+                  CONFIRMED:  { bg: 'bg-blue-50',    text: 'text-blue-700',   label: '✔ Confirmed' },
+                  COMPLETED:  { bg: 'bg-emerald-50', text: 'text-emerald-700',label: '✅ Completed' },
+                  CANCELLED:  { bg: 'bg-red-50',     text: 'text-red-700',    label: '✕ Cancelled' },
+                  IN_PROGRESS:{ bg: 'bg-purple-50',  text: 'text-purple-700', label: '🔄 In Progress' },
+                };
+                const sc = statusConfig[app.status] ?? { bg: 'bg-slate-50', text: 'text-slate-700', label: app.status };
+
+                return (
+                  <div key={app.appointment_id} className="rounded-xl border border-slate-200 overflow-hidden">
+                    {/* Card header — time + status */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-[#FFF8F0] border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-[#D2691E] flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="white" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-base font-bold text-[#4A3F35]">{time}</span>
+                      </div>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${sc.bg} ${sc.text}`}>
+                        {sc.label}
+                      </span>
+                    </div>
+
+                    {/* Card body */}
+                    <div className="px-4 py-4 space-y-3 bg-white">
+                      {/* Customer */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm flex-shrink-0">
+                          {customerName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-400 font-medium">Customer</p>
+                          <p className="text-sm font-bold text-slate-800">{customerName}</p>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-100" />
+
+                      {/* Style */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#FFF8F0] flex items-center justify-center text-[#D2691E] flex-shrink-0">
+                          ✂️
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-400 font-medium">Haircut Style</p>
+                          <p className="text-sm font-bold text-slate-800">{styleName}</p>
+                        </div>
+                      </div>
+
+                      {/* Add-ons */}
+                      {addOnNames.length > 0 && (
+                        <>
+                          <div className="h-px bg-slate-100" />
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 flex-shrink-0 mt-0.5">
+                              ➕
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-400 font-medium mb-1">Add-on Services</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {addOnNames.map((name, i) => (
+                                  <span key={i} className="text-xs bg-purple-50 text-purple-700 font-semibold px-2.5 py-1 rounded-full border border-purple-100">
+                                    {name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="h-px bg-slate-100" />
+
+                      {/* Total + Payment */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                            💰
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-400 font-medium">Total</p>
+                            <p className="text-base font-bold text-emerald-700">₱{Number(app.totalPrice).toLocaleString()}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-slate-400 font-medium">Payment</p>
+                          <p className="text-sm font-bold text-slate-700">
+                            {app.paymentMethod === 'DIGITAL_WALLET' ? '📱 E-Cash' : '💵 Cash'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    {(app.status === 'PENDING' || app.status === 'CONFIRMED') && (
+                      <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex gap-2">
+                        {app.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => { handleAppointmentAction(app.appointment_id, 'CONFIRMED'); setPopupDate(null); }}
+                              className="flex-1 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition"
+                            >
+                              ✔ Accept
+                            </button>
+                            <button
+                              onClick={() => { handleAppointmentAction(app.appointment_id, 'CANCELLED'); setPopupDate(null); }}
+                              className="flex-1 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition"
+                            >
+                              ✕ Decline
+                            </button>
+                          </>
+                        )}
+                        {app.status === 'CONFIRMED' && (
+                          <button
+                            onClick={() => { handleAppointmentAction(app.appointment_id, 'COMPLETED'); setPopupDate(null); }}
+                            className="flex-1 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition"
+                          >
+                            ✅ Mark Completed
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50">
+              <button
+                onClick={() => setPopupDate(null)}
+                className="w-full py-2.5 rounded-xl bg-[#D2691E] hover:bg-[#8B4513] text-white font-semibold text-sm transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes modalIn {
+          from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
 
       {/* ── Leave Requests Tab ────────────────────────────────────────────────── */}
       {activeTab === 'leave' && (

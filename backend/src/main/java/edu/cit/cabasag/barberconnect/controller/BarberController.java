@@ -69,6 +69,56 @@ public class BarberController {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // POST /barbers/{userId}/profile-picture  — upload via Cloudinary
+    // ─────────────────────────────────────────────────────────────────────────
+    @PostMapping(value = "/{userId}/profile-picture", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> uploadProfilePicture(
+            @PathVariable String userId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            edu.cit.cabasag.barberconnect.service.CloudinaryService cloudinaryService =
+                    applicationContext.getBean(edu.cit.cabasag.barberconnect.service.CloudinaryService.class);
+
+            String imageUrl = cloudinaryService.uploadProfilePicture("barbers/" + userId, file);
+
+            // Persist the URL in the users document
+            com.google.cloud.firestore.Firestore db = firebaseService.getFirestore();
+            if (db != null) {
+                java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                updates.put("profileImageUrl", imageUrl);
+                updates.put("updatedAt", new java.util.Date());
+                db.collection("users").document(userId).update(updates).get();
+
+                // Also update the embedded barberProfile.profileImageUrl
+                var userSnap = db.collection("users").document(userId).get().get();
+                if (userSnap.exists()) {
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> bp =
+                        (java.util.Map<String, Object>) userSnap.getData().get("barberProfile");
+                    if (bp != null) {
+                        bp.put("profileImageUrl", imageUrl);
+                        db.collection("users").document(userId)
+                          .update("barberProfile", bp).get();
+                    }
+                }
+            }
+
+            log.info("Profile picture uploaded for user {}: {}", userId, imageUrl);
+            return ResponseEntity.ok(ApiResponse.success(imageUrl));
+        } catch (Exception e) {
+            log.error("Failed to upload profile picture for user {}: {}", userId, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    private org.springframework.context.ApplicationContext applicationContext;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setApplicationContext(org.springframework.context.ApplicationContext ctx) {
+        this.applicationContext = ctx;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // NEW: GET /barbers/public/{barberProfileId}/leave-dates
     // ─────────────────────────────────────────────────────────────────────────
 

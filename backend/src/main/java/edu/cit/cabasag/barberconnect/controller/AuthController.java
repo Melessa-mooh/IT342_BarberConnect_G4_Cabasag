@@ -87,6 +87,24 @@ public class AuthController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    /** Public endpoint to look up a user's display name by Firebase UID.
+     *  Used by barber schedule popup to show customer names. */
+    @GetMapping("/user/{uid}")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getUserName(@PathVariable String uid) {
+        try {
+            User user = userService.findById(uid).orElse(null);
+            if (user == null) {
+                return ResponseEntity.ok(ApiResponse.success(Map.of("firstName", "Customer", "lastName", "")));
+            }
+            return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "firstName", user.getFirstName() != null ? user.getFirstName() : "",
+                "lastName",  user.getLastName()  != null ? user.getLastName()  : ""
+            )));
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.success(Map.of("firstName", "Customer", "lastName", "")));
+        }
+    }
     
     @PostMapping("/profile/image")
     public ResponseEntity<ApiResponse<String>> uploadProfileImage(@RequestParam("file") MultipartFile file) {

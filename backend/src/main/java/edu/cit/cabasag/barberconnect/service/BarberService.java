@@ -109,27 +109,52 @@ public class BarberService {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
 
+            // Strategy 1: look in the separate barber_profiles collection (admin-created barbers)
             var query = db.collection("barber_profiles")
                     .whereEqualTo("barber_profile_id", id)
                     .get()
                     .get();
 
-            if (query.isEmpty()) {
-                throw new RuntimeException("Barber profile not found");
+            if (!query.isEmpty()) {
+                BarberProfile profile = query.getDocuments().get(0).toObject(BarberProfile.class);
+                String uid = profile.getUser_id();
+                User userDoc = null;
+                if (uid != null) {
+                    var userSnap = db.collection(USERS_COLLECTION).document(uid).get().get();
+                    if (userSnap.exists()) {
+                        userDoc = userSnap.toObject(User.class);
+                    }
+                }
+                return mapToBarberResponse(profile, userDoc);
             }
 
-            BarberProfile profile = query.getDocuments().get(0).toObject(BarberProfile.class);
+            // Strategy 2: look in users collection for embedded barberProfile
+            // (self-registered barbers whose barberProfile.barber_profile_id == id)
+            var usersQuery = db.collection(USERS_COLLECTION)
+                    .whereEqualTo("role", "BARBER")
+                    .get()
+                    .get();
 
-            // After getting profile, fetch the user to get the name
-            String uid = profile.getUser_id();
-            User userDoc = null;
-            if (uid != null) {
-                var userSnap = db.collection("users").document(uid).get().get();
-                if (userSnap.exists()) {
-                    userDoc = userSnap.toObject(User.class);
+            for (var userDoc : usersQuery.getDocuments()) {
+                try {
+                    User user = userDoc.toObject(User.class);
+                    BarberProfile profile = user.getBarberProfile();
+                    if (profile != null && id.equals(profile.getBarber_profile_id())) {
+                        return mapToBarberResponse(profile, user);
+                    }
+                    // Also check if the Firebase UID itself is used as the profile ID
+                    if (profile != null && id.equals(user.getUser_id())) {
+                        if (profile.getBarber_profile_id() == null) {
+                            profile.setBarber_profile_id(user.getUser_id());
+                        }
+                        return mapToBarberResponse(profile, user);
+                    }
+                } catch (Exception e) {
+                    log.warn("Skipping user doc {} during getBarberById fallback: {}", userDoc.getId(), e.getMessage());
                 }
             }
-            return mapToBarberResponse(profile, userDoc);
+
+            throw new RuntimeException("Barber profile not found for id: " + id);
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error fetching barber by ID: {}", e.getMessage());

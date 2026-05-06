@@ -57,6 +57,21 @@ public class HaircutStyleController {
         }
     }
 
+    /** Public: get a single haircut style by ID — used by barber popup to resolve style name */
+    @GetMapping("/{haircutStyleId}")
+    public ResponseEntity<ApiResponse<HaircutStyle>> getHaircutStyleById(@PathVariable String haircutStyleId) {
+        try {
+            com.google.cloud.firestore.Firestore db = haircutStyleService.getFirestore();
+            if (db == null) return ResponseEntity.badRequest().body(ApiResponse.error("Firestore not available"));
+            var snap = db.collection("haircut_styles").document(haircutStyleId).get().get();
+            if (!snap.exists()) return ResponseEntity.badRequest().body(ApiResponse.error("Style not found"));
+            HaircutStyle style = snap.toObject(HaircutStyle.class);
+            return ResponseEntity.ok(ApiResponse.success(style));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     // Wait, the instructions say the request body is JSON.
     // "1. POST /haircuts
     // - Request body: { "barberProfileId": "", "name": "", "description": "", "basePrice": 0.0, "durationMinutes": 0 }
