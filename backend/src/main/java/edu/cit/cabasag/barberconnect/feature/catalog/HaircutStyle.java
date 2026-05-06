@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -25,7 +24,7 @@ public class HaircutStyle {
     private Integer durationMinutes;
     private String imageUrl;
     private Boolean isActive = true;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String createdAt;
+    private String updatedAt;
     private List<String> styleOptionIds;
 }

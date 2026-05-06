@@ -216,4 +216,20 @@ public class BarberController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // NEW: GET /barbers/{barberProfileId}/leave-dates
+    // Returns only APPROVED leave dates (no auth required — see SecurityConfig)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/{barberProfileId}/leave-dates")
+    public ResponseEntity<ApiResponse<List<String>>> getLeaveDates(
+            @PathVariable String barberProfileId) {
+        try {
+            List<String> dates = barberService.getApprovedLeaveDates(barberProfileId);
+            return ResponseEntity.ok(ApiResponse.success(dates));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

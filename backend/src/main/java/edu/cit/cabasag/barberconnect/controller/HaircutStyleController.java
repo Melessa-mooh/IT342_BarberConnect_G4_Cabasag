@@ -21,20 +21,29 @@ public class HaircutStyleController {
 
     private final HaircutStyleService haircutStyleService;
 
-    @PostMapping
+    @PostMapping(produces = "application/json")
     @PreAuthorize("hasRole('BARBER')")
     public ResponseEntity<ApiResponse<HaircutStyle>> createHaircutStyle(
             @RequestParam("barberProfileId") String barberProfileId,
             @RequestParam("name") String name,
-            @RequestParam("description") String description,
+            @RequestParam(value = "description", required = false, defaultValue = "") String description,
             @RequestParam("basePrice") BigDecimal basePrice,
             @RequestParam(value = "durationMinutes", required = false) Integer durationMinutes,
             @RequestParam(value = "file", required = false) MultipartFile file) {
         try {
+            if (barberProfileId == null || barberProfileId.isBlank()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("barberProfileId is required"));
+            }
+            if (name == null || name.isBlank()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("name is required"));
+            }
+            if (basePrice == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("basePrice is required"));
+            }
             HaircutStyle style = haircutStyleService.createHaircutStyle(barberProfileId, name, description, basePrice, durationMinutes, file);
             return ResponseEntity.ok(ApiResponse.success(style));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Create failed: " + e.getMessage()));
         }
     }
 

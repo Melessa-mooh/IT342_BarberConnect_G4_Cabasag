@@ -45,6 +45,7 @@ public class SecurityConfig {
                     "/login/oauth2/**",
                     "/error",
                     "/barbers/public/**",
+                    "/barbers/*/leave-dates",
                     "/haircuts/barber/**",
                     "/haircuts/*/options",
                     "/posts",

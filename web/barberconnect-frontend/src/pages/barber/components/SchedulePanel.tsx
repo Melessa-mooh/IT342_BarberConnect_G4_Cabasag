@@ -14,16 +14,23 @@ const SchedulePanel: React.FC = () => {
   // FIX: Remove fallback to firebaseUid
   const barberProfileId = user?.barberProfile?.id ?? '';
 
-  // FIX: Add early return guard
-  if (!barberProfileId) {
-    return <div className="text-slate-500 text-sm p-8">Loading schedule...</div>;
-  }
-
   const [activeTab, setActiveTab] = useState('calendar');
   
   // Calendar state management
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // ─── Leave Request State ───────────────────────────────────────────────────
+  const [leaveRequests, setLeaveRequests]   = useState<LeaveRequest[]>([]);
+  const [loadingLeave, setLoadingLeave]     = useState(false);
+  const [leaveError, setLeaveError]         = useState<string | null>(null);
+  const [showLeaveForm, setShowLeaveForm]   = useState(false);
+  const [leaveDate, setLeaveDate]           = useState('');
+  const [leaveReason, setLeaveReason]       = useState('');
+  const [submitting, setSubmitting]         = useState(false);
+
+  const [appointments, setAppointments]     = useState<Appointment[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
   
   const days  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
@@ -81,23 +88,11 @@ const SchedulePanel: React.FC = () => {
     const isApprovedLeave = leaveRequests.some(lr => lr.requestedDate === dateStr && lr.status === 'APPROVED');
     const isPendingLeave = leaveRequests.some(lr => lr.requestedDate === dateStr && lr.status === 'PENDING');
     
-    if (isApprovedLeave) return 'bg-[#F4E4BC] text-[#8B4513] font-semibold';
+    if (isApprovedLeave) return 'bg-red-200 text-red-800 font-semibold';
     if (isPendingLeave) return 'bg-amber-100 text-amber-700 font-semibold';
     
     return 'text-slate-700 hover:bg-slate-100 hover:text-[#8B4513] font-medium';
   };
-
-  // ─── Leave Request State ───────────────────────────────────────────────────
-  const [leaveRequests, setLeaveRequests]   = useState<LeaveRequest[]>([]);
-  const [loadingLeave, setLoadingLeave]     = useState(false);
-  const [leaveError, setLeaveError]         = useState<string | null>(null);
-  const [showLeaveForm, setShowLeaveForm]   = useState(false);
-  const [leaveDate, setLeaveDate]           = useState('');
-  const [leaveReason, setLeaveReason]       = useState('');
-  const [submitting, setSubmitting]         = useState(false);
-
-  const [appointments, setAppointments]     = useState<Appointment[]>([]);
-  const [loadingAppointments, setLoadingAppointments] = useState(false);
 
   // FIX: Fetch appointments on mount for the calendar
   useEffect(() => {
@@ -186,6 +181,14 @@ const SchedulePanel: React.FC = () => {
       return appDateStr === selectedStr && appHour === timeStr && app.status !== 'CANCELLED';
     });
   };
+
+  const isSelectedDateApprovedLeave = leaveRequests.some(lr => 
+    lr.requestedDate === selectedDate.toLocaleDateString('en-CA') && lr.status === 'APPROVED'
+  );
+
+  if (!barberProfileId) {
+    return <div className="text-slate-500 text-sm p-8">Loading schedule...</div>;
+  }
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-10">
@@ -280,16 +283,16 @@ const SchedulePanel: React.FC = () => {
             <div className="mt-8 space-y-4 px-2">
               <h4 className="text-sm font-bold text-[#4A3F35] uppercase tracking-wide mb-5">Legend</h4>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-emerald-500 shadow-sm" />
-                <span className="text-base text-[#4A3F35] font-medium">Not Fully</span>
+                <div className="w-6 h-6 rounded-lg bg-[#D2691E] shadow-sm" />
+                <span className="text-base text-[#4A3F35] font-medium">Selected Date</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-red-500 shadow-sm" />
-                <span className="text-base text-[#4A3F35] font-medium">Fully Booked</span>
+                <div className="w-6 h-6 rounded-lg bg-red-200 shadow-sm" />
+                <span className="text-base text-[#4A3F35] font-medium">Approved Leave</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-lg bg-[#F4E4BC] shadow-sm" />
-                <span className="text-base text-[#4A3F35] font-medium">Day Off</span>
+                <div className="w-6 h-6 rounded-lg bg-amber-100 shadow-sm" />
+                <span className="text-base text-[#4A3F35] font-medium">Pending Leave</span>
               </div>
             </div>
           </div>
@@ -301,26 +304,33 @@ const SchedulePanel: React.FC = () => {
                 Available Time Slots - {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-3 max-w-xl">
-              {['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'].map(t => (
-                <div key={t} className="flex justify-between items-center p-4 rounded-lg border border-slate-200 hover:border-[#D2691E] hover:shadow-sm transition-all cursor-pointer bg-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-slate-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+            {isSelectedDateApprovedLeave ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center mt-4">
+                <p className="text-red-800 font-bold text-lg">Day Off</p>
+                <p className="text-red-600 text-sm">You have an approved leave on this date.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 max-w-xl">
+                {['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'].map(t => (
+                  <div key={t} className="flex justify-between items-center p-4 rounded-lg border border-slate-200 hover:border-[#D2691E] hover:shadow-sm transition-all cursor-pointer bg-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-slate-600">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="font-semibold text-slate-800">{t}</span>
                     </div>
-                    <span className="font-semibold text-slate-800">{t}</span>
+                    <span className={isSlotBooked(t) 
+                      ? 'bg-red-500 text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full'
+                      : 'bg-[#D2691E] text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full'
+                    }>
+                      {isSlotBooked(t) ? 'Booked' : 'Open'}
+                    </span>
                   </div>
-                  <span className={isSlotBooked(t) 
-                    ? 'bg-red-500 text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full'
-                    : 'bg-[#D2691E] text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full'
-                  }>
-                    {isSlotBooked(t) ? 'Booked' : 'Open'}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

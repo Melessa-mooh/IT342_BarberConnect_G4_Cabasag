@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 
 export interface RegisterData {
   firstName: string;
@@ -103,10 +104,9 @@ export const authService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await api.post('/auth/profile/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const token = localStorage.getItem('jwt_token');
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/auth/profile/image`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       return response.data.data;
     } catch (error: any) {

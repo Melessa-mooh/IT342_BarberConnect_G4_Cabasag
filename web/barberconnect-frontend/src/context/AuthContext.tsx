@@ -44,8 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async (): Promise<void> => {
-    const userData = await authService.loginWithGoogle();
-    setUser(userData);
+    await authService.loginWithGoogle();
   };
 
   const logout = () => {

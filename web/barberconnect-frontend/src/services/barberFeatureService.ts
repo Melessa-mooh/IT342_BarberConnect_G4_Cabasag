@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,8 +100,9 @@ export const postService = {
     form.append('barberProfileId', barberProfileId);
     form.append('content', content);
     if (file) form.append('file', file);
-    const res = await api.post('/posts', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const token = localStorage.getItem('jwt_token');
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/posts`, form, {
+      headers: { Authorization: `Bearer ${token}` }
     });
     return unwrap(res);
   },

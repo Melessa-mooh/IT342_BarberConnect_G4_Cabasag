@@ -220,7 +220,6 @@ public class BarberService {
 
             var query = db.collection("income_records")
                     .whereEqualTo("barber_profile_id", barberProfileId)
-                    .orderBy("recordedAt", com.google.cloud.firestore.Query.Direction.DESCENDING)
                     .get()
                     .get();
 
@@ -228,11 +227,41 @@ public class BarberService {
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
                 records.add(doc.toObject(IncomeRecord.class));
             }
+            
+            // Sort in memory by recordedAt DESCENDING
+            records.sort((a, b) -> {
+                if (a.getRecordedAt() == null && b.getRecordedAt() == null) return 0;
+                if (a.getRecordedAt() == null) return 1;
+                if (b.getRecordedAt() == null) return -1;
+                return b.getRecordedAt().compareTo(a.getRecordedAt());
+            });
+            
             return records;
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch income records for barber {}: {}", barberProfileId, e.getMessage());
             throw new RuntimeException("Failed to fetch income records", e);
+        }
+    }
+
+    public List<String> getApprovedLeaveDates(String barberProfileId) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+
+            var snap = db.collection("leave_requests")
+                    .whereEqualTo("barberProfileId", barberProfileId)
+                    .whereEqualTo("status", "APPROVED")
+                    .get().get();
+
+            List<String> dates = new ArrayList<>();
+            for (var doc : snap.getDocuments()) {
+                String date = doc.getString("requestedDate");
+                if (date != null) dates.add(date);
+            }
+            return dates;
+        } catch (Exception e) {
+            log.error("Failed to get approved leave dates: {}", e.getMessage());
+            return new ArrayList<>();
         }
     }
 }

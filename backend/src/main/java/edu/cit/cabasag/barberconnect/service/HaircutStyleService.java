@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,8 +52,8 @@ public class HaircutStyleService {
             style.setDurationMinutes(durationMinutes);
             style.setImageUrl(imageUrl);
             style.setIsActive(true);
-            style.setCreatedAt(LocalDateTime.now());
-            style.setUpdatedAt(LocalDateTime.now());
+            style.setCreatedAt(new java.util.Date().toString());
+            style.setUpdatedAt(new java.util.Date().toString());
             style.setStyleOptionIds(new ArrayList<>());
 
             db.collection(HAIRCUTS_COLLECTION).document(java.util.Objects.requireNonNullElse(haircutStyleId, "")).set(style).get();
@@ -74,13 +73,14 @@ public class HaircutStyleService {
 
             QuerySnapshot query = db.collection(HAIRCUTS_COLLECTION)
                     .whereEqualTo("barber_profile_id", barberProfileId)
-                    .whereEqualTo("isActive", true)
                     .get().get();
 
             List<HaircutStyle> styles = new ArrayList<>();
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
                 HaircutStyle style = doc.toObject(HaircutStyle.class);
-                styles.add(style);
+                if (Boolean.TRUE.equals(style.getIsActive())) {
+                    styles.add(style);
+                }
             }
             return styles;
 
@@ -109,7 +109,7 @@ public class HaircutStyleService {
             if (description != null) updates.put("description", description);
             if (basePrice != null) updates.put("basePrice", basePrice);
             if (durationMinutes != null) updates.put("durationMinutes", durationMinutes);
-            updates.put("updatedAt", LocalDateTime.now().toString());
+            updates.put("updatedAt", new java.util.Date().toString());
 
             docRef.update(updates).get();
 
@@ -173,12 +173,14 @@ public class HaircutStyleService {
 
             QuerySnapshot query = db.collection(OPTIONS_COLLECTION)
                     .whereEqualTo("haircut_style_id", haircutStyleId)
-                    .whereEqualTo("isActive", true)
                     .get().get();
 
             List<StyleOption> options = new ArrayList<>();
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
-                options.add(doc.toObject(StyleOption.class));
+                StyleOption option = doc.toObject(StyleOption.class);
+                if (Boolean.TRUE.equals(option.getIsActive())) {
+                    options.add(option);
+                }
             }
             return options;
 

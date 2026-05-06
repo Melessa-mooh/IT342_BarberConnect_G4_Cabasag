@@ -42,13 +42,15 @@ export const barberService = {
 
   async getApprovedLeaveDates(barberProfileId: string): Promise<string[]> {
     try {
-      const response = await api.get<{ success: boolean; data: string[] }>(
-        `/barbers/public/${barberProfileId}/leave-dates`
-      );
-      return response.data.data ?? [];
-    } catch (error: any) {
-      console.error('Failed to fetch leave dates:', error);
-      return []; // Fail silently — don't block the booking page from loading
+      const response = await api.get<{
+        success: boolean;
+        data: string[];
+        error: string | null;
+      }>(`/barbers/${barberProfileId}/leave-dates`);
+      return response.data?.data ?? [];
+    } catch (err) {
+      console.error('Failed to fetch approved leave dates:', err);
+      return [];
     }
   }
 };

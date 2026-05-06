@@ -151,6 +151,15 @@ public class AdminService {
             db.collection("barber_profiles").document(profileId).set(profileData).get();
             log.info("Firestore 'barber_profiles' document written (profileId={})", profileId);
 
+            // Seed 4 default haircut styles for the new barber
+            try {
+                seedDefaultHaircutStyles(profileId, db);
+            } catch (Exception seedEx) {
+                log.warn("Could not seed default styles for barber {}: {}",
+                          profileId, seedEx.getMessage());
+                // Don't fail the whole account creation if seeding fails
+            }
+
             return user;
 
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
@@ -527,6 +536,45 @@ public class AdminService {
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch barber income summaries: {}", e.getMessage());
             throw new RuntimeException("Failed to fetch barber income summaries: " + e.getMessage());
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────────
+    // Private: Seed default haircut styles for a new barber
+    // ──────────────────────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("null")
+    private void seedDefaultHaircutStyles(String barberProfileId,
+                                          com.google.cloud.firestore.Firestore db)
+                                          throws Exception {
+
+        Object[][] defaults = {
+            { "Classic Cut",   "A timeless and clean classic haircut suitable for all occasions.",
+              new java.math.BigDecimal("200.00"), 30 },
+            { "Barber Cut",    "A professional barber-styled cut with precision and detail.",
+              new java.math.BigDecimal("400.00"), 45 },
+            { "Trend Cut",     "A modern, on-trend cut following the latest barbering styles.",
+              new java.math.BigDecimal("500.00"), 45 },
+            { "Premium Cut",   "A full premium experience with wash, cut, and styling finish.",
+              new java.math.BigDecimal("600.00"), 60 },
+        };
+
+        for (Object[] style : defaults) {
+            String id = UUID.randomUUID().toString();
+            java.util.Map<String, Object> doc = new java.util.HashMap<>();
+            doc.put("haircut_style_id",   id);
+            doc.put("barber_profile_id",  barberProfileId);
+            doc.put("name",               style[0]);
+            doc.put("description",        style[1]);
+            doc.put("basePrice",          style[2]);
+            doc.put("durationMinutes",    style[3]);
+            doc.put("imageUrl",           null);
+            doc.put("isActive",           true);
+            doc.put("styleOptionIds",     new java.util.ArrayList<>());
+            doc.put("createdAt",          new Date());
+            doc.put("updatedAt",          new Date());
+            db.collection("haircut_styles").document(java.util.Objects.requireNonNullElse(id, "")).set(doc).get();
+            log.info("Seeded default style '{}' for barber {}", style[0], barberProfileId);
         }
     }
 }

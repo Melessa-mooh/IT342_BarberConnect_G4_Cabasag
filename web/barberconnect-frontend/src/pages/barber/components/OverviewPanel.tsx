@@ -30,7 +30,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = () => {
           appointmentService.getBarberAppointments(barberProfileId),
           leaveService.getLeaveRequests(barberProfileId),
           haircutStyleService.getHaircutStylesForBarber(barberProfileId),
-          barberService.getBarberById(Number(barberProfileId))
+          barberService.getBarberById(barberProfileId)
         ]);
 
         setIncomeRecords(inc);

@@ -122,13 +122,21 @@ public class AppointmentService {
 
             com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("appointments")
                     .whereEqualTo("barber_profile_id", barberProfileId)
-                    .orderBy("appointmentDateTime", com.google.cloud.firestore.Query.Direction.DESCENDING)
                     .get()
                     .get();
 
-            return querySnapshot.getDocuments().stream()
+            java.util.List<Appointment> appointments = querySnapshot.getDocuments().stream()
                     .map(doc -> doc.toObject(Appointment.class))
                     .collect(java.util.stream.Collectors.toList());
+                    
+            appointments.sort((a, b) -> {
+                if (a.getAppointmentDateTime() == null && b.getAppointmentDateTime() == null) return 0;
+                if (a.getAppointmentDateTime() == null) return 1;
+                if (b.getAppointmentDateTime() == null) return -1;
+                return b.getAppointmentDateTime().compareTo(a.getAppointmentDateTime());
+            });
+            
+            return appointments;
                     
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch appointments for barber from Firestore", e);
@@ -173,7 +181,7 @@ public class AppointmentService {
                 incomeRecord.setPaymentMethod(IncomeRecord.PaymentMethod.CASH);
             }
             
-            incomeRecord.setRecordedAt(LocalDateTime.now());
+            incomeRecord.setRecordedAt(LocalDateTime.now().toString());
 
             // 4. Update Appointment Status
             appointment.setStatus(Appointment.AppointmentStatus.COMPLETED);
