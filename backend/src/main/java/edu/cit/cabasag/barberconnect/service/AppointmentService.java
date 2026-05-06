@@ -46,16 +46,27 @@ public class AppointmentService {
             java.time.LocalDate appointmentDate = instant.atZone(java.time.ZoneId.of("Asia/Manila")).toLocalDate();
             String appointmentDateStr = appointmentDate.toString(); // "yyyy-MM-dd"
 
-            // Check if barber has an APPROVED leave on this date
+            // Check if barber has an APPROVED leave on this date.
+            // Single-field query to avoid requiring a composite Firestore index;
+            // status and date are filtered in Java.
             com.google.cloud.firestore.QuerySnapshot leaveSnap = db.collection("leave_requests")
                 .whereEqualTo("barberProfileId", request.getBarberProfileId())
-                .whereEqualTo("requestedDate", appointmentDateStr)
-                .whereEqualTo("status", "APPROVED")
                 .get().get();
 
-            if (!leaveSnap.isEmpty()) {
+            boolean isOnLeave = false;
+            for (var leaveDoc : leaveSnap.getDocuments()) {
+                String status = leaveDoc.getString("status");
+                String leaveDate = leaveDoc.getString("requestedDate");
+                if ("APPROVED".equals(status) && appointmentDateStr.equals(leaveDate)) {
+                    isOnLeave = true;
+                    break;
+                }
+            }
+
+            if (isOnLeave) {
                 throw new RuntimeException(
-                    "This barber is on approved leave on " + appointmentDateStr + ". Please choose a different date."
+                    "This barber is on approved leave on " + appointmentDateStr +
+                    ". Please choose a different date."
                 );
             }
 

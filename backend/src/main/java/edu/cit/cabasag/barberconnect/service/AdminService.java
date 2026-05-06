@@ -151,6 +151,23 @@ public class AdminService {
             db.collection("barber_profiles").document(profileId).set(profileData).get();
             log.info("Firestore 'barber_profiles' document written (profileId={})", profileId);
 
+            // Embed barberProfile into the users document so getAllAvailableBarbers()
+            // can read the barber_profile_id from the user document
+            Map<String, Object> embeddedProfile = new HashMap<>();
+            embeddedProfile.put("barber_profile_id", profileId);
+            embeddedProfile.put("user_id", uid);
+            embeddedProfile.put("bio", "");
+            embeddedProfile.put("yearsExperience", 0);
+            embeddedProfile.put("rating", 0.0);
+            embeddedProfile.put("totalReviews", 0);
+            embeddedProfile.put("profileImageUrl", null);
+            embeddedProfile.put("isAvailable", true);
+            embeddedProfile.put("gcashNumber", "");
+            db.collection("users").document(uid)
+              .update("barberProfile", embeddedProfile).get();
+            log.info("Embedded barberProfile (profileId={}) into users document uid={}",
+                     profileId, uid);
+
             // Seed 4 default haircut styles for the new barber
             try {
                 seedDefaultHaircutStyles(profileId, db);
@@ -268,8 +285,8 @@ public class AdminService {
         map.put("profileImageUrl",   null);
         map.put("isAvailable",       true);
         map.put("gcashNumber",       "");
-        map.put("createdAt",         LocalDateTime.now().toString());
-        map.put("updatedAt",         LocalDateTime.now().toString());
+        map.put("createdAt",         new java.util.Date());
+        map.put("updatedAt",         new java.util.Date());
         return map;
     }
 

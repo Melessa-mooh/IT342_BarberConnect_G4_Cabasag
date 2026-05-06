@@ -38,8 +38,22 @@ public class BarberService {
             for (QueryDocumentSnapshot document : query.getDocuments()) {
                 try {
                     User user = document.toObject(User.class);
-                    if (user.getBarberProfile() != null && user.getBarberProfile().getIsAvailable()) {
-                        barbers.add(mapToBarberResponse(user.getBarberProfile(), user));
+                    BarberProfile profile = user.getBarberProfile();
+
+                    // Fallback: if embedded barberProfile is missing or has no ID,
+                    // look it up in the barber_profiles collection
+                    if (profile == null || profile.getBarber_profile_id() == null) {
+                        String userId = document.getId();
+                        var profileQuery = db.collection("barber_profiles")
+                                .whereEqualTo("user_id", userId)
+                                .get().get();
+                        if (!profileQuery.isEmpty()) {
+                            profile = profileQuery.getDocuments().get(0).toObject(BarberProfile.class);
+                        }
+                    }
+
+                    if (profile != null && Boolean.TRUE.equals(profile.getIsAvailable())) {
+                        barbers.add(mapToBarberResponse(profile, user));
                     }
                 } catch (Exception e) {
                     // Log and skip barbers with deserialization issues
@@ -250,13 +264,15 @@ public class BarberService {
 
             var snap = db.collection("leave_requests")
                     .whereEqualTo("barberProfileId", barberProfileId)
-                    .whereEqualTo("status", "APPROVED")
                     .get().get();
 
             List<String> dates = new ArrayList<>();
             for (var doc : snap.getDocuments()) {
+                String status = doc.getString("status");
                 String date = doc.getString("requestedDate");
-                if (date != null) dates.add(date);
+                if ("APPROVED".equals(status) && date != null) {
+                    dates.add(date);
+                }
             }
             return dates;
         } catch (Exception e) {
