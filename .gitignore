@@ -66,6 +66,8 @@ mobile/**/*.aab
 mobile/**/*.dex
 mobile/**/*.class
 mobile/google-services.json
+mobile/app/google-services.json
+mobile/**/google-services.json
 
 # ======== Spring Boot / Backend ========
 backend/target/
