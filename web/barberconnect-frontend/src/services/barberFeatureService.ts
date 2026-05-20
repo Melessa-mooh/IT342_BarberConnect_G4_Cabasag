@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,12 +63,17 @@ export interface AttendanceRecord {
 }
 
 export interface IncomeRecord {
-  incomeRecordId: string;
-  appointmentId: string;
-  barberProfileId: string;
-  grossAmount: number;
+  income_record_id?: string;
+  incomeRecordId?: string;
+  appointmentId?: string;
+  appointment_id?: string;
+  barberProfileId?: string;
+  barber_profile_id?: string;
+  amount: number;
+  grossAmount?: number;   // alias — some records use this field name
   platformFee: number;
   netAmount: number;
+  paymentMethod?: string;
   recordedAt: string;
 }
 
@@ -99,8 +105,9 @@ export const postService = {
     form.append('barberProfileId', barberProfileId);
     form.append('content', content);
     if (file) form.append('file', file);
-    const res = await api.post('/posts', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const token = localStorage.getItem('jwt_token');
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/posts`, form, {
+      headers: { Authorization: `Bearer ${token}` }
     });
     return unwrap(res);
   },
@@ -173,25 +180,25 @@ export const feedbackService = {
 export const adminBarberService = {
   /** Admin: get all PENDING leave requests */
   getPendingLeaveRequests: async (): Promise<LeaveRequest[]> => {
-    const res = await api.get('/api/v1/admin/leave-requests');
+    const res = await api.get('/admin/leave-requests');
     return unwrap(res);
   },
 
   /** Admin: approve a leave request */
   approveLeaveRequest: async (leaveRequestId: string): Promise<LeaveRequest> => {
-    const res = await api.put(`/api/v1/admin/leave-requests/${leaveRequestId}/approve`);
+    const res = await api.put(`/admin/leave-requests/${leaveRequestId}/approve`);
     return unwrap(res);
   },
 
   /** Admin: decline a leave request */
   declineLeaveRequest: async (leaveRequestId: string): Promise<LeaveRequest> => {
-    const res = await api.put(`/api/v1/admin/leave-requests/${leaveRequestId}/decline`);
+    const res = await api.put(`/admin/leave-requests/${leaveRequestId}/decline`);
     return unwrap(res);
   },
 
   /** Admin: get today's attendance */
   getTodayAttendance: async (): Promise<AttendanceRecord[]> => {
-    const res = await api.get('/api/v1/admin/attendance/today');
+    const res = await api.get('/admin/attendance/today');
     return unwrap(res);
   },
 
@@ -200,13 +207,13 @@ export const adminBarberService = {
     firstName: string; lastName: string;
     email: string; password: string; phoneNumber: string;
   }) => {
-    const res = await api.post('/api/v1/admin/barbers/create', payload);
+    const res = await api.post('/admin/barbers/create', payload);
     return unwrap(res);
   },
 
   /** Admin: deactivate a barber */
   deleteBarber: async (userId: string) => {
-    const res = await api.delete(`/api/v1/admin/barbers/${userId}`);
+    const res = await api.delete(`/admin/barbers/${userId}`);
     return unwrap(res);
   },
 };

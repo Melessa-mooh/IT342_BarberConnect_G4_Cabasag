@@ -108,8 +108,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate('/', { replace: true });
   };
 
@@ -293,7 +293,7 @@ const AdminDashboard: React.FC = () => {
                       </p>
                       <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '2px 0 0' }}>{rec.userId}</p>
                     </div>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '20px', border: '1px solid', whiteSpace: 'nowrap' }}
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '0.45rem 1rem', borderRadius: '20px', border: '1px solid', whiteSpace: 'nowrap', letterSpacing: '0.05em' }}
                       className={attBadge(rec.attendanceStatus)}>
                       {rec.attendanceStatus.replace('_', ' ')}
                     </span>

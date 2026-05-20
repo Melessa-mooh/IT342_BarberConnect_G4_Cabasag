@@ -5,7 +5,7 @@ import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
-import edu.cit.cabasag.barberconnect.model.LeaveRequest;
+import edu.cit.cabasag.barberconnect.feature.admin.LeaveRequest;
 import edu.cit.cabasag.barberconnect.service.BarberService;
 import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +64,92 @@ public class BarberController {
             AuthResponse.BarberProfileResponse updatedProfile = barberService.updateProfile(userId, request);
             return ResponseEntity.ok(ApiResponse.success(updatedProfile));
         } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /barbers/{userId}/profile-picture  — upload via Cloudinary
+    // ─────────────────────────────────────────────────────────────────────────
+    @PostMapping(value = "/{userId}/profile-picture", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> uploadProfilePicture(
+            @PathVariable String userId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            edu.cit.cabasag.barberconnect.service.CloudinaryService cloudinaryService =
+                    applicationContext.getBean(edu.cit.cabasag.barberconnect.service.CloudinaryService.class);
+
+            String imageUrl = cloudinaryService.uploadProfilePicture("barbers/" + userId, file);
+
+            // Persist the URL in the users document
+            com.google.cloud.firestore.Firestore db = firebaseService.getFirestore();
+            if (db != null) {
+                java.util.Map<String, Object> updates = new java.util.HashMap<>();
+                updates.put("profileImageUrl", imageUrl);
+                updates.put("updatedAt", new java.util.Date());
+                db.collection("users").document(userId).update(updates).get();
+
+                // Also update the embedded barberProfile.profileImageUrl
+                var userSnap = db.collection("users").document(userId).get().get();
+                if (userSnap.exists()) {
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> bp =
+                        (java.util.Map<String, Object>) userSnap.getData().get("barberProfile");
+                    if (bp != null) {
+                        bp.put("profileImageUrl", imageUrl);
+                        db.collection("users").document(userId)
+                          .update("barberProfile", bp).get();
+                    }
+                }
+            }
+
+            log.info("Profile picture uploaded for user {}: {}", userId, imageUrl);
+            return ResponseEntity.ok(ApiResponse.success(imageUrl));
+        } catch (Exception e) {
+            log.error("Failed to upload profile picture for user {}: {}", userId, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    private org.springframework.context.ApplicationContext applicationContext;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setApplicationContext(org.springframework.context.ApplicationContext ctx) {
+        this.applicationContext = ctx;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // NEW: GET /barbers/public/{barberProfileId}/leave-dates
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns all APPROVED leave dates for a specific barber.
+     * Used by customer booking page to block unavailable dates.
+     * Public endpoint — no auth required.
+     */
+    @GetMapping("/public/{barberProfileId}/leave-dates")
+    public ResponseEntity<ApiResponse<List<String>>> getApprovedLeaveDates(
+            @PathVariable String barberProfileId) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Firestore not available"));
+
+            QuerySnapshot snapshot = db.collection("leave_requests")
+                    .whereEqualTo("barberProfileId", barberProfileId)
+                    .whereEqualTo("status", "APPROVED")
+                    .get().get();
+
+            List<String> dates = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
+                String d = doc.getString("requestedDate");
+                if (d != null) dates.add(d);
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(dates));
+
+        } catch (Exception e) {
+            log.error("Failed to fetch approved leave dates for barber {}: {}", barberProfileId, e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -170,13 +256,29 @@ public class BarberController {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GetMapping("/{barberProfileId}/income")
-    public ResponseEntity<ApiResponse<List<edu.cit.cabasag.barberconnect.model.IncomeRecord>>> getBarberIncome(
+    public ResponseEntity<ApiResponse<List<edu.cit.cabasag.barberconnect.feature.income.IncomeRecord>>> getBarberIncome(
             @PathVariable String barberProfileId) {
         try {
-            List<edu.cit.cabasag.barberconnect.model.IncomeRecord> records = barberService.getIncomeRecords(barberProfileId);
+            List<edu.cit.cabasag.barberconnect.feature.income.IncomeRecord> records = barberService.getIncomeRecords(barberProfileId);
             return ResponseEntity.ok(ApiResponse.success(records));
         } catch (Exception e) {
             log.error("Failed to fetch income records for barber {}: {}", barberProfileId, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // NEW: GET /barbers/{barberProfileId}/leave-dates
+    // Returns only APPROVED leave dates (no auth required — see SecurityConfig)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/{barberProfileId}/leave-dates")
+    public ResponseEntity<ApiResponse<List<String>>> getLeaveDates(
+            @PathVariable String barberProfileId) {
+        try {
+            List<String> dates = barberService.getApprovedLeaveDates(barberProfileId);
+            return ResponseEntity.ok(ApiResponse.success(dates));
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }

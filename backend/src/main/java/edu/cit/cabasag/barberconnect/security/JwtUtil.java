@@ -24,6 +24,9 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private Long expiration;
 
+    @Value("${jwt.refresh-expiration:604800000}")
+    private Long refreshExpiration;
+
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
@@ -35,6 +38,29 @@ public class JwtUtil {
         claims.put("email", email);
         claims.put("role", role);
         return createToken(claims, uid);
+    }
+
+    public String generateRefreshToken(String uid) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("uid", uid);
+        claims.put("type", "refresh");
+        Date now = new Date();
+        return Jwts.builder()
+                .claims(claims)
+                .subject(uid)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + refreshExpiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            String type = extractClaim(token, claims -> claims.get("type", String.class));
+            return "refresh".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String createToken(Map<String, Object> claims, String subject) {

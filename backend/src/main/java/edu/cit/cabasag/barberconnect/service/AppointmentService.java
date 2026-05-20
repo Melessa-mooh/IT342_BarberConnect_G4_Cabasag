@@ -6,7 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
-import edu.cit.cabasag.barberconnect.model.Appointment;
+import edu.cit.cabasag.barberconnect.feature.appointment.Appointment;
+import edu.cit.cabasag.barberconnect.feature.income.IncomeRecord;
 import com.google.cloud.firestore.Firestore;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -40,6 +41,35 @@ public class AppointmentService {
             
             // Parse ISO String from frontend using Instant to safely handle the 'Z' (UTC) timezone marker
             java.time.Instant instant = java.time.Instant.parse(request.getAppointmentDateTime());
+
+            // Extract the date portion from the appointment datetime
+            java.time.LocalDate appointmentDate = instant.atZone(java.time.ZoneId.of("Asia/Manila")).toLocalDate();
+            String appointmentDateStr = appointmentDate.toString(); // "yyyy-MM-dd"
+
+            // Check if barber has an APPROVED leave on this date.
+            // Single-field query to avoid requiring a composite Firestore index;
+            // status and date are filtered in Java.
+            com.google.cloud.firestore.QuerySnapshot leaveSnap = db.collection("leave_requests")
+                .whereEqualTo("barberProfileId", request.getBarberProfileId())
+                .get().get();
+
+            boolean isOnLeave = false;
+            for (var leaveDoc : leaveSnap.getDocuments()) {
+                String status = leaveDoc.getString("status");
+                String leaveDate = leaveDoc.getString("requestedDate");
+                if ("APPROVED".equals(status) && appointmentDateStr.equals(leaveDate)) {
+                    isOnLeave = true;
+                    break;
+                }
+            }
+
+            if (isOnLeave) {
+                throw new RuntimeException(
+                    "This barber is on approved leave on " + appointmentDateStr +
+                    ". Please choose a different date."
+                );
+            }
+
             appointment.setAppointmentDateTime(Date.from(instant));
             
             appointment.setTotalPrice(request.getTotalPrice());
@@ -103,13 +133,21 @@ public class AppointmentService {
 
             com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("appointments")
                     .whereEqualTo("barber_profile_id", barberProfileId)
-                    .orderBy("appointmentDateTime", com.google.cloud.firestore.Query.Direction.DESCENDING)
                     .get()
                     .get();
 
-            return querySnapshot.getDocuments().stream()
+            java.util.List<Appointment> appointments = querySnapshot.getDocuments().stream()
                     .map(doc -> doc.toObject(Appointment.class))
                     .collect(java.util.stream.Collectors.toList());
+                    
+            appointments.sort((a, b) -> {
+                if (a.getAppointmentDateTime() == null && b.getAppointmentDateTime() == null) return 0;
+                if (a.getAppointmentDateTime() == null) return 1;
+                if (b.getAppointmentDateTime() == null) return -1;
+                return b.getAppointmentDateTime().compareTo(a.getAppointmentDateTime());
+            });
+            
+            return appointments;
                     
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch appointments for barber from Firestore", e);
@@ -139,7 +177,7 @@ public class AppointmentService {
             java.math.BigDecimal netAmount = total.multiply(new java.math.BigDecimal("0.80"));
 
             // 3. Generate Income Record
-            edu.cit.cabasag.barberconnect.model.IncomeRecord incomeRecord = new edu.cit.cabasag.barberconnect.model.IncomeRecord();
+            IncomeRecord incomeRecord = new IncomeRecord();
             incomeRecord.setIncome_record_id(UUID.randomUUID().toString());
             incomeRecord.setBarber_profile_id(appointment.getBarber_profile_id());
             incomeRecord.setAppointment_id(appointment.getAppointment_id());
@@ -149,21 +187,31 @@ public class AppointmentService {
             
             // Map payment method safely
             try {
-                incomeRecord.setPaymentMethod(edu.cit.cabasag.barberconnect.model.IncomeRecord.PaymentMethod.valueOf(appointment.getPaymentMethod().name()));
+                incomeRecord.setPaymentMethod(IncomeRecord.PaymentMethod.valueOf(appointment.getPaymentMethod().name()));
             } catch (Exception e) {
-                incomeRecord.setPaymentMethod(edu.cit.cabasag.barberconnect.model.IncomeRecord.PaymentMethod.CASH);
+                incomeRecord.setPaymentMethod(IncomeRecord.PaymentMethod.CASH);
             }
             
-            incomeRecord.setRecordedAt(LocalDateTime.now());
+            incomeRecord.setRecordedAt(LocalDateTime.now().toString());
 
             // 4. Update Appointment Status
             appointment.setStatus(Appointment.AppointmentStatus.COMPLETED);
             appointment.setPaymentStatus(Appointment.PaymentStatus.PAID);
             appointment.setUpdatedAt(new Date());
 
-            // 5. Commit to Firestore (Atomically-like)
-            db.collection("income_records").document(java.util.Objects.requireNonNull(incomeRecord.getIncome_record_id())).set(incomeRecord);
-            db.collection("appointments").document(java.util.Objects.requireNonNull(appointmentId)).set(appointment);
+            // 5. Commit to Firestore atomically using WriteBatch
+            com.google.cloud.firestore.WriteBatch batch = db.batch();
+            batch.set(
+                db.collection("income_records")
+                  .document(java.util.Objects.requireNonNull(incomeRecord.getIncome_record_id())),
+                incomeRecord
+            );
+            batch.set(
+                db.collection("appointments")
+                  .document(java.util.Objects.requireNonNull(appointmentId)),
+                appointment
+            );
+            batch.commit().get();
 
             String notificationMessage = "Appointment completed! " + netAmount + " added to your earnings.";
             eventManager.notifyAll(appointment.getBarber_profile_id(), notificationMessage);

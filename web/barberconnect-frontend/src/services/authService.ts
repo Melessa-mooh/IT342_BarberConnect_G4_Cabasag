@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 
 export interface RegisterData {
   firstName: string;
@@ -23,7 +24,7 @@ export interface User {
   isActive: boolean;
   profileImageUrl?: string;
   barberProfile?: {
-    id: number;
+    id: string;       // Firebase UID string returned by BarberProfileResponse
     bio: string;
     yearsExperience: number;
     rating: string;
@@ -34,8 +35,6 @@ export interface User {
   };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 export const authService = {
   /**
    * Register with email and password
@@ -44,12 +43,12 @@ export const authService = {
     try {
       const response = await api.post('/auth/register', data);
       const authResponse = response.data.data;
-      
+
       // Store JWT token
       if (authResponse.token) {
         authService.setToken(authResponse.token);
       }
-      
+
       return authResponse;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || error.message);
@@ -63,12 +62,12 @@ export const authService = {
     try {
       const response = await api.post('/auth/login', data);
       const authResponse = response.data.data;
-      
+
       // Store JWT token
       if (authResponse.token) {
         authService.setToken(authResponse.token);
       }
-      
+
       return authResponse;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || error.message);
@@ -76,10 +75,13 @@ export const authService = {
   },
 
   /**
-   * Redirect to Google OAuth2 login
+   * Sign in with Google using Spring Boot OAuth2.
+   * Flow: Redirect to backend OAuth2 endpoint → Google login → Callback with JWT
    */
-  loginWithGoogle(): void {
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+  async loginWithGoogle(): Promise<void> {
+    // Redirect to Spring Boot OAuth2 endpoint
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+    window.location.href = `${backendUrl}/oauth2/authorization/google`;
   },
 
   /**
@@ -101,11 +103,10 @@ export const authService = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
-      const response = await api.post('/auth/profile/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+
+      const token = localStorage.getItem('jwt_token');
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/auth/profile/image`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       return response.data.data;
     } catch (error: any) {
@@ -144,6 +145,7 @@ export const authService = {
    */
   removeToken(): void {
     localStorage.removeItem('jwt_token');
+    localStorage.removeItem('refresh_token');
   },
 
   /**

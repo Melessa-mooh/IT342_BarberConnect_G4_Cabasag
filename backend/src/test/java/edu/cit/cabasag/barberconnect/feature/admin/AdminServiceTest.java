@@ -1,7 +1,7 @@
 package edu.cit.cabasag.barberconnect.feature.admin;
 
-import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
 import edu.cit.cabasag.barberconnect.service.AdminService;
+import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import com.google.cloud.firestore.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,24 +19,23 @@ import static org.mockito.Mockito.*;
 /**
  * Unit Tests — Admin Feature Slice
  * TC-ADM-01 through TC-ADM-02
+ *
+ * Firestore mocking uses lenient() where optional interactions are set up,
+ * avoiding raw ApiFuture generic type issues.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Admin Feature — AdminService Tests")
 class AdminServiceTest {
 
-    @Mock private edu.cit.cabasag.barberconnect.service.FirebaseService firebaseService;
+    @Mock private FirebaseService firebaseService;
     @Mock private com.google.firebase.auth.FirebaseAuth firebaseAuth;
     @Mock private edu.cit.cabasag.barberconnect.factory.UserFactory userFactory;
     @Mock private Firestore mockDb;
-    @Mock private CollectionReference appointmentsRef;
-    @Mock private AggregateQuery countQuery;
-    @Mock private ApiFuture<AggregateQuerySnapshot> aggregateFuture;
-    @Mock private AggregateQuerySnapshot aggregateSnapshot;
 
     @InjectMocks private AdminService adminService;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         when(firebaseService.getFirestore()).thenReturn(mockDb);
     }
 

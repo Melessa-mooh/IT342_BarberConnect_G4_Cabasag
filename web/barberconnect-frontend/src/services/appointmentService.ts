@@ -27,8 +27,8 @@ export interface Appointment {
 export const appointmentService = {
   bookAppointment: async (request: CreateAppointmentRequest): Promise<Appointment> => {
     try {
-      const response = await api.post<Appointment>('/appointments/book', request);
-      return response.data;
+      const response = await api.post<{ success: boolean; data: Appointment; error: string | null }>('/appointments/book', request);
+      return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to book appointment');
     }
@@ -36,8 +36,9 @@ export const appointmentService = {
 
   getCustomerAppointments: async (customerId: string): Promise<Appointment[]> => {
     try {
-      const response = await api.get<Appointment[]>(`/appointments/customer/${customerId}`);
-      return response.data;
+      const response = await api.get<{ success: boolean; data: Appointment[]; error: string | null }>(`/appointments/customer/${customerId}`);
+      // FIX: Add ?? [] guard
+      return response.data.data ?? [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch appointments');
     }
@@ -45,8 +46,9 @@ export const appointmentService = {
 
   getBarberAppointments: async (barberProfileId: string): Promise<Appointment[]> => {
     try {
-      const response = await api.get<Appointment[]>(`/appointments/barber/${barberProfileId}`);
-      return response.data;
+      const response = await api.get<{ success: boolean; data: Appointment[]; error: string | null }>(`/appointments/barber/${barberProfileId}`);
+      // FIX: Add ?? [] guard
+      return response.data.data ?? [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch appointments');
     }
@@ -54,10 +56,37 @@ export const appointmentService = {
 
   updateAppointmentStatus: async (appointmentId: string, status: string): Promise<Appointment> => {
     try {
-      const response = await api.put<Appointment>(`/appointments/${appointmentId}/status`, { status });
-      return response.data;
+      const response = await api.put<{ success: boolean; data: Appointment; error: string | null }>(`/appointments/${appointmentId}/status`, { status });
+      return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update appointment status');
+    }
+  },
+
+  completeAppointment: async (appointmentId: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<{ success: boolean; data: Appointment; error: string | null }>(`/appointments/${appointmentId}/complete`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to complete appointment');
+    }
+  },
+
+  cancelAppointment: async (appointmentId: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<{ success: boolean; data: Appointment; error: string | null }>(`/appointments/${appointmentId}/cancel`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to cancel appointment');
+    }
+  },
+
+  markNoShow: async (appointmentId: string): Promise<Appointment> => {
+    try {
+      const response = await api.put<{ success: boolean; data: Appointment; error: string | null }>(`/appointments/${appointmentId}/no-show`);
+      return response.data.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to mark no-show');
     }
   }
 };

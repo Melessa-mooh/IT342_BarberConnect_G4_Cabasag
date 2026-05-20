@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * Vertical Slice Architecture — Income Feature
@@ -24,7 +23,7 @@ public class IncomeRecord {
     private BigDecimal platformFee;    // 20%
     private BigDecimal netAmount;      // 80%
     private PaymentMethod paymentMethod;
-    private LocalDateTime recordedAt;
+    private String recordedAt;
 
     public enum PaymentMethod {
         CASH, CARD, DIGITAL_WALLET

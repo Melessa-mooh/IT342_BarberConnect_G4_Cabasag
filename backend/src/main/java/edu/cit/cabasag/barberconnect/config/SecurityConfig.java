@@ -41,17 +41,27 @@ public class SecurityConfig {
                     "/auth/register",
                     "/auth/login",
                     "/auth/firebase-login",
+                    "/auth/refresh",
+                    "/auth/user/**",
                     "/oauth2/**",
                     "/login/oauth2/**",
                     "/error",
                     "/barbers/public/**",
+                    "/barbers/*/leave-dates",
                     "/haircuts/barber/**",
-                    "/haircuts/*/options"
+                    "/haircuts/**",
+                    "/haircuts/*/options",
+                    "/addons",
+                    "/addons/**",
+                    "/posts",
+                    "/posts/**"
                 ).permitAll()
                 // Admin endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                // Barber endpoints
-                .requestMatchers("/barbers/profile/**").hasRole("BARBER")
+                // Barber profile update — matches PUT /barbers/{userId}/profile
+                .requestMatchers("/barbers/*/profile").hasRole("BARBER")
+                // Barber profile picture upload
+                .requestMatchers("/barbers/*/profile-picture").hasRole("BARBER")
                 // Protected endpoints
                 .anyRequest().authenticated()
             )

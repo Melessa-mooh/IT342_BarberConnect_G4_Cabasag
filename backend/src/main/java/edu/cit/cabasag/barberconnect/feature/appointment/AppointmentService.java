@@ -1,8 +1,8 @@
 package edu.cit.cabasag.barberconnect.feature.appointment;
 
-import edu.cit.cabasag.barberconnect.feature.shared.FirebaseService;
+import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import edu.cit.cabasag.barberconnect.dto.request.CreateAppointmentRequest;
-import edu.cit.cabasag.barberconnect.model.IncomeRecord;
+
 import edu.cit.cabasag.barberconnect.observer.AppointmentEventManager;
 import com.google.cloud.firestore.Firestore;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -30,30 +30,48 @@ public class AppointmentService {
     private final AppointmentEventManager eventManager;
     private final FirebaseService firebaseService;
 
-    public edu.cit.cabasag.barberconnect.model.Appointment bookAppointment(CreateAppointmentRequest request) {
+    public Appointment bookAppointment(CreateAppointmentRequest request) {
         log.info("Processing booking for Customer {} with Barber {}", request.getCustomerId(), request.getBarberProfileId());
         try {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
 
-            edu.cit.cabasag.barberconnect.model.Appointment appointment = new edu.cit.cabasag.barberconnect.model.Appointment();
+            Appointment appointment = new Appointment();
             appointment.setAppointment_id(UUID.randomUUID().toString());
             appointment.setCustomer_id(request.getCustomerId());
             appointment.setBarber_profile_id(request.getBarberProfileId());
             appointment.setHaircut_style_id(request.getHaircutStyleId());
 
             java.time.Instant instant = java.time.Instant.parse(request.getAppointmentDateTime());
+
+            // Extract the date portion from the appointment datetime
+            java.time.LocalDate appointmentDate = instant.atZone(java.time.ZoneId.of("Asia/Manila")).toLocalDate();
+            String appointmentDateStr = appointmentDate.toString(); // "yyyy-MM-dd"
+
+            // Check if barber has an APPROVED leave on this date
+            com.google.cloud.firestore.QuerySnapshot leaveSnap = db.collection("leave_requests")
+                .whereEqualTo("barberProfileId", request.getBarberProfileId())
+                .whereEqualTo("requestedDate", appointmentDateStr)
+                .whereEqualTo("status", "APPROVED")
+                .get().get();
+
+            if (!leaveSnap.isEmpty()) {
+                throw new RuntimeException(
+                    "This barber is on approved leave on " + appointmentDateStr + ". Please choose a different date."
+                );
+            }
+
             appointment.setAppointmentDateTime(Date.from(instant));
             appointment.setTotalPrice(request.getTotalPrice());
 
             try {
-                appointment.setPaymentMethod(edu.cit.cabasag.barberconnect.model.Appointment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase()));
+                appointment.setPaymentMethod(Appointment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase()));
             } catch (Exception e) {
-                appointment.setPaymentMethod(edu.cit.cabasag.barberconnect.model.Appointment.PaymentMethod.CASH);
+                appointment.setPaymentMethod(Appointment.PaymentMethod.CASH);
             }
 
-            appointment.setStatus(edu.cit.cabasag.barberconnect.model.Appointment.AppointmentStatus.PENDING);
-            appointment.setPaymentStatus(edu.cit.cabasag.barberconnect.model.Appointment.PaymentStatus.PENDING);
+            appointment.setStatus(Appointment.AppointmentStatus.PENDING);
+            appointment.setPaymentStatus(Appointment.PaymentStatus.PENDING);
             appointment.setSelectedOptionIds(request.getSelectedOptionIds());
             appointment.setCreatedAt(new Date());
             appointment.setUpdatedAt(new Date());
@@ -73,7 +91,7 @@ public class AppointmentService {
         }
     }
 
-    public List<edu.cit.cabasag.barberconnect.model.Appointment> getAppointmentsByBarberProfileId(String barberProfileId) {
+    public List<Appointment> getAppointmentsByBarberProfileId(String barberProfileId) {
         try {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
@@ -82,7 +100,7 @@ public class AppointmentService {
                     .whereEqualTo("barber_profile_id", barberProfileId)
                     .orderBy("appointmentDateTime", com.google.cloud.firestore.Query.Direction.DESCENDING)
                     .get().get().getDocuments().stream()
-                    .map(doc -> doc.toObject(edu.cit.cabasag.barberconnect.model.Appointment.class))
+                    .map(doc -> doc.toObject(Appointment.class))
                     .collect(Collectors.toList());
 
         } catch (InterruptedException | ExecutionException e) {
@@ -90,7 +108,7 @@ public class AppointmentService {
         }
     }
 
-    public edu.cit.cabasag.barberconnect.model.Appointment updateAppointmentStatus(String appointmentId, String status) {
+    public Appointment updateAppointmentStatus(String appointmentId, String status) {
         log.info("Updating appointment {} to status {}", appointmentId, status);
         try {
             Firestore db = firebaseService.getFirestore();
@@ -102,9 +120,9 @@ public class AppointmentService {
 
             docRef.update("status", status).get();
 
-            edu.cit.cabasag.barberconnect.model.Appointment updated = doc.toObject(edu.cit.cabasag.barberconnect.model.Appointment.class);
+            Appointment updated = doc.toObject(Appointment.class);
             if (updated != null) {
-                updated.setStatus(edu.cit.cabasag.barberconnect.model.Appointment.AppointmentStatus.valueOf(status));
+                updated.setStatus(Appointment.AppointmentStatus.valueOf(status));
             }
             return updated;
 

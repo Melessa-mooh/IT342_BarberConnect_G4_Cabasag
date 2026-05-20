@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,6 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Export ONLY Firestore - NO Firebase Auth
 export const db = getFirestore(app);
+export const auth = getAuth(app);  // Firebase Auth instance for Google Sign-In
 export default app;
+

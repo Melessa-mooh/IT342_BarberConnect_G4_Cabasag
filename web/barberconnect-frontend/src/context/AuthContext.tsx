@@ -5,7 +5,7 @@ import type { User } from '../services/authService';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  loginWithGoogle: () => void;
+  loginWithGoogle: () => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -43,8 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, []);
 
-  const loginWithGoogle = () => {
-    authService.loginWithGoogle();
+  const loginWithGoogle = async (): Promise<void> => {
+    await authService.loginWithGoogle();
   };
 
   const logout = () => {

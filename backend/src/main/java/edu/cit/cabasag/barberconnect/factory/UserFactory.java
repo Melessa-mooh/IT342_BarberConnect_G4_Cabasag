@@ -1,7 +1,7 @@
 package edu.cit.cabasag.barberconnect.factory;
 
-import edu.cit.cabasag.barberconnect.model.User;
-import edu.cit.cabasag.barberconnect.model.User.UserRole;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User.UserRole;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;

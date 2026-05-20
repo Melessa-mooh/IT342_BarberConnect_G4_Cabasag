@@ -47,15 +47,15 @@ describe('Appointment Feature — appointmentService', () => {
   });
 
   it('TC-FE-APT-03: updateAppointmentStatus() calls correct endpoint', async () => {
-    // Arrange
-    vi.mocked(api.patch).mockResolvedValueOnce({
-      data: { success: true, data: { status: 'CONFIRMED' } },
+    // Arrange — the service uses PUT, not PATCH
+    vi.mocked(api.put).mockResolvedValueOnce({
+      data: { success: true, data: { appointment_id: 'apt-001', status: 'CONFIRMED' } },
     } as any);
 
     // Act
     await appointmentService.updateAppointmentStatus('apt-001', 'CONFIRMED');
 
     // Assert
-    expect(api.patch).toHaveBeenCalledWith('/appointments/apt-001/status', { status: 'CONFIRMED' });
+    expect(api.put).toHaveBeenCalledWith('/appointments/apt-001/status', { status: 'CONFIRMED' });
   });
 });

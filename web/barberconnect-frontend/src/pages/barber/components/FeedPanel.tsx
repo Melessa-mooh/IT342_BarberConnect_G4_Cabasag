@@ -4,7 +4,9 @@ import { postService, type Post, type PostComment } from '../../../services/barb
 
 const FeedPanel: React.FC = () => {
   const { user } = useAuth();
-  const barberProfileId = user?.barberProfile?.id?.toString() ?? '';
+  // barberProfile.id is a string (Firebase UID); fall back to firebaseUid because
+  // the backend sets barber_profile_id = user_id when a new profile is created.
+  const barberProfileId = user?.barberProfile?.id ?? user?.firebaseUid ?? '';
 
   // ─── State ──────────────────────────────────────────────────────────────────
   const [posts, setPosts]           = useState<Post[]>([]);
@@ -43,16 +45,38 @@ const FeedPanel: React.FC = () => {
 
   // ─── Create post ─────────────────────────────────────────────────────────────
   const handleCreatePost = async () => {
-    if (!newContent.trim()) return;
+    if (!newContent.trim()) {
+      alert('Please enter some content for your post');
+      return;
+    }
+
+    // Use barberProfile.id first; fall back to firebaseUid because the backend
+    // sets barber_profile_id = user_id when a new barber profile is first created.
+    const profileId = barberProfileId || user?.firebaseUid || '';
+
+    if (!profileId) {
+      alert('Barber profile not found. Please complete your profile first.');
+      return;
+    }
+
     setCreating(true);
     try {
-      const created = await postService.createPost(barberProfileId, newContent.trim(), newFile ?? undefined);
+      console.log('Creating post with:', { profileId, content: newContent, hasFile: !!newFile });
+      const created = await postService.createPost(profileId, newContent.trim(), newFile ?? undefined);
+      console.log('Post created successfully:', created);
       setPosts(prev => [created, ...prev]);
       setNewContent('');
       setNewFile(null);
+      if (fileRef.current) {
+        fileRef.current.value = '';
+      }
       setShowCreate(false);
+      alert('Post created successfully!');
     } catch (e: any) {
-      alert(e.message || 'Failed to create post');
+      console.error('Failed to create post:', e);
+      // Surface the real backend error message if available
+      const msg = e?.response?.data?.error || e?.message || 'Failed to create post. Please check your connection and try again.';
+      alert(msg);
     } finally {
       setCreating(false);
     }
@@ -101,36 +125,36 @@ const FeedPanel: React.FC = () => {
 
   // ─── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-10">
+    <div className="flex flex-col gap-6 animate-fade-in pb-10">
 
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Social Feed</h2>
-          <p className="text-slate-500 font-medium mt-1">Share your work and engage with customers</p>
+          <h2 className="text-2xl font-bold text-slate-800">Social Feed</h2>
+          <p className="text-sm text-slate-500 mt-1">Share your work and engage with customers</p>
         </div>
         <button
           onClick={() => setShowCreate(v => !v)}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition flex items-center gap-2"
+          className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-all"
         >
-          <span>➕</span> Create Post
+          + Create Post
         </button>
       </div>
 
       {/* Create Post Form */}
       {showCreate && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-4 max-w-2xl">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 max-w-2xl">
           <h3 className="font-bold text-slate-800">New Post</h3>
           <textarea
             value={newContent}
             onChange={e => setNewContent(e.target.value)}
             placeholder="What's on your mind? Share a haircut, tip, or update…"
-            className="border border-slate-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:border-slate-400"
+            className="border border-slate-300 rounded-lg p-3 text-sm resize-none h-24 focus:outline-none focus:border-[#D2691E] focus:ring-1 focus:ring-[#D2691E]"
           />
           <div className="flex items-center gap-3">
             <button
               onClick={() => fileRef.current?.click()}
-              className="border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+              className="border border-slate-300 px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
             >
               📷 {newFile ? newFile.name : 'Add Photo'}
             </button>
@@ -139,7 +163,7 @@ const FeedPanel: React.FC = () => {
             <button
               onClick={handleCreatePost}
               disabled={creating || !newContent.trim()}
-              className="bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold disabled:opacity-50 transition ml-auto"
+              className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 transition ml-auto"
             >
               {creating ? 'Posting…' : 'Post'}
             </button>
@@ -228,7 +252,7 @@ const FeedPanel: React.FC = () => {
                   />
                   <button
                     onClick={() => handleAddComment(post.post_id)}
-                    className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold"
+                    className="bg-gradient-to-r from-[#D2691E] to-[#8B4513] hover:from-[#CD853F] hover:to-[#A0522D] text-white px-4 py-2 rounded-xl text-xs font-bold"
                   >
                     Send
                   </button>

@@ -1,6 +1,6 @@
 package edu.cit.cabasag.barberconnect.dto.request;
 
-import edu.cit.cabasag.barberconnect.model.Appointment;
+import edu.cit.cabasag.barberconnect.feature.appointment.Appointment;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 

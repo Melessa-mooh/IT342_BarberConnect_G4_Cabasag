@@ -1,166 +1,210 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { barberService } from '../../../services/barberService';
+import api from '../../../services/api';
 
 const ProfilePanel = () => {
-  const { user } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { user, refreshUser } = useAuth();
+  const [isSaving,       setIsSaving]       = useState(false);
+  const [saveSuccess,    setSaveSuccess]    = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [previewUrl,     setPreviewUrl]     = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
-    phone: '',
-    bio: '',
-    experience: '',
-    gcash: '',
-    email: ''
-  });
+  const [formData, setFormData] = useState({ phone: '', bio: '', experience: '', gcash: '', email: '' });
 
-  // Pre-fill the form with real authenticated user data from Context
   useEffect(() => {
     if (user) {
       setFormData({
-        phone: user.phoneNumber || '',
-        bio: user.barberProfile?.bio || '',
+        phone:      user.phoneNumber || '',
+        bio:        user.barberProfile?.bio || '',
         experience: user.barberProfile?.yearsExperience?.toString() || '',
-        gcash: user.barberProfile?.gcashNumber || '',
-        email: user.email || ''
+        gcash:      user.barberProfile?.gcashNumber || '',
+        email:      user.email || '',
       });
+      setPreviewUrl(user.barberProfile?.profileImageUrl || null);
     }
   }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setPreviewUrl(URL.createObjectURL(file));
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post(`/barbers/${user.firebaseUid}/profile-picture`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setPreviewUrl(res.data?.data);
+      await refreshUser();
+    } catch (err: any) {
+      alert('Failed to upload photo: ' + (err?.response?.data?.error || err?.message));
+      setPreviewUrl(user.barberProfile?.profileImageUrl || null);
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
-    setIsSaving(true);
-    setSaveSuccess(false);
-
+    setIsSaving(true); setSaveSuccess(false);
     try {
       await barberService.updateProfile(user.firebaseUid, {
-        phone: formData.phone,
-        bio: formData.bio,
-        experience: parseInt(formData.experience) || 0,
-        gcash: formData.gcash
+        phone: formData.phone, bio: formData.bio,
+        experience: parseInt(formData.experience) || 0, gcash: formData.gcash,
       });
-      
+      await refreshUser();
       setSaveSuccess(true);
-      // Hide success message after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error("Failed to save profile", error);
-      alert("Failed to save profile. Please try again.");
+    } catch (error: any) {
+      alert(`Failed to save profile: ${error?.response?.data?.error || error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Barber';
+  const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Barber Profile</h2>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        {/* Profile Photo Upload */}
-        <div className="flex items-center gap-6 mb-8 border-b border-gray-100 pb-8">
-          <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md flex items-center justify-center text-4xl text-gray-400">
-            👤
+    <>
+      <div className="barber-page-header">
+        <h1>My Profile</h1>
+        <p>Manage your professional information and photo.</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.25rem', alignItems: 'start' }}>
+
+        {/* Left: Avatar card */}
+        <div className="barber-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', textAlign: 'center' }}>
+          {/* Avatar */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              width: '96px', height: '96px', borderRadius: '50%',
+              background: '#FFF7ED', border: '3px solid #FED7AA',
+              overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {previewUrl ? (
+                <img src={previewUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={() => setPreviewUrl(null)} />
+              ) : (
+                <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F97316' }}>{initials}</span>
+              )}
+            </div>
+            {uploadingPhoto && (
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="barber-spinner" style={{ width: '24px', height: '24px', borderWidth: '3px', margin: 0 }} />
+              </div>
+            )}
           </div>
+
           <div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Profile Photo</h3>
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
-              Upload New Photo (Cloudinary)
-            </button>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#111827' }}>{fullName}</p>
+            <p style={{ margin: '3px 0 0', fontSize: '0.78rem', color: '#6B7280' }}>Professional Barber</p>
+            <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#9CA3AF' }}>{formData.email}</p>
           </div>
+
+          {/* Stats */}
+          <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center', paddingTop: '1rem', borderTop: '1px solid #F3F4F6' }}>
+            {[
+              { label: 'Rating',   value: user?.barberProfile?.rating ? parseFloat(user.barberProfile.rating).toFixed(1) : '—', color: '#F59E0B' },
+              { label: 'Reviews',  value: user?.barberProfile?.totalReviews ?? '—',                                              color: '#3B82F6' },
+              { label: 'Yrs Exp',  value: formData.experience || '—',                                                            color: '#22C55E' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center' }}>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: '1.25rem', color: s.color }}>{s.value}</p>
+                <p style={{ margin: 0, fontSize: '0.65rem', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="barber-btn-primary"
+            style={{ width: '100%' }}
+          >
+            {uploadingPhoto ? 'Uploading…' : 'Change Photo'}
+          </button>
         </div>
 
-        {/* Profile Form */}
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-              <input 
-                type="text" 
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+63 912 345 6789"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#D2691E]"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Google Email (Read-only)</label>
-              <input 
-                type="email" 
-                value={formData.email}
-                disabled
-                className="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-lg p-3 cursor-not-allowed"
-              />
-            </div>
+        {/* Right: Edit form */}
+        <div className="barber-card">
+          <div className="barber-card-header">
+            <span className="barber-card-title">Edit Profile</span>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Short Bio</label>
-            <textarea 
-              name="bio"
-              value={formData.bio}
-              onChange={handleChange}
-              placeholder="Tell customers about your barbering style..."
-              className="w-full border border-gray-300 rounded-lg p-3 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-[#D2691E]"
-            ></textarea>
-          </div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Years of Experience</label>
-              <input 
-                type="number" 
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-                placeholder="Years..."
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#D2691E]"
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label className="barber-label">Phone Number</label>
+                <input type="text" name="phone" value={formData.phone} onChange={handleChange}
+                  placeholder="+63 912 345 6789" className="barber-input" />
+              </div>
+              <div>
+                <label className="barber-label">Email (Read-only)</label>
+                <input type="email" value={formData.email} disabled className="barber-input" />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">GCash Number</label>
-              <input 
-                type="text" 
-                name="gcash"
-                value={formData.gcash}
-                onChange={handleChange}
-                placeholder="09..."
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#D2691E]"
-              />
-            </div>
-          </div>
 
-          <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-6">
-            {saveSuccess && (
-              <span className="text-green-600 font-bold bg-green-50 px-4 py-2 rounded-lg animate-pulse">
-                ✓ Profile Saved!
-              </span>
-            )}
-            <div className="flex gap-4">
-              <button type="button" className="px-6 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition">
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                disabled={isSaving}
-                className={`px-8 py-2 text-white font-bold rounded-lg shadow-sm transition ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8B4513] hover:bg-[#D2691E]'}`}
+            <div>
+              <label className="barber-label">Short Bio</label>
+              <textarea name="bio" value={formData.bio} onChange={handleChange}
+                placeholder="Tell customers about your barbering style and specialties…"
+                rows={4}
+                className="barber-input"
+                style={{ resize: 'none' }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label className="barber-label">Years of Experience</label>
+                <input type="number" name="experience" value={formData.experience} onChange={handleChange}
+                  placeholder="e.g. 5" className="barber-input" />
+              </div>
+              <div>
+                <label className="barber-label">GCash Number</label>
+                <input type="text" name="gcash" value={formData.gcash} onChange={handleChange}
+                  placeholder="09XXXXXXXXX" className="barber-input" />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.875rem', paddingTop: '0.75rem', borderTop: '1px solid #F3F4F6' }}>
+              {saveSuccess && (
+                <span style={{ fontSize: '0.875rem', color: '#22C55E', fontWeight: 600 }}>
+                  ✓ Profile saved!
+                </span>
+              )}
+              <button
+                type="button"
+                className="barber-btn-secondary"
+                onClick={() => {
+                  if (user) setFormData({
+                    phone: user.phoneNumber || '', bio: user.barberProfile?.bio || '',
+                    experience: user.barberProfile?.yearsExperience?.toString() || '',
+                    gcash: user.barberProfile?.gcashNumber || '', email: user.email || '',
+                  });
+                }}
               >
-                {isSaving ? 'Saving...' : 'Save Profile'}
+                Reset
+              </button>
+              <button type="submit" disabled={isSaving} className="barber-btn-primary">
+                {isSaving ? 'Saving…' : 'Save Profile'}
               </button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

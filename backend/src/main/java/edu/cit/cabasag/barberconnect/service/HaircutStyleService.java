@@ -3,14 +3,13 @@ package edu.cit.cabasag.barberconnect.service;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
-import edu.cit.cabasag.barberconnect.model.HaircutStyle;
-import edu.cit.cabasag.barberconnect.model.StyleOption;
+import edu.cit.cabasag.barberconnect.feature.catalog.HaircutStyle;
+import edu.cit.cabasag.barberconnect.feature.catalog.StyleOption;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +27,11 @@ public class HaircutStyleService {
 
     private static final String HAIRCUTS_COLLECTION = "haircut_styles";
     private static final String OPTIONS_COLLECTION = "style_options";
+
+    /** Expose Firestore for controller-level single-doc lookups */
+    public com.google.cloud.firestore.Firestore getFirestore() {
+        return firebaseService.getFirestore();
+    }
 
     @SuppressWarnings("null")
     public HaircutStyle createHaircutStyle(String barberProfileId, String name, String description,
@@ -53,8 +57,8 @@ public class HaircutStyleService {
             style.setDurationMinutes(durationMinutes);
             style.setImageUrl(imageUrl);
             style.setIsActive(true);
-            style.setCreatedAt(LocalDateTime.now());
-            style.setUpdatedAt(LocalDateTime.now());
+            style.setCreatedAt(new java.util.Date().toString());
+            style.setUpdatedAt(new java.util.Date().toString());
             style.setStyleOptionIds(new ArrayList<>());
 
             db.collection(HAIRCUTS_COLLECTION).document(java.util.Objects.requireNonNullElse(haircutStyleId, "")).set(style).get();
@@ -74,20 +78,77 @@ public class HaircutStyleService {
 
             QuerySnapshot query = db.collection(HAIRCUTS_COLLECTION)
                     .whereEqualTo("barber_profile_id", barberProfileId)
-                    .whereEqualTo("isActive", true)
                     .get().get();
 
             List<HaircutStyle> styles = new ArrayList<>();
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
-                HaircutStyle style = doc.toObject(HaircutStyle.class);
-                styles.add(style);
+                try {
+                    HaircutStyle style = doc.toObject(HaircutStyle.class);
+                    if (Boolean.TRUE.equals(style.getIsActive())) {
+                        styles.add(style);
+                    }
+                } catch (Exception e) {
+                    log.warn("Skipping haircut style doc {} due to deserialization error: {}", doc.getId(), e.getMessage());
+                }
             }
+
+            // If no styles exist yet, seed the 4 defaults automatically
+            if (styles.isEmpty()) {
+                log.info("No styles found for barber {}. Seeding defaults...", barberProfileId);
+                styles = seedDefaultStyles(barberProfileId);
+            }
+
             return styles;
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch haircut styles: {}", e.getMessage());
             throw new RuntimeException("Failed to fetch haircut styles: " + e.getMessage());
         }
+    }
+
+    /**
+     * Seeds 4 default haircut styles for a new barber.
+     * Called automatically when a barber has no styles yet.
+     * NOTE: barberProfileId here is the UUID from barber_profiles collection,
+     * NOT the Firebase UID.
+     */
+    public List<HaircutStyle> seedDefaultStyles(String barberProfileId) {
+        // Define the 4 default styles matching AdminService defaults
+        record DefaultStyle(String name, String description, double price, int duration) {}
+
+        List<DefaultStyle> defaults = List.of(
+            new DefaultStyle("Classic Cut",
+                "A timeless and clean classic haircut suitable for all occasions.",
+                200.0, 30),
+            new DefaultStyle("Barber Cut",
+                "A professional barber-styled cut with precision and detail.",
+                400.0, 45),
+            new DefaultStyle("Trend Cut",
+                "A modern, on-trend cut following the latest barbering styles.",
+                500.0, 45),
+            new DefaultStyle("Premium Cut",
+                "A full premium experience with wash, cut, and styling finish.",
+                600.0, 60)
+        );
+
+        List<HaircutStyle> created = new ArrayList<>();
+        for (DefaultStyle d : defaults) {
+            try {
+                HaircutStyle style = createHaircutStyle(
+                    barberProfileId,
+                    d.name(),
+                    d.description(),
+                    java.math.BigDecimal.valueOf(d.price()),
+                    d.duration(),
+                    null  // no image file
+                );
+                created.add(style);
+                log.info("Seeded default style '{}' for barber {}", d.name(), barberProfileId);
+            } catch (Exception e) {
+                log.warn("Failed to seed style '{}' for barber {}: {}", d.name(), barberProfileId, e.getMessage());
+            }
+        }
+        return created;
     }
 
     @SuppressWarnings("null")
@@ -109,7 +170,7 @@ public class HaircutStyleService {
             if (description != null) updates.put("description", description);
             if (basePrice != null) updates.put("basePrice", basePrice);
             if (durationMinutes != null) updates.put("durationMinutes", durationMinutes);
-            updates.put("updatedAt", LocalDateTime.now().toString());
+            updates.put("updatedAt", new java.util.Date().toString());
 
             docRef.update(updates).get();
 
@@ -173,12 +234,14 @@ public class HaircutStyleService {
 
             QuerySnapshot query = db.collection(OPTIONS_COLLECTION)
                     .whereEqualTo("haircut_style_id", haircutStyleId)
-                    .whereEqualTo("isActive", true)
                     .get().get();
 
             List<StyleOption> options = new ArrayList<>();
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
-                options.add(doc.toObject(StyleOption.class));
+                StyleOption option = doc.toObject(StyleOption.class);
+                if (Boolean.TRUE.equals(option.getIsActive())) {
+                    options.add(option);
+                }
             }
             return options;
 

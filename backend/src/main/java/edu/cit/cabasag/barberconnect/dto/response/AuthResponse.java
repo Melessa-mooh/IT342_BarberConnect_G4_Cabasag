@@ -1,6 +1,6 @@
 package edu.cit.cabasag.barberconnect.dto.response;
 
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,6 +29,8 @@ public class AuthResponse {
     @AllArgsConstructor
     public static class BarberProfileResponse {
         private String id;
+        private String firstName;
+        private String lastName;
         private String bio;
         private Integer yearsExperience;
         private String rating;

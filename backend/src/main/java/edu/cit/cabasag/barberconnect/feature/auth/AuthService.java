@@ -47,7 +47,7 @@ public class AuthService {
 
             UserRecord userRecord = firebaseAuth.createUser(createRequest);
 
-            edu.cit.cabasag.barberconnect.model.User user = userFactory.createUser(
+            User user = userFactory.createUser(
                 userRecord.getUid(),
                 request.getFirstName(),
                 request.getLastName(),
@@ -82,12 +82,12 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         try {
-            Optional<edu.cit.cabasag.barberconnect.model.User> userOpt = userService.findByEmail(request.getEmail());
+            Optional<User> userOpt = userService.findByEmail(request.getEmail());
             if (userOpt.isEmpty()) {
                 throw new RuntimeException("Invalid email or password");
             }
 
-            edu.cit.cabasag.barberconnect.model.User user = userOpt.get();
+            User user = userOpt.get();
 
             if (!user.getIsActive()) {
                 throw new RuntimeException("Account is deactivated");
@@ -115,12 +115,12 @@ public class AuthService {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
             String uid = decodedToken.getUid();
 
-            Optional<edu.cit.cabasag.barberconnect.model.User> userOpt = userService.findById(uid);
+            Optional<User> userOpt = userService.findById(uid);
             if (userOpt.isEmpty()) {
                 throw new RuntimeException("User not found. Please register first.");
             }
 
-            edu.cit.cabasag.barberconnect.model.User user = userOpt.get();
+            User user = userOpt.get();
 
             if (!user.getIsActive()) {
                 throw new RuntimeException("Account is deactivated");
@@ -146,7 +146,7 @@ public class AuthService {
         }
     }
 
-    private AuthResponse mapToAuthResponse(edu.cit.cabasag.barberconnect.model.User user) {
+    private AuthResponse mapToAuthResponse(User user) {
         AuthResponse response = new AuthResponse();
         response.setFirebaseUid(user.getUser_id());
         response.setFirstName(user.getFirstName());
@@ -156,16 +156,21 @@ public class AuthService {
         response.setRole(user.getRole());
         response.setActive(user.getIsActive());
 
-        if (user.getBarberProfile() != null) {
-            var bp = user.getBarberProfile();
+        // Load barberProfile — might be null on the User object if not embedded in Firestore
+        var bp = user.getBarberProfile();
+        if (bp == null && user.getRole() == User.UserRole.BARBER) {
+            bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
+        }
+
+        if (bp != null) {
             AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
-            barberResponse.setId(bp.getBarber_profile_id());
+            barberResponse.setId(bp.getBarber_profile_id()); // ← the UUID, not the Firebase UID
             barberResponse.setBio(bp.getBio());
             barberResponse.setYearsExperience(bp.getYearsExperience());
-            barberResponse.setRating(bp.getRating().toString());
-            barberResponse.setTotalReviews(bp.getTotalReviews());
+            barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
+            barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
             barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
-            barberResponse.setIsAvailable(bp.getIsAvailable());
+            barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
             response.setBarberProfile(barberResponse);
         }
 

@@ -1,8 +1,8 @@
 package edu.cit.cabasag.barberconnect.controller;
 
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
-import edu.cit.cabasag.barberconnect.model.HaircutStyle;
-import edu.cit.cabasag.barberconnect.model.StyleOption;
+import edu.cit.cabasag.barberconnect.feature.catalog.HaircutStyle;
+import edu.cit.cabasag.barberconnect.feature.catalog.StyleOption;
 import edu.cit.cabasag.barberconnect.service.HaircutStyleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,20 +21,29 @@ public class HaircutStyleController {
 
     private final HaircutStyleService haircutStyleService;
 
-    @PostMapping
+    @PostMapping(produces = "application/json")
     @PreAuthorize("hasRole('BARBER')")
     public ResponseEntity<ApiResponse<HaircutStyle>> createHaircutStyle(
             @RequestParam("barberProfileId") String barberProfileId,
             @RequestParam("name") String name,
-            @RequestParam("description") String description,
+            @RequestParam(value = "description", required = false, defaultValue = "") String description,
             @RequestParam("basePrice") BigDecimal basePrice,
             @RequestParam(value = "durationMinutes", required = false) Integer durationMinutes,
             @RequestParam(value = "file", required = false) MultipartFile file) {
         try {
+            if (barberProfileId == null || barberProfileId.isBlank()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("barberProfileId is required"));
+            }
+            if (name == null || name.isBlank()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("name is required"));
+            }
+            if (basePrice == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("basePrice is required"));
+            }
             HaircutStyle style = haircutStyleService.createHaircutStyle(barberProfileId, name, description, basePrice, durationMinutes, file);
             return ResponseEntity.ok(ApiResponse.success(style));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Create failed: " + e.getMessage()));
         }
     }
 
@@ -43,6 +52,21 @@ public class HaircutStyleController {
         try {
             List<HaircutStyle> styles = haircutStyleService.getHaircutStylesForBarber(barberProfileId);
             return ResponseEntity.ok(ApiResponse.success(styles));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Public: get a single haircut style by ID — used by barber popup to resolve style name */
+    @GetMapping("/{haircutStyleId}")
+    public ResponseEntity<ApiResponse<HaircutStyle>> getHaircutStyleById(@PathVariable String haircutStyleId) {
+        try {
+            com.google.cloud.firestore.Firestore db = haircutStyleService.getFirestore();
+            if (db == null) return ResponseEntity.badRequest().body(ApiResponse.error("Firestore not available"));
+            var snap = db.collection("haircut_styles").document(haircutStyleId).get().get();
+            if (!snap.exists()) return ResponseEntity.badRequest().body(ApiResponse.error("Style not found"));
+            HaircutStyle style = snap.toObject(HaircutStyle.class);
+            return ResponseEntity.ok(ApiResponse.success(style));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

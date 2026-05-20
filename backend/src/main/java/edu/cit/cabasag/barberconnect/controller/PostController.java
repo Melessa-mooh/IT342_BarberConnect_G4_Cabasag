@@ -5,9 +5,9 @@ import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
-import edu.cit.cabasag.barberconnect.model.Comment;
-import edu.cit.cabasag.barberconnect.model.Post;
-import edu.cit.cabasag.barberconnect.model.Reaction;
+import edu.cit.cabasag.barberconnect.feature.social.Comment;
+import edu.cit.cabasag.barberconnect.feature.social.Post;
+import edu.cit.cabasag.barberconnect.feature.social.Reaction;
 import edu.cit.cabasag.barberconnect.service.CloudinaryService;
 import edu.cit.cabasag.barberconnect.service.FirebaseService;
 import lombok.RequiredArgsConstructor;
@@ -111,8 +111,8 @@ public class PostController {
                     .body(ApiResponse.error("Firestore not available"));
 
             QuerySnapshot snap = db.collection(POSTS_COL)
-                    .whereEqualTo("isActive", true)
                     .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .limit(50)
                     .get().get();
 
             List<Post> posts = mapPosts(snap);

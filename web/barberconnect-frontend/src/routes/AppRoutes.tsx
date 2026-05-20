@@ -8,6 +8,7 @@ import AdminLoginPage from '../pages/auth/AdminLoginPage';
 import AuthCallback from '../pages/auth/AuthCallback';
 import CustomerDashboard from '../pages/customer/CustomerDashboard';
 import BookingPage from '../pages/customer/BookingPage';
+import MyBookingsPage from '../pages/customer/MyBookingsPage';
 import BarberDashboard from '../pages/barber/BarberDashboard';
 import ProfilePage from '../pages/ProfilePage';
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -182,6 +183,12 @@ const AppRoutes: React.FC = () => {
       <Route path="/booking" element={
         <RoleProtectedRoute allowedRoles={['CUSTOMER']}>
           <BookingPage />
+        </RoleProtectedRoute>
+      } />
+
+      <Route path="/my-bookings" element={
+        <RoleProtectedRoute allowedRoles={['CUSTOMER']}>
+          <MyBookingsPage />
         </RoleProtectedRoute>
       } />
 

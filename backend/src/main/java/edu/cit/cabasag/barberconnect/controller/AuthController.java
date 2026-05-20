@@ -5,7 +5,7 @@ import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
 import edu.cit.cabasag.barberconnect.dto.request.UpdateProfileRequest;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
-import edu.cit.cabasag.barberconnect.model.User;
+import edu.cit.cabasag.barberconnect.feature.auth.User;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import edu.cit.cabasag.barberconnect.service.AuthService;
 import edu.cit.cabasag.barberconnect.service.CloudinaryService;
@@ -51,7 +51,8 @@ public class AuthController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("Login failed", e);
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
     
@@ -85,6 +86,24 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Get current user failed", e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Public endpoint to look up a user's display name by Firebase UID.
+     *  Used by barber schedule popup to show customer names. */
+    @GetMapping("/user/{uid}")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getUserName(@PathVariable String uid) {
+        try {
+            User user = userService.findById(uid).orElse(null);
+            if (user == null) {
+                return ResponseEntity.ok(ApiResponse.success(Map.of("firstName", "Customer", "lastName", "")));
+            }
+            return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "firstName", user.getFirstName() != null ? user.getFirstName() : "",
+                "lastName",  user.getLastName()  != null ? user.getLastName()  : ""
+            )));
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.success(Map.of("firstName", "Customer", "lastName", "")));
         }
     }
     
@@ -127,6 +146,50 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Token validation failed", e);
             return ResponseEntity.ok(ApiResponse.success(false));
+        }
+    }
+
+    /**
+     * POST /auth/refresh
+     * Accepts a valid (non-expired) refresh token and issues a new access token + refresh token pair.
+     * Returns HTTP 401 if the refresh token is invalid or expired.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<Map<String, String>>> refreshToken(
+            @RequestBody Map<String, String> body) {
+        try {
+            String refreshToken = body.get("refreshToken");
+            if (refreshToken == null || refreshToken.isBlank()) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Refresh token is required"));
+            }
+
+            // Validate the token is a refresh token and is not expired
+            if (!jwtUtil.isRefreshToken(refreshToken) || jwtUtil.isTokenExpired(refreshToken)) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid or expired refresh token"));
+            }
+
+            String uid = jwtUtil.extractUid(refreshToken);
+            User user = userService.findById(uid)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!user.getIsActive()) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Account is deactivated"));
+            }
+
+            String newAccessToken  = jwtUtil.generateToken(uid, user.getEmail(), user.getRole().name());
+            String newRefreshToken = jwtUtil.generateRefreshToken(uid);
+
+            log.info("Token refreshed for user: {}", uid);
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("token", newAccessToken, "refreshToken", newRefreshToken)));
+
+        } catch (Exception e) {
+            log.error("Token refresh failed: {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Token refresh failed"));
         }
     }
     
@@ -192,16 +255,21 @@ public class AuthController {
         response.setActive(user.getIsActive());
         response.setProfileImageUrl(user.getProfileImageUrl());
         
-        if (user.getBarberProfile() != null) {
-            var bp = user.getBarberProfile();
+        // Load barberProfile — might be null on the User object if not embedded in Firestore
+        var bp = user.getBarberProfile();
+        if (bp == null && user.getRole() == User.UserRole.BARBER) {
+            bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
+        }
+
+        if (bp != null) {
             AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
             barberResponse.setId(bp.getBarber_profile_id());
             barberResponse.setBio(bp.getBio());
             barberResponse.setYearsExperience(bp.getYearsExperience());
-            barberResponse.setRating(bp.getRating().toString());
-            barberResponse.setTotalReviews(bp.getTotalReviews());
+            barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
+            barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
             barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
-            barberResponse.setIsAvailable(bp.getIsAvailable());
+            barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
             
             response.setBarberProfile(barberResponse);
         }
