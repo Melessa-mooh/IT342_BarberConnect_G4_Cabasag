@@ -145,6 +145,7 @@ export const authService = {
    */
   removeToken(): void {
     localStorage.removeItem('jwt_token');
+    localStorage.removeItem('refresh_token');
   },
 
   /**

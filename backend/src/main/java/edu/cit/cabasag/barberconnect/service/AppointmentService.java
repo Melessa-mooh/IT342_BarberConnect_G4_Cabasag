@@ -199,9 +199,19 @@ public class AppointmentService {
             appointment.setPaymentStatus(Appointment.PaymentStatus.PAID);
             appointment.setUpdatedAt(new Date());
 
-            // 5. Commit to Firestore (Atomically-like)
-            db.collection("income_records").document(java.util.Objects.requireNonNull(incomeRecord.getIncome_record_id())).set(incomeRecord);
-            db.collection("appointments").document(java.util.Objects.requireNonNull(appointmentId)).set(appointment);
+            // 5. Commit to Firestore atomically using WriteBatch
+            com.google.cloud.firestore.WriteBatch batch = db.batch();
+            batch.set(
+                db.collection("income_records")
+                  .document(java.util.Objects.requireNonNull(incomeRecord.getIncome_record_id())),
+                incomeRecord
+            );
+            batch.set(
+                db.collection("appointments")
+                  .document(java.util.Objects.requireNonNull(appointmentId)),
+                appointment
+            );
+            batch.commit().get();
 
             String notificationMessage = "Appointment completed! " + netAmount + " added to your earnings.";
             eventManager.notifyAll(appointment.getBarber_profile_id(), notificationMessage);

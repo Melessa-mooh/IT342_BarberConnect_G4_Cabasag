@@ -27,8 +27,8 @@ const BarberDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<BarberTab>('overview');
 
-  const handleLogout = async () => {
-    try { await logout(); navigate('/login'); }
+  const handleLogout = () => {
+    try { logout(); navigate('/login'); }
     catch (err) { console.error('Logout failed:', err); }
   };
 
@@ -38,15 +38,16 @@ const BarberDashboard: React.FC = () => {
     !user?.barberProfile?.yearsExperience || user.barberProfile.yearsExperience === 0;
 
   const renderContent = () => {
+    const handleTabChange = (tab: string) => setActiveTab(tab as BarberTab);
     switch (activeTab) {
-      case 'overview':  return <OverviewPanel setActiveTab={setActiveTab} />;
+      case 'overview':  return <OverviewPanel setActiveTab={handleTabChange} />;
       case 'schedule':  return <SchedulePanel />;
       case 'catalog':   return <CatalogPanel />;
       case 'feed':      return <FeedPanel />;
       case 'income':    return <IncomePanel />;
       case 'ratings':   return <FeedbackPanel />;
       case 'profile':   return <ProfilePanel />;
-      default:          return <OverviewPanel setActiveTab={setActiveTab} />;
+      default:          return <OverviewPanel setActiveTab={handleTabChange} />;
     }
   };
 

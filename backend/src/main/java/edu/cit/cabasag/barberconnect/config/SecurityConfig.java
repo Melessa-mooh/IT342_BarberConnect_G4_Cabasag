@@ -41,6 +41,7 @@ public class SecurityConfig {
                     "/auth/register",
                     "/auth/login",
                     "/auth/firebase-login",
+                    "/auth/refresh",
                     "/auth/user/**",
                     "/oauth2/**",
                     "/login/oauth2/**",

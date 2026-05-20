@@ -12,237 +12,237 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Canonical barber profile location: the "barber_profiles" Firestore collection.
+ *
+ * Migration note: self-registered barbers previously had their profile embedded
+ * inside the "users" document. The migrateEmbeddedProfiles() method (called once
+ * via the admin migration endpoint) copies any such embedded profiles into the
+ * canonical collection and removes the embedded copy.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BarberService {
-    
+
     private final FirebaseService firebaseService;
-    private static final String USERS_COLLECTION = "users";
-    
+    private static final String USERS_COLLECTION        = "users";
+    private static final String PROFILES_COLLECTION     = "barber_profiles";
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Public API
+    // ─────────────────────────────────────────────────────────────────────────
+
     public List<AuthResponse.BarberProfileResponse> getAllAvailableBarbers() {
         try {
             Firestore db = firebaseService.getFirestore();
             if (db == null) return new ArrayList<>();
-            
-            var query = db.collection(USERS_COLLECTION)
-                    .whereEqualTo("role", "BARBER")
-                    .whereEqualTo("isActive", true)
-                    .get()
-                    .get();
-            
-            List<AuthResponse.BarberProfileResponse> barbers = new ArrayList<>();
-            
-            for (QueryDocumentSnapshot document : query.getDocuments()) {
-                try {
-                    User user = document.toObject(User.class);
-                    BarberProfile profile = user.getBarberProfile();
 
-                    // Fallback: if embedded barberProfile is missing or has no ID,
-                    // look it up in the barber_profiles collection
-                    if (profile == null || profile.getBarber_profile_id() == null) {
-                        String userId = document.getId();
-                        var profileQuery = db.collection("barber_profiles")
-                                .whereEqualTo("user_id", userId)
-                                .get().get();
-                        if (!profileQuery.isEmpty()) {
-                            profile = profileQuery.getDocuments().get(0).toObject(BarberProfile.class);
+            // Single source of truth: barber_profiles collection
+            var profilesSnap = db.collection(PROFILES_COLLECTION)
+                    .whereEqualTo("isAvailable", true)
+                    .get().get();
+
+            List<AuthResponse.BarberProfileResponse> barbers = new ArrayList<>();
+            for (QueryDocumentSnapshot profileDoc : profilesSnap.getDocuments()) {
+                try {
+                    BarberProfile profile = profileDoc.toObject(BarberProfile.class);
+                    if (profile == null) continue;
+
+                    // Fetch the associated user for name fields
+                    User user = null;
+                    String uid = profile.getUser_id();
+                    if (uid != null) {
+                        var userSnap = db.collection(USERS_COLLECTION).document(uid).get().get();
+                        if (userSnap.exists()) {
+                            user = userSnap.toObject(User.class);
+                            // Skip inactive users
+                            if (user != null && Boolean.FALSE.equals(user.getIsActive())) continue;
                         }
                     }
-
-                    if (profile != null && Boolean.TRUE.equals(profile.getIsAvailable())) {
-                        barbers.add(mapToBarberResponse(profile, user));
-                    }
+                    barbers.add(mapToBarberResponse(profile, user));
                 } catch (Exception e) {
-                    // Log and skip barbers with deserialization issues
-                    log.warn("Failed to deserialize barber profile for document {}: {}", document.getId(), e.getMessage());
-                    // Try to fix the document by updating it
-                    try {
-                        fixBarberProfileTimestamps(db, document.getId());
-                        log.info("Fixed timestamps for barber: {}", document.getId());
-                    } catch (Exception fixError) {
-                        log.error("Failed to fix timestamps for barber {}: {}", document.getId(), fixError.getMessage());
-                    }
+                    log.warn("Skipping barber profile doc {}: {}", profileDoc.getId(), e.getMessage());
                 }
             }
-            
             return barbers;
+
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error fetching available barbers: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
-    
+
     /**
-     * Helper method to fix timestamp fields in existing barber profiles
+     * Looks up a barber profile by its barber_profile_id from the canonical
+     * barber_profiles collection only. No multi-strategy fallback needed.
      */
-    @SuppressWarnings("null")
-    private void fixBarberProfileTimestamps(Firestore db, String userId) throws ExecutionException, InterruptedException {
-        var docRef = db.collection(USERS_COLLECTION).document(java.util.Objects.requireNonNullElse(userId, ""));
-        var doc = docRef.get().get();
-        
-        if (!doc.exists()) return;
-        
-        var data = doc.getData();
-        if (data == null) return;
-        
-        @SuppressWarnings("unchecked")
-        var barberProfile = (java.util.Map<String, Object>) data.get("barberProfile");
-        if (barberProfile == null) return;
-        
-        // Replace any HashMap timestamps with proper Date objects
-        if (barberProfile.get("createdAt") instanceof java.util.Map) {
-            barberProfile.put("createdAt", new java.util.Date());
-        }
-        if (barberProfile.get("updatedAt") instanceof java.util.Map) {
-            barberProfile.put("updatedAt", new java.util.Date());
-        }
-        
-        data.put("barberProfile", barberProfile);
-        docRef.set(data).get();
-    }
-    
     public AuthResponse.BarberProfileResponse getBarberById(String id) {
         try {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
 
-            // Strategy 1: look in the separate barber_profiles collection (admin-created barbers)
-            var query = db.collection("barber_profiles")
+            var snap = db.collection(PROFILES_COLLECTION)
                     .whereEqualTo("barber_profile_id", id)
-                    .get()
-                    .get();
+                    .limit(1)
+                    .get().get();
 
-            if (!query.isEmpty()) {
-                BarberProfile profile = query.getDocuments().get(0).toObject(BarberProfile.class);
-                String uid = profile.getUser_id();
-                User userDoc = null;
-                if (uid != null) {
-                    var userSnap = db.collection(USERS_COLLECTION).document(uid).get().get();
-                    if (userSnap.exists()) {
-                        userDoc = userSnap.toObject(User.class);
-                    }
-                }
-                return mapToBarberResponse(profile, userDoc);
+            if (snap.isEmpty()) {
+                throw new RuntimeException("Barber profile not found for id: " + id);
             }
 
-            // Strategy 2: look in users collection for embedded barberProfile
-            // (self-registered barbers whose barberProfile.barber_profile_id == id)
-            var usersQuery = db.collection(USERS_COLLECTION)
-                    .whereEqualTo("role", "BARBER")
-                    .get()
-                    .get();
+            BarberProfile profile = snap.getDocuments().get(0).toObject(BarberProfile.class);
+            if (profile == null) throw new RuntimeException("Failed to deserialize barber profile: " + id);
 
-            for (var userDoc : usersQuery.getDocuments()) {
-                try {
-                    User user = userDoc.toObject(User.class);
-                    BarberProfile profile = user.getBarberProfile();
-                    if (profile != null && id.equals(profile.getBarber_profile_id())) {
-                        return mapToBarberResponse(profile, user);
-                    }
-                    // Also check if the Firebase UID itself is used as the profile ID
-                    if (profile != null && id.equals(user.getUser_id())) {
-                        if (profile.getBarber_profile_id() == null) {
-                            profile.setBarber_profile_id(user.getUser_id());
-                        }
-                        return mapToBarberResponse(profile, user);
-                    }
-                } catch (Exception e) {
-                    log.warn("Skipping user doc {} during getBarberById fallback: {}", userDoc.getId(), e.getMessage());
-                }
+            User user = null;
+            if (profile.getUser_id() != null) {
+                var userSnap = db.collection(USERS_COLLECTION)
+                        .document(profile.getUser_id()).get().get();
+                if (userSnap.exists()) user = userSnap.toObject(User.class);
             }
-
-            throw new RuntimeException("Barber profile not found for id: " + id);
+            return mapToBarberResponse(profile, user);
 
         } catch (InterruptedException | ExecutionException e) {
-            log.error("Error fetching barber by ID: {}", e.getMessage());
+            log.error("Error fetching barber by ID {}: {}", id, e.getMessage());
             throw new RuntimeException("Error fetching barber by ID", e);
         }
     }
-    
-    
-    private AuthResponse.BarberProfileResponse mapToBarberResponse(BarberProfile barber, User user) {
-        // Implemented using the Creational Builder Pattern
-        return AuthResponse.BarberProfileResponse.builder()
-                .id(barber.getBarber_profile_id())
-                .firstName(user != null ? user.getFirstName() : "")
-                .lastName(user != null ? user.getLastName() : "")
-                .bio(barber.getBio())
-                .yearsExperience(barber.getYearsExperience())
-                .rating(barber.getRating() != null ? barber.getRating().toString() : "0.0")
-                .totalReviews(barber.getTotalReviews())
-                .profileImageUrl(barber.getProfileImageUrl())
-                .gcashNumber(barber.getGcashNumber())
-                .isAvailable(barber.getIsAvailable())
-                .build();
-    }
-    
-    public AuthResponse.BarberProfileResponse updateProfile(String userId, edu.cit.cabasag.barberconnect.dto.request.UpdateBarberProfileRequest request) {
+
+    /**
+     * One-time migration: copies embedded barberProfile objects from the "users"
+     * collection into the canonical "barber_profiles" collection, then removes
+     * the embedded copy from the user document.
+     *
+     * Safe to call multiple times — skips profiles that already exist in
+     * barber_profiles.
+     *
+     * @return number of profiles migrated
+     */
+    public int migrateEmbeddedProfiles() {
+        int migrated = 0;
         try {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
-            
-            // 0. Fetch the user safely
-            com.google.cloud.firestore.DocumentSnapshot doc = db.collection(USERS_COLLECTION).document(java.util.Objects.requireNonNull(userId)).get().get();
-            if (!doc.exists()) throw new RuntimeException("User not found: " + userId);
-            
-            User user = doc.toObject(User.class);
-            if (user == null) throw new RuntimeException("Failed to cast User");
-            
-            // 1. Update user phone
-            user.setPhoneNumber(request.getPhone());
-            
-            // 2. Safely initialize barber profile if missing
-            BarberProfile profile = user.getBarberProfile();
-            if (profile == null) {
-                profile = new BarberProfile();
-                profile.setBarber_profile_id(user.getUser_id());
-                profile.setUser_id(user.getUser_id());
-                profile.setCreatedAt(new java.util.Date());
-                user.setBarberProfile(profile);
+
+            var barbersSnap = db.collection(USERS_COLLECTION)
+                    .whereEqualTo("role", "BARBER")
+                    .get().get();
+
+            for (QueryDocumentSnapshot userDoc : barbersSnap.getDocuments()) {
+                try {
+                    User user = userDoc.toObject(User.class);
+                    if (user == null) continue;
+
+                    BarberProfile embedded = user.getBarberProfile();
+                    if (embedded == null) continue; // nothing to migrate
+
+                    // Ensure the profile has an ID
+                    if (embedded.getBarber_profile_id() == null) {
+                        embedded.setBarber_profile_id(user.getUser_id());
+                    }
+                    embedded.setUser_id(user.getUser_id());
+
+                    // Check if already in canonical collection
+                    var existing = db.collection(PROFILES_COLLECTION)
+                            .whereEqualTo("barber_profile_id", embedded.getBarber_profile_id())
+                            .limit(1).get().get();
+
+                    if (!existing.isEmpty()) {
+                        log.debug("Profile {} already in barber_profiles — skipping",
+                                embedded.getBarber_profile_id());
+                        continue;
+                    }
+
+                    // Write to canonical collection
+                    if (embedded.getCreatedAt() == null) embedded.setCreatedAt(new java.util.Date());
+                    if (embedded.getUpdatedAt() == null) embedded.setUpdatedAt(new java.util.Date());
+
+                    db.collection(PROFILES_COLLECTION)
+                            .document(embedded.getBarber_profile_id())
+                            .set(embedded).get();
+
+                    // Remove embedded copy from user document
+                    db.collection(USERS_COLLECTION)
+                            .document(userDoc.getId())
+                            .update("barberProfile", null).get();
+
+                    log.info("Migrated embedded profile {} for user {}",
+                            embedded.getBarber_profile_id(), user.getUser_id());
+                    migrated++;
+
+                } catch (Exception e) {
+                    log.warn("Failed to migrate profile for user doc {}: {}",
+                            userDoc.getId(), e.getMessage());
+                }
             }
-            
-            // 3. Map request data - Use Date for compatibility
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Migration failed: {}", e.getMessage());
+            throw new RuntimeException("Migration failed", e);
+        }
+        log.info("Migration complete. {} profiles migrated.", migrated);
+        return migrated;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Profile update
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public AuthResponse.BarberProfileResponse updateProfile(
+            String userId,
+            edu.cit.cabasag.barberconnect.dto.request.UpdateBarberProfileRequest request) {
+        try {
+            Firestore db = firebaseService.getFirestore();
+            if (db == null) throw new RuntimeException("Firestore not available");
+
+            // 1. Update phone on the user document
+            var userDocRef = db.collection(USERS_COLLECTION).document(
+                    java.util.Objects.requireNonNull(userId));
+            var userSnap = userDocRef.get().get();
+            if (!userSnap.exists()) throw new RuntimeException("User not found: " + userId);
+
+            User user = userSnap.toObject(User.class);
+            if (user == null) throw new RuntimeException("Failed to cast User");
+            user.setPhoneNumber(request.getPhone());
+            user.setUpdatedAt(new java.util.Date());
+            userDocRef.set(user).get();
+
+            // 2. Update the canonical barber_profiles document
+            var profileQuery = db.collection(PROFILES_COLLECTION)
+                    .whereEqualTo("user_id", userId)
+                    .limit(1).get().get();
+
+            BarberProfile profile;
+            String profileDocId;
+
+            if (!profileQuery.isEmpty()) {
+                profileDocId = profileQuery.getDocuments().get(0).getId();
+                profile = profileQuery.getDocuments().get(0).toObject(BarberProfile.class);
+                if (profile == null) profile = new BarberProfile();
+            } else {
+                // First-time profile creation for self-registered barber
+                profileDocId = userId;
+                profile = new BarberProfile();
+                profile.setBarber_profile_id(userId);
+                profile.setUser_id(userId);
+                profile.setCreatedAt(new java.util.Date());
+            }
+
             profile.setBio(request.getBio());
             profile.setYearsExperience(request.getExperience());
             profile.setGcashNumber(request.getGcash());
-            profile.setUpdatedAt(new java.util.Date());
-            user.setUpdatedAt(new java.util.Date());
-            
-            // 4. Update the Firestore User document (which contains the nested profile structure)
-            db.collection(USERS_COLLECTION)
-              .document(java.util.Objects.requireNonNull(userId))
-              .set(user) 
-              .get();
-              
-            // Also sync to the separate barber_profiles collection
-            try {
-                var profileQuery = db.collection("barber_profiles")
-                        .whereEqualTo("user_id", userId)
-                        .get().get();
-                if (!profileQuery.isEmpty()) {
-                    String profileDocId = profileQuery.getDocuments().get(0).getId();
-                    java.util.Map<String, Object> profileUpdate = new java.util.HashMap<>();
-                    profileUpdate.put("bio", request.getBio());
-                    profileUpdate.put("yearsExperience", request.getExperience());
-                    profileUpdate.put("gcashNumber", request.getGcash());
-                    profileUpdate.put("updatedAt", new java.util.Date().toString());
-                    if (request.getIsAvailable() != null) {
-                        profileUpdate.put("isAvailable", request.getIsAvailable());
-                    }
-                    db.collection("barber_profiles").document(profileDocId)
-                      .update(profileUpdate).get();
-                    log.info("Synced barber_profiles doc {} for user {}", profileDocId, userId);
-                }
-            } catch (Exception syncEx) {
-                log.warn("Could not sync barber_profiles for user {}: {}", userId, syncEx.getMessage());
+            if (request.getIsAvailable() != null) {
+                profile.setIsAvailable(request.getIsAvailable());
             }
-              
-            log.info("Successfully updated barber profile for user: {}", userId);
+            profile.setUpdatedAt(new java.util.Date());
+
+            db.collection(PROFILES_COLLECTION).document(profileDocId).set(profile).get();
+            log.info("Updated barber profile {} for user {}", profileDocId, userId);
+
             return mapToBarberResponse(profile, user);
-            
+
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to update Barber Profile in Firestore", e);
             throw new RuntimeException("DB Error: " + e.getMessage(), e);
@@ -252,6 +252,10 @@ public class BarberService {
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Income records
+    // ─────────────────────────────────────────────────────────────────────────
+
     public List<IncomeRecord> getIncomeRecords(String barberProfileId) {
         try {
             Firestore db = firebaseService.getFirestore();
@@ -259,22 +263,20 @@ public class BarberService {
 
             var query = db.collection("income_records")
                     .whereEqualTo("barber_profile_id", barberProfileId)
-                    .get()
-                    .get();
+                    .get().get();
 
             List<IncomeRecord> records = new ArrayList<>();
             for (QueryDocumentSnapshot doc : query.getDocuments()) {
                 records.add(doc.toObject(IncomeRecord.class));
             }
-            
-            // Sort in memory by recordedAt DESCENDING
+
             records.sort((a, b) -> {
                 if (a.getRecordedAt() == null && b.getRecordedAt() == null) return 0;
                 if (a.getRecordedAt() == null) return 1;
                 if (b.getRecordedAt() == null) return -1;
                 return b.getRecordedAt().compareTo(a.getRecordedAt());
             });
-            
+
             return records;
 
         } catch (InterruptedException | ExecutionException e) {
@@ -294,7 +296,7 @@ public class BarberService {
             List<String> dates = new ArrayList<>();
             for (var doc : snap.getDocuments()) {
                 String status = doc.getString("status");
-                String date = doc.getString("requestedDate");
+                String date   = doc.getString("requestedDate");
                 if ("APPROVED".equals(status) && date != null) {
                     dates.add(date);
                 }
@@ -304,5 +306,24 @@ public class BarberService {
             log.error("Failed to get approved leave dates: {}", e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private AuthResponse.BarberProfileResponse mapToBarberResponse(BarberProfile barber, User user) {
+        return AuthResponse.BarberProfileResponse.builder()
+                .id(barber.getBarber_profile_id())
+                .firstName(user != null ? user.getFirstName() : "")
+                .lastName(user != null ? user.getLastName() : "")
+                .bio(barber.getBio())
+                .yearsExperience(barber.getYearsExperience())
+                .rating(barber.getRating() != null ? barber.getRating().toString() : "0.0")
+                .totalReviews(barber.getTotalReviews())
+                .profileImageUrl(barber.getProfileImageUrl())
+                .gcashNumber(barber.getGcashNumber())
+                .isAvailable(barber.getIsAvailable())
+                .build();
     }
 }

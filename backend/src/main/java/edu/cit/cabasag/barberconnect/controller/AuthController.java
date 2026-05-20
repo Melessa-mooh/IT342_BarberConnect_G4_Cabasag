@@ -51,7 +51,8 @@ public class AuthController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("Login failed", e);
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
     
@@ -145,6 +146,50 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Token validation failed", e);
             return ResponseEntity.ok(ApiResponse.success(false));
+        }
+    }
+
+    /**
+     * POST /auth/refresh
+     * Accepts a valid (non-expired) refresh token and issues a new access token + refresh token pair.
+     * Returns HTTP 401 if the refresh token is invalid or expired.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<Map<String, String>>> refreshToken(
+            @RequestBody Map<String, String> body) {
+        try {
+            String refreshToken = body.get("refreshToken");
+            if (refreshToken == null || refreshToken.isBlank()) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Refresh token is required"));
+            }
+
+            // Validate the token is a refresh token and is not expired
+            if (!jwtUtil.isRefreshToken(refreshToken) || jwtUtil.isTokenExpired(refreshToken)) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid or expired refresh token"));
+            }
+
+            String uid = jwtUtil.extractUid(refreshToken);
+            User user = userService.findById(uid)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!user.getIsActive()) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Account is deactivated"));
+            }
+
+            String newAccessToken  = jwtUtil.generateToken(uid, user.getEmail(), user.getRole().name());
+            String newRefreshToken = jwtUtil.generateRefreshToken(uid);
+
+            log.info("Token refreshed for user: {}", uid);
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("token", newAccessToken, "refreshToken", newRefreshToken)));
+
+        } catch (Exception e) {
+            log.error("Token refresh failed: {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Token refresh failed"));
         }
     }
     

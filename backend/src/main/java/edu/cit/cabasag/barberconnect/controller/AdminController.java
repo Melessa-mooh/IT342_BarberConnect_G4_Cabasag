@@ -6,6 +6,7 @@ import edu.cit.cabasag.barberconnect.feature.admin.LeaveRequest;
 import edu.cit.cabasag.barberconnect.feature.auth.User;
 import edu.cit.cabasag.barberconnect.service.AdminService;
 import edu.cit.cabasag.barberconnect.service.AdminService.AttendanceRecord;
+import edu.cit.cabasag.barberconnect.service.BarberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final BarberService barberService;
 
     // ─────────────────────────────────────────────────────────────────────────
     // GET /api/v1/admin/dashboard-stats
@@ -164,6 +166,27 @@ public class AdminController {
             return ResponseEntity.ok(ApiResponse.success(summaries));
         } catch (RuntimeException e) {
             log.error("Failed to get barber income summaries: {}", e.getMessage());
+            return ResponseEntity.internalServerError().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/v1/admin/migrate/barber-profiles
+    // One-time migration: moves embedded barberProfile objects from the users
+    // collection into the canonical barber_profiles collection.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @PostMapping("/migrate/barber-profiles")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> migrateBarberProfiles() {
+        try {
+            int count = barberService.migrateEmbeddedProfiles();
+            log.info("Admin triggered barber profile migration: {} profiles migrated", count);
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("migrated", count, "message",
+                           count + " embedded barber profile(s) migrated to barber_profiles collection.")));
+        } catch (RuntimeException e) {
+            log.error("Barber profile migration failed: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(ApiResponse.error(e.getMessage()));
         }
     }

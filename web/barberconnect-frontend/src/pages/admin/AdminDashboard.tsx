@@ -108,8 +108,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate('/', { replace: true });
   };
 

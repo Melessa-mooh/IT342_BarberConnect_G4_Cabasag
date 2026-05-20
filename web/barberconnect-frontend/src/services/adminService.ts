@@ -10,7 +10,9 @@ export interface AdminStats {
 const adminService = {
   getDashboardStats: async (): Promise<AdminStats> => {
     const res = await api.get('/admin/dashboard-stats');
-    return res.data;
+    // Backend wraps stats in ApiResponse<T> → unwrap .data.data
+    // Fall back to res.data if the wrapper is absent (e.g. direct Map response)
+    return (res.data?.data ?? res.data) as AdminStats;
   }
 };
 
