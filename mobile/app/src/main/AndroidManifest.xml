@@ -12,7 +12,7 @@
         android:theme="@style/Theme.BarberConnect"
         android:networkSecurityConfig="@xml/network_security_config">
 
-        <!-- Splash Screen -->
+        <!-- ── Entry point ──────────────────────────────────────────────── -->
         <activity
             android:name=".ui.SplashActivity"
             android:exported="true"
@@ -23,22 +23,66 @@
             </intent-filter>
         </activity>
 
-        <!-- Login -->
+        <!-- ── Auth ─────────────────────────────────────────────────────── -->
         <activity
             android:name=".ui.LoginActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Register -->
         <activity
             android:name=".ui.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Dashboard -->
+        <!-- ── Dashboard (role-aware) ────────────────────────────────────── -->
         <activity
             android:name=".ui.DashboardActivity"
             android:exported="false" />
+
+        <!-- ── Customer screens ─────────────────────────────────────────── -->
+        <activity
+            android:name=".ui.customer.CustomerBarberListActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <activity
+            android:name=".ui.customer.BookingActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".ui.customer.CustomerBarberListActivity" />
+
+        <activity
+            android:name=".ui.customer.MyAppointmentsActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <activity
+            android:name=".ui.customer.BarberFeedActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <!-- ── Barber screens ────────────────────────────────────────────── -->
+        <activity
+            android:name=".ui.barber.BarberScheduleActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <activity
+            android:name=".ui.barber.BarberLeaveActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <activity
+            android:name=".ui.barber.BarberIncomeActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <activity
+            android:name=".ui.barber.BarberFeedActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".ui.DashboardActivity" />
 
     </application>
 

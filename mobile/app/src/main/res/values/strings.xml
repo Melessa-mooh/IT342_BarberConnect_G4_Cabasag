@@ -30,6 +30,31 @@
     <string name="logout">Logout</string>
     <string name="your_role">Role: %1$s</string>
 
+    <!-- Customer screens -->
+    <string name="browse_barbers">Browse Barbers &amp; Book</string>
+    <string name="my_appointments">My Appointments</string>
+    <string name="barber_feed">Barber Feed</string>
+    <string name="book_appointment">Book Appointment</string>
+    <string name="confirm_booking">Confirm Booking</string>
+    <string name="select_style">Select Haircut Style</string>
+    <string name="select_date">Select Date</string>
+    <string name="select_time">Select Time</string>
+    <string name="payment_method">Payment Method</string>
+
+    <!-- Barber screens -->
+    <string name="my_schedule">My Schedule</string>
+    <string name="leave_requests">Leave Requests</string>
+    <string name="income">Income</string>
+    <string name="social_feed">Social Feed</string>
+    <string name="submit_leave">Submit Request</string>
+    <string name="post_placeholder">What\'s on your mind?</string>
+
+    <!-- Status labels -->
+    <string name="status_pending">PENDING</string>
+    <string name="status_confirmed">CONFIRMED</string>
+    <string name="status_completed">COMPLETED</string>
+    <string name="status_cancelled">CANCELLED</string>
+
     <!-- Google Sign-In Client ID -->
     <!-- IMPORTANT: Replace with your Web Client ID from Firebase Console
          Project Settings → General → Your apps → Web app → Web API Key
