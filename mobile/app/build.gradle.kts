@@ -54,6 +54,21 @@ android {
     }
 }
 
+// ── Decouple unit tests from processGoogleServices ────────────────────────────
+// processDebugGoogleServices requires google-services.json which is gitignored.
+// Unit tests (testDebugUnitTest) run on the JVM and don't need Firebase at all.
+// We make the task do nothing when google-services.json is absent so that
+// `gradle testDebugUnitTest` works in CI without the real credentials file.
+afterEvaluate {
+    tasks.matching { it.name.startsWith("processDebugGoogleServices") }.configureEach {
+        val gsFile = project.file("google-services.json")
+        if (!gsFile.exists()) {
+            enabled = false
+            logger.warn("google-services.json not found — skipping ${this.name} for unit tests.")
+        }
+    }
+}
+
 dependencies {
     // Android Core
     implementation("androidx.core:core-ktx:1.12.0")
@@ -93,8 +108,17 @@ dependencies {
     // Image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
-    // Tests
+    // Tests — JUnit + Mockito (unit tests, no emulator needed)
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+    // Instrumented tests (Espresso — requires emulator/device)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test:rules:1.5.0")
 }
