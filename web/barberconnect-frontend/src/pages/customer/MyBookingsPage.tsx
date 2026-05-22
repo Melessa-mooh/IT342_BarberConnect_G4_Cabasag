@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { appointmentService, type Appointment } from '../../services/appointmentService';
+import { barberService, type Barber } from '../../services/barberService';
 
 const MyBookingsPage: React.FC = () => {
   const { user, logout } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [barberNames, setBarberNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,12 +25,27 @@ const MyBookingsPage: React.FC = () => {
     setError(null);
     try {
       const data = await appointmentService.getCustomerAppointments(user!.firebaseUid);
-      // FIX: Add ?? [] guard
       const safeData = Array.isArray(data) ? data : [];
-      // Sort: newest first
-      setAppointments(safeData.sort((a, b) => 
+      const sorted = safeData.sort((a, b) =>
         new Date(b.appointmentDateTime).getTime() - new Date(a.appointmentDateTime).getTime()
-      ));
+      );
+      setAppointments(sorted);
+
+      // Fetch barber names for all unique barber profile IDs
+      const uniqueBarberIds = [...new Set(sorted.map(a => a.barber_profile_id).filter(Boolean))];
+      const nameMap: Record<string, string> = {};
+      await Promise.all(
+        uniqueBarberIds.map(async (id) => {
+          try {
+            const barber: Barber = await barberService.getBarberById(id);
+            const fullName = `${barber.firstName ?? ''} ${barber.lastName ?? ''}`.trim();
+            nameMap[id] = fullName || 'Unknown Barber';
+          } catch {
+            nameMap[id] = 'Unknown Barber';
+          }
+        })
+      );
+      setBarberNames(nameMap);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch appointments');
     } finally {
@@ -54,7 +71,7 @@ const MyBookingsPage: React.FC = () => {
                   {new Date(app.appointmentDateTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(app.appointmentDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                 </h4>
                 <p className="text-sm text-slate-600 mt-1">
-                  Barber ID: {app.barber_profile_id}
+                  Barber: {barberNames[app.barber_profile_id] ?? 'Loading…'}
                 </p>
                 <p className="text-sm text-[#D2691E] font-semibold mt-1">
                   Price: ₱{app.totalPrice} <span className="text-slate-400 font-normal ml-2">Payment: {app.paymentMethod}</span>

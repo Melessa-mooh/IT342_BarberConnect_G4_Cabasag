@@ -254,15 +254,47 @@ const CustomerDashboard: React.FC = () => {
                 const dateStr = post.createdAt
                   ? new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   : 'Recently';
-                const initial = (post.barber_profile_id ?? 'B').charAt(0).toUpperCase();
+
+                // Look up barber info from the already-loaded barbers list
+                const postBarber = barbers.find(b => b.id === post.barber_profile_id);
+                const barberName = postBarber
+                  ? `${postBarber.firstName ?? ''} ${postBarber.lastName ?? ''}`.trim() || 'Barber'
+                  : 'Barber';
+                const barberInitials = postBarber
+                  ? [postBarber.firstName, postBarber.lastName]
+                      .filter(Boolean)
+                      .map(n => n!.charAt(0).toUpperCase())
+                      .join('') || 'B'
+                  : (post.barber_profile_id ?? 'B').charAt(0).toUpperCase();
+                const barberImg = postBarber?.profileImageUrl ?? null;
 
                 return (
                   <div key={post.post_id} className="cd-post">
                     {/* Header */}
                     <div className="cd-post-header">
-                      <div className="cd-post-avatar">{initial}</div>
+                      <div className="cd-post-avatar">
+                        {barberImg ? (
+                          <img
+                            src={barberImg}
+                            alt={barberName}
+                            onError={e => {
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              const parent = img.parentElement;
+                              if (parent && !parent.querySelector('.cd-avatar-initials')) {
+                                const span = document.createElement('span');
+                                span.className = 'cd-avatar-initials';
+                                span.textContent = barberInitials;
+                                parent.appendChild(span);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="cd-avatar-initials">{barberInitials}</span>
+                        )}
+                      </div>
                       <div className="cd-post-meta">
-                        <p className="cd-post-name">Barber Post</p>
+                        <p className="cd-post-name">{barberName}</p>
                         <p className="cd-post-date">{dateStr}</p>
                       </div>
                       <button className="cd-post-more"><IconDots /></button>
@@ -363,14 +395,33 @@ const CustomerDashboard: React.FC = () => {
               ) : (
                 filteredBarbers.map(barber => {
                   const name = `${barber.firstName ?? ''} ${barber.lastName ?? ''}`.trim() || 'Barber';
-                  const initial = name.charAt(0).toUpperCase();
+                  const initials = [barber.firstName, barber.lastName]
+                    .filter(Boolean)
+                    .map(n => n!.charAt(0).toUpperCase())
+                    .join('') || 'B';
                   return (
                     <div key={barber.id} className="cd-barber-card">
                       <div className="cd-barber-avatar">
                         {barber.profileImageUrl ? (
-                          <img src={barber.profileImageUrl} alt={name}
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        ) : initial}
+                          <img
+                            src={barber.profileImageUrl}
+                            alt={name}
+                            onError={e => {
+                              // Hide broken image and show initials fallback
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              const parent = img.parentElement;
+                              if (parent && !parent.querySelector('.cd-avatar-initials')) {
+                                const span = document.createElement('span');
+                                span.className = 'cd-avatar-initials';
+                                span.textContent = initials;
+                                parent.appendChild(span);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="cd-avatar-initials">{initials}</span>
+                        )}
                       </div>
                       <div className="cd-barber-info">
                         <p className="cd-barber-name">{name}</p>

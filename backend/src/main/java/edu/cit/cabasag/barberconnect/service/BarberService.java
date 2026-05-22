@@ -228,6 +228,9 @@ public class BarberService {
                 profile.setBarber_profile_id(userId);
                 profile.setUser_id(userId);
                 profile.setCreatedAt(new java.util.Date());
+                profile.setRating(java.math.BigDecimal.ZERO);
+                profile.setTotalReviews(0);
+                profile.setIsAvailable(true);
             }
 
             profile.setBio(request.getBio());
@@ -238,7 +241,27 @@ public class BarberService {
             }
             profile.setUpdatedAt(new java.util.Date());
 
-            db.collection(PROFILES_COLLECTION).document(profileDocId).set(profile).get();
+            // Use a field-level update map instead of set() to avoid wiping
+            // existing fields (rating, totalReviews, profileImageUrl, etc.)
+            java.util.Map<String, Object> updates = new java.util.HashMap<>();
+            updates.put("bio",             request.getBio());
+            updates.put("yearsExperience", request.getExperience());
+            updates.put("gcashNumber",     request.getGcash());
+            updates.put("updatedAt",       new java.util.Date());
+            if (request.getIsAvailable() != null) {
+                updates.put("isAvailable", request.getIsAvailable());
+            }
+            // Ensure user_id and barber_profile_id are always present
+            updates.put("user_id",            userId);
+            if (profile.getBarber_profile_id() != null) {
+                updates.put("barber_profile_id", profile.getBarber_profile_id());
+            }
+
+            // Use set with merge=true so existing fields are preserved
+            db.collection(PROFILES_COLLECTION)
+              .document(profileDocId)
+              .set(updates, com.google.cloud.firestore.SetOptions.merge())
+              .get();
             log.info("Updated barber profile {} for user {}", profileDocId, userId);
 
             return mapToBarberResponse(profile, user);
