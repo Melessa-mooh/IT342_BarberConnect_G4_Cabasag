@@ -2,12 +2,14 @@ package edu.cit.cabasag.barberconnect.controller;
 
 import edu.cit.cabasag.barberconnect.dto.request.LoginRequest;
 import edu.cit.cabasag.barberconnect.dto.request.RegisterRequest;
+import edu.cit.cabasag.barberconnect.dto.request.UpdateBarberProfileRequest;
 import edu.cit.cabasag.barberconnect.dto.request.UpdateProfileRequest;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
 import edu.cit.cabasag.barberconnect.dto.response.AuthResponse;
 import edu.cit.cabasag.barberconnect.feature.auth.User;
 import edu.cit.cabasag.barberconnect.security.JwtUtil;
 import edu.cit.cabasag.barberconnect.service.AuthService;
+import edu.cit.cabasag.barberconnect.service.BarberService;
 import edu.cit.cabasag.barberconnect.service.CloudinaryService;
 import edu.cit.cabasag.barberconnect.service.UserService;
 import jakarta.validation.Valid;
@@ -32,6 +34,7 @@ public class AuthController {
     private final UserService userService;
     private final CloudinaryService cloudinaryService;
     private final JwtUtil jwtUtil;
+    private final BarberService barberService;
     
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
@@ -112,24 +115,42 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String uid = (String) authentication.getPrincipal();
-            
+
             log.info("Profile image upload request for user: {}", uid);
-            
+
             User user = userService.findById(uid)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-                    
-            // Pipe it strictly to the remote bucket
+
             String profileImageUrl = cloudinaryService.uploadProfilePicture(uid, file);
-            
-            // Sync up Firestore natively
-            user.setProfileImageUrl(profileImageUrl);
-            userService.save(user);
-            
-            log.info("User {} profile picture completely updated", uid);
-            
+
+            // Update users collection (field-level, preserves all other fields)
+            userService.updateProfilePicture(uid, profileImageUrl);
+
+            // If barber, also update barber_profiles.profileImageUrl
+            if (user.getRole() == User.UserRole.BARBER) {
+                try {
+                    com.google.cloud.firestore.Firestore db =
+                            com.google.firebase.cloud.FirestoreClient.getFirestore();
+                    if (db != null) {
+                        var profileQuery = db.collection("barber_profiles")
+                                .whereEqualTo("user_id", uid)
+                                .limit(1).get().get();
+                        if (!profileQuery.isEmpty()) {
+                            String profileDocId = profileQuery.getDocuments().get(0).getId();
+                            db.collection("barber_profiles").document(profileDocId)
+                              .update("profileImageUrl", profileImageUrl).get();
+                            log.info("Updated barber_profiles.profileImageUrl for user {}", uid);
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not update barber_profiles profileImageUrl: {}", ex.getMessage());
+                }
+            }
+
+            log.info("User {} profile picture updated", uid);
             return ResponseEntity.ok(ApiResponse.success(profileImageUrl));
         } catch (Exception e) {
-            log.error("Profile image upload crashed: ", e);
+            log.error("Profile image upload failed: ", e);
             return ResponseEntity.badRequest().body(ApiResponse.error("File upload failed: " + e.getMessage()));
         }
     }
@@ -198,44 +219,39 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String uid = (String) authentication.getPrincipal();
-            
+
             log.info("Profile update request for user: {}", uid);
-            log.info("Request data: firstName={}, lastName={}, phoneNumber={}", 
-                    request.getFirstName(), request.getLastName(), request.getPhoneNumber());
-            
+
             User user = userService.findById(uid)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
-            log.info("Current user data: firstName={}, lastName={}, phoneNumber={}", 
-                    user.getFirstName(), user.getLastName(), user.getPhoneNumber());
-            
-            // Update basic user information
+
+            // Always update basic user fields
             user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
-            
             if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
-                log.info("Updating phone number from '{}' to '{}'", user.getPhoneNumber(), request.getPhoneNumber());
                 user.setPhoneNumber(request.getPhoneNumber());
             }
-            
-            // Update barber-specific information if user is a barber
-            if (user.getRole() == User.UserRole.BARBER && user.getBarberProfile() != null) {
-                var barberProfile = user.getBarberProfile();
-                if (request.getBio() != null) {
-                    barberProfile.setBio(request.getBio());
-                }
-                if (request.getYearsExperience() != null) {
-                    barberProfile.setYearsExperience(request.getYearsExperience());
-                }
-                if (request.getIsAvailable() != null) {
-                    barberProfile.setIsAvailable(request.getIsAvailable());
+
+            user = userService.save(user);
+            log.info("Basic user fields saved for: {}", uid);
+
+            // For BARBERs: delegate barber-specific fields to BarberService
+            // which writes directly to barber_profiles (canonical source of truth)
+            if (user.getRole() == User.UserRole.BARBER) {
+                try {
+                    UpdateBarberProfileRequest barberRequest = new UpdateBarberProfileRequest();
+                    barberRequest.setPhone(user.getPhoneNumber());
+                    barberRequest.setBio(request.getBio());
+                    barberRequest.setExperience(request.getYearsExperience() != null ? request.getYearsExperience() : 0);
+                    barberRequest.setGcash(null); // not sent from ProfilePage — preserved via merge
+                    barberRequest.setIsAvailable(request.getIsAvailable());
+                    barberService.updateProfile(uid, barberRequest);
+                    log.info("Barber profile fields saved to barber_profiles for: {}", uid);
+                } catch (Exception ex) {
+                    log.warn("Could not update barber_profiles: {}", ex.getMessage());
                 }
             }
-            
-            // Save updated user
-            user = userService.save(user);
-            log.info("User saved successfully. New phone number: {}", user.getPhoneNumber());
-            
+
             AuthResponse response = mapToAuthResponse(user);
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
@@ -254,26 +270,24 @@ public class AuthController {
         response.setRole(user.getRole());
         response.setActive(user.getIsActive());
         response.setProfileImageUrl(user.getProfileImageUrl());
-        
-        // Load barberProfile — might be null on the User object if not embedded in Firestore
-        var bp = user.getBarberProfile();
-        if (bp == null && user.getRole() == User.UserRole.BARBER) {
-            bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
+
+        // Always load barberProfile from barber_profiles collection (canonical source of truth)
+        if (user.getRole() == User.UserRole.BARBER) {
+            var bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
+            if (bp != null) {
+                AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
+                barberResponse.setId(bp.getBarber_profile_id());
+                barberResponse.setBio(bp.getBio());
+                barberResponse.setYearsExperience(bp.getYearsExperience());
+                barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
+                barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
+                barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
+                barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
+                barberResponse.setGcashNumber(bp.getGcashNumber());
+                response.setBarberProfile(barberResponse);
+            }
         }
 
-        if (bp != null) {
-            AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
-            barberResponse.setId(bp.getBarber_profile_id());
-            barberResponse.setBio(bp.getBio());
-            barberResponse.setYearsExperience(bp.getYearsExperience());
-            barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
-            barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
-            barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
-            barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
-            
-            response.setBarberProfile(barberResponse);
-        }
-        
         return response;
     }
 }

@@ -205,22 +205,21 @@ public class AuthService {
         response.setRole(user.getRole());
         response.setActive(user.getIsActive());
 
-        // Load barberProfile — might be null on the User object if not embedded in Firestore
-        var bp = user.getBarberProfile();
-        if (bp == null && user.getRole() == User.UserRole.BARBER) {
-            bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
-        }
-
-        if (bp != null) {
-            AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
-            barberResponse.setId(bp.getBarber_profile_id()); // ← the UUID, not the Firebase UID
-            barberResponse.setBio(bp.getBio());
-            barberResponse.setYearsExperience(bp.getYearsExperience());
-            barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
-            barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
-            barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
-            barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
-            response.setBarberProfile(barberResponse);
+        // Always load barberProfile from barber_profiles (canonical source of truth)
+        if (user.getRole() == User.UserRole.BARBER) {
+            var bp = userService.findBarberProfileByUserId(user.getUser_id()).orElse(null);
+            if (bp != null) {
+                AuthResponse.BarberProfileResponse barberResponse = new AuthResponse.BarberProfileResponse();
+                barberResponse.setId(bp.getBarber_profile_id());
+                barberResponse.setBio(bp.getBio());
+                barberResponse.setYearsExperience(bp.getYearsExperience());
+                barberResponse.setRating(bp.getRating() != null ? bp.getRating().toString() : "0");
+                barberResponse.setTotalReviews(bp.getTotalReviews() != null ? bp.getTotalReviews() : 0);
+                barberResponse.setProfileImageUrl(bp.getProfileImageUrl());
+                barberResponse.setIsAvailable(bp.getIsAvailable() != null ? bp.getIsAvailable() : true);
+                barberResponse.setGcashNumber(bp.getGcashNumber());
+                response.setBarberProfile(barberResponse);
+            }
         }
 
         return response;

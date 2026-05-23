@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
+import { barberService } from '../services/barberService';
 import { formatPhoneNumber, validatePhilippinePhoneNumber, normalizePhoneNumber } from '../utils/phoneUtils';
 import CustomerNavbar from '../components/CustomerNavbar';
 import './ProfilePage.css';
@@ -111,15 +112,13 @@ const ProfilePage: React.FC = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      const payload: any = {
+      // Step 1: always update basic user fields via /auth/profile
+      const basicPayload: any = {
         firstName: formData.firstName.trim(),
         lastName:  formData.lastName.trim(),
       };
-      if (formData.phoneNumber) payload.phoneNumber = normalizePhoneNumber(formData.phoneNumber);
-      if (user?.role === 'BARBER') {
-        payload.bio             = formData.bio;
-        payload.yearsExperience = formData.yearsExperience;
-        payload.isAvailable     = formData.isAvailable;
+      if (formData.phoneNumber) {
+        basicPayload.phoneNumber = normalizePhoneNumber(formData.phoneNumber);
       }
 
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/profile`, {
@@ -128,12 +127,23 @@ const ProfilePage: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(basicPayload),
       });
 
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to update profile');
+      }
+
+      // Step 2: for BARBERs, also save barber-specific fields to barber_profiles
+      if (user?.role === 'BARBER') {
+        await barberService.updateProfile(user.firebaseUid, {
+          phone:      normalizePhoneNumber(formData.phoneNumber) || '',
+          bio:        formData.bio,
+          experience: formData.yearsExperience,
+          gcash:      user.barberProfile?.gcashNumber || '',
+          isAvailable: formData.isAvailable,
+        });
       }
 
       await refreshUser();

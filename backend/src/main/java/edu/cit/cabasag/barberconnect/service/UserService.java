@@ -131,6 +131,7 @@ public class UserService {
         map.put("phoneNumber", user.getPhoneNumber());
         map.put("role", user.getRole().toString());
         map.put("isActive", user.getIsActive());
+        map.put("profileImageUrl", user.getProfileImageUrl());
         map.put("createdAt", user.getCreatedAt());
         map.put("updatedAt", user.getUpdatedAt());
         return map;
