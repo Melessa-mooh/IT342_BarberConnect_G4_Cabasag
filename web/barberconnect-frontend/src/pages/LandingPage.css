@@ -1,62 +1,87 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    BarberConnect — Landing Page
    Role-aware theme: .theme-customer (light) / .theme-barber (dark)
+   Layout is unchanged — only CSS variables differ per theme.
 ───────────────────────────────────────────────────────────────────────────── */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* ── CSS variables ─────────────────────────────────────────────────────────── */
+/* ── Default / neutral (no role selected yet) ──────────────────────────────── */
 .lp-root {
-  --accent:        #F97316;
-  --accent-hover:  #EA580C;
-  --accent-soft:   rgba(249,115,22,0.12);
-  --accent-glow:   rgba(249,115,22,0.25);
+  /* accent — always orange */
+  --accent:       #F97316;
+  --accent-hover: #EA580C;
+  --accent-soft:  rgba(249,115,22,0.12);
+  --accent-glow:  rgba(249,115,22,0.25);
 
-  /* customer defaults */
-  --bg:            #F4F6FA;
-  --hero-from:     #1F2937;
-  --hero-to:       #111827;
-  --hero-text:     #F9FAFB;
-  --hero-muted:    rgba(249,250,251,0.7);
-  --panel-bg:      #FFFFFF;
-  --panel-text:    #111827;
-  --panel-muted:   #6B7280;
-  --card-bg:       #FFFFFF;
-  --card-border:   #E5E7EB;
-  --card-shadow:   rgba(0,0,0,0.06);
-  --chip-bg:       rgba(249,115,22,0.08);
-  --chip-color:    #C2410C;
-  --nav-bg:        rgba(255,255,255,0.96);
-  --nav-border:    rgba(0,0,0,0.06);
-  --nav-text:      #374151;
-  --nav-logo:      #111827;
+  /* neutral defaults (before role pick) */
+  --bg:           #F4F6FA;
+  --hero-from:    #1F2937;
+  --hero-to:      #111827;
+  --hero-text:    #F9FAFB;
+  --hero-muted:   rgba(249,250,251,0.7);
+  --panel-bg:     #FFFFFF;
+  --panel-text:   #111827;
+  --panel-muted:  #6B7280;
+  --card-bg:      #FFFFFF;
+  --card-border:  #E5E7EB;
+  --card-shadow:  rgba(0,0,0,0.06);
+  --chip-bg:      rgba(249,115,22,0.08);
+  --chip-color:   #C2410C;
+  --nav-bg:       rgba(255,255,255,0.96);
+  --nav-border:   rgba(0,0,0,0.06);
+  --nav-text:     #374151;
+  --nav-logo:     #111827;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
   background: var(--bg);
-  transition: background .4s ease, color .4s ease;
+  transition: background .35s ease, color .35s ease;
 }
 
-/* ── Barber theme overrides ─────────────────────────────────────────────────── */
+/* ── Customer theme — light, clean, SaaS/social ────────────────────────────── */
+.lp-root.theme-customer {
+  --bg:           #F5F7FB;
+  --hero-from:    #1F2937;
+  --hero-to:      #111827;
+  --hero-text:    #F9FAFB;
+  --hero-muted:   rgba(249,250,251,0.72);
+  --panel-bg:     #FFFFFF;
+  --panel-text:   #0F172A;
+  --panel-muted:  #64748B;
+  --card-bg:      #FFFFFF;
+  --card-border:  #E5E7EB;
+  --card-shadow:  rgba(0,0,0,0.06);
+  --chip-bg:      rgba(249,115,22,0.09);
+  --chip-color:   #C2410C;
+  --nav-bg:       rgba(255,255,255,0.97);
+  --nav-border:   rgba(0,0,0,0.07);
+  --nav-text:     #374151;
+  --nav-logo:     #111827;
+}
+
+/* ── Barber theme — dark, professional, premium ────────────────────────────── */
 .lp-root.theme-barber {
-  --bg:            #0F172A;
-  --hero-from:     #0F172A;
-  --hero-to:       #1E293B;
-  --panel-bg:      #1E293B;
-  --panel-text:    #F1F5F9;
-  --panel-muted:   #94A3B8;
-  --card-bg:       rgba(255,255,255,0.05);
-  --card-border:   rgba(255,255,255,0.1);
-  --card-shadow:   rgba(0,0,0,0.3);
-  --chip-bg:       rgba(249,115,22,0.15);
-  --chip-color:    #FB923C;
-  --nav-bg:        rgba(15,23,42,0.97);
-  --nav-border:    rgba(249,115,22,0.15);
-  --nav-text:      #CBD5E1;
-  --nav-logo:      #F97316;
+  --bg:           #101827;
+  --hero-from:    #0F172A;
+  --hero-to:      #172234;
+  --hero-text:    #F1F5F9;
+  --hero-muted:   rgba(241,245,249,0.65);
+  --panel-bg:     #172234;
+  --panel-text:   #F1F5F9;
+  --panel-muted:  #94A3B8;
+  --card-bg:      rgba(255,255,255,0.06);
+  --card-border:  rgba(255,255,255,0.12);
+  --card-shadow:  rgba(0,0,0,0.35);
+  --chip-bg:      rgba(249,115,22,0.18);
+  --chip-color:   #FB923C;
+  --nav-bg:       rgba(16,24,39,0.97);
+  --nav-border:   rgba(249,115,22,0.18);
+  --nav-text:     #CBD5E1;
+  --nav-logo:     #F97316;
 }
 
-/* ── Root layout ────────────────────────────────────────────────────────────── */
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 /* ── Navbar ─────────────────────────────────────────────────────────────────── */
@@ -67,7 +92,7 @@
   backdrop-filter: blur(12px);
   height: 68px;
   display: flex; align-items: center;
-  transition: background .4s, border-color .4s;
+  transition: background .35s, border-color .35s;
 }
 
 .lp-nav-inner {
@@ -88,7 +113,7 @@
 
 .lp-logo-text {
   font-size: 1.1rem; font-weight: 800; color: var(--nav-logo);
-  letter-spacing: -0.02em; transition: color .4s;
+  letter-spacing: -0.02em; transition: color .35s;
 }
 
 .lp-nav-right { display: flex; align-items: center; gap: 12px; }
@@ -121,16 +146,16 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   LEFT HERO
+   LEFT HERO — colors adapt via variables
 ════════════════════════════════════════════════════════════════════════════ */
 .lp-hero {
   background: linear-gradient(160deg, var(--hero-from) 0%, var(--hero-to) 100%);
   display: flex; flex-direction: column; justify-content: center;
   padding: 3rem 3rem 3rem 3.5rem;
   gap: 2rem; position: relative; overflow: hidden;
+  transition: background .35s;
 }
 
-/* subtle radial glow */
 .lp-hero::before {
   content: ''; position: absolute; top: -100px; right: -100px;
   width: 400px; height: 400px; border-radius: 50%;
@@ -138,45 +163,35 @@
   pointer-events: none;
 }
 
-/* Headline */
 .lp-hero-pill {
   display: inline-flex; align-items: center; gap: 6px;
   background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.3);
   color: #FB923C; font-size: 11.5px; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 5px 14px; border-radius: 20px;
-  width: fit-content;
+  padding: 5px 14px; border-radius: 20px; width: fit-content;
 }
 
 .lp-hero-title {
   font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 900; color: var(--hero-text);
-  line-height: 1.15; letter-spacing: -0.03em;
-  margin: 0;
+  line-height: 1.15; letter-spacing: -0.03em; margin: 0;
+  transition: color .35s;
 }
 
 .lp-hero-sub {
   font-size: 15px; color: var(--hero-muted);
   line-height: 1.65; max-width: 420px; margin: 0;
+  transition: color .35s;
 }
 
 /* 2×2 image grid */
 .lp-img-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 10px;
-  height: 320px;
-  border-radius: 20px;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  gap: 10px; height: 320px; border-radius: 20px; overflow: hidden;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
 }
 
-.lp-img-cell {
-  position: relative; overflow: hidden;
-  border-radius: 0;
-}
+.lp-img-cell { position: relative; overflow: hidden; }
 
 .lp-img-cell img {
   width: 100%; height: 100%; object-fit: cover; display: block;
@@ -189,21 +204,17 @@
   background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.35) 100%);
 }
 
-/* Floating stat card */
 .lp-stat-card {
   position: absolute; bottom: 16px; right: 16px;
   background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
   border-radius: 14px; padding: 10px 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  text-align: center; z-index: 2;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; z-index: 2;
 }
-.lp-stat-num  { margin: 0; font-size: 20px; font-weight: 900; color: #F97316; line-height: 1; }
-.lp-stat-label{ margin: 2px 0 0; font-size: 10.5px; font-weight: 600; color: #6B7280; }
+.lp-stat-num   { margin: 0; font-size: 20px; font-weight: 900; color: #F97316; line-height: 1; }
+.lp-stat-label { margin: 2px 0 0; font-size: 10.5px; font-weight: 600; color: #6B7280; }
 
 /* Feature cards */
-.lp-features {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-}
+.lp-features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 .lp-feat {
   display: flex; align-items: center; gap: 12px;
@@ -213,22 +224,21 @@
 }
 .lp-feat:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
 
-.lp-feat-icon { font-size: 22px; flex-shrink: 0; }
-.lp-feat-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--hero-text); }
-.lp-feat-desc  { margin: 2px 0 0; font-size: 11.5px; color: var(--hero-muted); }
+.lp-feat-icon  { font-size: 22px; flex-shrink: 0; }
+.lp-feat-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--hero-text); transition: color .35s; }
+.lp-feat-desc  { margin: 2px 0 0; font-size: 11.5px; color: var(--hero-muted); transition: color .35s; }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   RIGHT PANEL
+   RIGHT PANEL — colors adapt via variables
 ════════════════════════════════════════════════════════════════════════════ */
 .lp-panel {
   background: var(--panel-bg);
   display: flex; align-items: center; justify-content: center;
   padding: 2.5rem 2rem;
-  transition: background .4s;
+  transition: background .35s;
   position: relative; overflow: hidden;
 }
 
-/* subtle bg decoration */
 .lp-panel::before {
   content: ''; position: absolute; top: -80px; right: -80px;
   width: 300px; height: 300px; border-radius: 50%;
@@ -236,31 +246,26 @@
   pointer-events: none;
 }
 
-.lp-panel-inner {
-  width: 100%; max-width: 420px; position: relative; z-index: 1;
-}
+.lp-panel-inner { width: 100%; max-width: 420px; position: relative; z-index: 1; }
 
-/* Panel header */
 .lp-welcome-pill {
   display: inline-block;
   background: linear-gradient(135deg, #F97316, #EA580C);
   color: #fff; font-size: 10.5px; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase;
-  padding: 4px 14px; border-radius: 20px;
-  margin-bottom: 14px;
+  padding: 4px 14px; border-radius: 20px; margin-bottom: 14px;
 }
 
 .lp-panel-title {
   font-size: clamp(1.5rem, 2.5vw, 1.9rem);
   font-weight: 800; color: var(--panel-text);
   line-height: 1.25; letter-spacing: -0.02em;
-  margin: 0 0 8px;
-  transition: color .4s;
+  margin: 0 0 8px; transition: color .35s;
 }
 
 .lp-panel-sub {
   font-size: 14px; color: var(--panel-muted);
-  margin: 0 0 28px; transition: color .4s;
+  margin: 0 0 28px; transition: color .35s;
 }
 
 .lp-panel-head { margin-bottom: 4px; }
@@ -286,24 +291,37 @@
   box-shadow: 0 0 0 4px var(--accent-soft), 0 10px 30px var(--accent-glow);
 }
 
+/* Customer active — light orange glow */
+.theme-customer .lp-role-card.lp-role-active {
+  background: #FFFBF7;
+  border-color: #F97316;
+  box-shadow: 0 0 0 4px rgba(249,115,22,0.1), 0 8px 24px rgba(249,115,22,0.2);
+}
+
+/* Barber active — dark gold glow */
+.theme-barber .lp-role-card.lp-role-active {
+  background: rgba(249,115,22,0.08);
+  border-color: #F59E0B;
+  box-shadow: 0 0 0 4px rgba(245,158,11,0.15), 0 8px 24px rgba(245,158,11,0.25);
+}
+
 .lp-role-icon {
   width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; color: #fff;
 }
 .lp-icon-customer { background: linear-gradient(135deg, #F97316, #EA580C); }
 .lp-icon-barber   { background: linear-gradient(135deg, #1E293B, #334155); }
-
 .theme-barber .lp-icon-barber { background: linear-gradient(135deg, #F97316, #EA580C); }
 
 .lp-role-body { flex: 1; min-width: 0; }
-.lp-role-body h3 { margin: 0 0 3px; font-size: 15px; font-weight: 700; color: var(--panel-text); transition: color .4s; }
-.lp-role-body p  { margin: 0 0 8px; font-size: 12.5px; color: var(--panel-muted); transition: color .4s; }
+.lp-role-body h3 { margin: 0 0 3px; font-size: 15px; font-weight: 700; color: var(--panel-text); transition: color .35s; }
+.lp-role-body p  { margin: 0 0 8px; font-size: 12.5px; color: var(--panel-muted); transition: color .35s; }
 
 .lp-chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .lp-chips span {
   font-size: 11px; font-weight: 600; color: var(--chip-color);
   background: var(--chip-bg); padding: 3px 9px; border-radius: 20px;
-  transition: background .4s, color .4s;
+  transition: background .35s, color .35s;
 }
 
 .lp-chevron { font-size: 22px; color: var(--accent); font-weight: 700; flex-shrink: 0; }
@@ -317,7 +335,7 @@
   padding: 3px 9px; border-radius: 20px; white-space: nowrap;
 }
 
-.lp-terms { font-size: 12px; color: var(--panel-muted); text-align: center; transition: color .4s; }
+.lp-terms { font-size: 12px; color: var(--panel-muted); text-align: center; transition: color .35s; }
 .lp-terms-link { color: var(--accent); text-decoration: underline; }
 
 /* Auth step */
@@ -352,9 +370,7 @@
   box-shadow: 0 2px 10px var(--card-shadow);
   transition: all .22s ease; font-family: inherit; text-align: left;
 }
-.lp-auth-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--accent-glow); }
-.lp-auth-signup:hover { border-color: var(--accent); }
-.lp-auth-signin:hover { border-color: var(--accent); }
+.lp-auth-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--accent-glow); border-color: var(--accent); }
 
 .lp-auth-icon {
   width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
@@ -364,21 +380,22 @@
 .lp-auth-icon-signin { background: linear-gradient(135deg, #1F2937, #374151); }
 
 .lp-auth-text { flex: 1; }
-.lp-auth-text h3 { margin: 0 0 2px; font-size: 14.5px; font-weight: 700; color: var(--panel-text); transition: color .4s; }
-.lp-auth-text p  { margin: 0; font-size: 12.5px; color: var(--panel-muted); transition: color .4s; }
+.lp-auth-text h3 { margin: 0 0 2px; font-size: 14.5px; font-weight: 700; color: var(--panel-text); transition: color .35s; }
+.lp-auth-text p  { margin: 0; font-size: 12.5px; color: var(--panel-muted); transition: color .35s; }
 
 .lp-or {
   display: flex; align-items: center; gap: 10px;
   color: var(--panel-muted); font-size: 12px; margin: 10px 0;
+  transition: color .35s;
 }
-.lp-or::before, .lp-or::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
+.lp-or::before, .lp-or::after { content: ''; flex: 1; height: 1px; background: var(--card-border); transition: background .35s; }
 
 .lp-secure-note {
   text-align: center; font-size: 12px; color: var(--panel-muted);
   margin-top: 18px; padding: 10px 14px;
   background: var(--accent-soft); border-radius: 10px;
   border: 1px solid rgba(249,115,22,0.15);
-  transition: color .4s;
+  transition: color .35s;
 }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */

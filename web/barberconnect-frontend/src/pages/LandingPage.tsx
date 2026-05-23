@@ -15,8 +15,8 @@ const LandingPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<Role>(null);
   const [authStep,     setAuthStep]     = useState(false);
 
-  // theme class drives all CSS variable overrides
-  const theme = selectedRole === 'barber' ? 'theme-barber' : 'theme-customer';
+  // theme class drives all CSS variable overrides — neutral until a role is picked
+  const theme = selectedRole === 'barber' ? 'theme-barber' : selectedRole === 'customer' ? 'theme-customer' : '';
 
   const features = [
     { icon: '📅', label: 'Easy Booking',     desc: 'Book in seconds' },

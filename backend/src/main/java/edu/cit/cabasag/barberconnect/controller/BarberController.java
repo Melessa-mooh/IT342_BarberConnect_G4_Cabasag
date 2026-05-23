@@ -52,6 +52,44 @@ public class BarberController {
             AuthResponse.BarberProfileResponse barber = barberService.getBarberById(id);
             return ResponseEntity.ok(ApiResponse.success(barber));
         } catch (Exception e) {
+            // Fallback: the post may store the Firebase UID as barber_profile_id.
+            // Try looking up by user_id in barber_profiles.
+            try {
+                com.google.cloud.firestore.Firestore db = firebaseService.getFirestore();
+                if (db != null) {
+                    var snap = db.collection("barber_profiles")
+                            .whereEqualTo("user_id", id)
+                            .limit(1).get().get();
+                    if (!snap.isEmpty()) {
+                        edu.cit.cabasag.barberconnect.feature.barber.BarberProfile profile =
+                                snap.getDocuments().get(0).toObject(
+                                        edu.cit.cabasag.barberconnect.feature.barber.BarberProfile.class);
+                        if (profile != null) {
+                            edu.cit.cabasag.barberconnect.feature.auth.User user = null;
+                            var userSnap = db.collection("users").document(id).get().get();
+                            if (userSnap.exists()) {
+                                user = userSnap.toObject(edu.cit.cabasag.barberconnect.feature.auth.User.class);
+                            }
+                            final edu.cit.cabasag.barberconnect.feature.auth.User finalUser = user;
+                            AuthResponse.BarberProfileResponse resp = AuthResponse.BarberProfileResponse.builder()
+                                    .id(profile.getBarber_profile_id())
+                                    .firstName(finalUser != null ? finalUser.getFirstName() : "")
+                                    .lastName(finalUser != null ? finalUser.getLastName() : "")
+                                    .bio(profile.getBio())
+                                    .yearsExperience(profile.getYearsExperience())
+                                    .rating(profile.getRating() != null ? profile.getRating().toString() : "0.0")
+                                    .totalReviews(profile.getTotalReviews())
+                                    .profileImageUrl(profile.getProfileImageUrl())
+                                    .gcashNumber(profile.getGcashNumber())
+                                    .isAvailable(profile.getIsAvailable())
+                                    .build();
+                            return ResponseEntity.ok(ApiResponse.success(resp));
+                        }
+                    }
+                }
+            } catch (Exception fallbackEx) {
+                log.warn("Fallback lookup by user_id also failed for id={}: {}", id, fallbackEx.getMessage());
+            }
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }

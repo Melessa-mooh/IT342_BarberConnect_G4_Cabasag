@@ -289,9 +289,10 @@ public class PostController {
             if (db == null) return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Firestore not available"));
 
+            // No orderBy to avoid requiring a composite Firestore index.
+            // Sort by createdAt in Java instead.
             QuerySnapshot snap = db.collection(COMMENTS_COL)
                     .whereEqualTo("post_id", postId)
-                    .orderBy("createdAt", Query.Direction.ASCENDING)
                     .get().get();
 
             List<Comment> comments = new ArrayList<>();
@@ -303,9 +304,20 @@ public class PostController {
                 c.setContent(doc.getString("content"));
                 c.setIsActive(Boolean.TRUE.equals(doc.getBoolean("isActive")));
                 String ca = doc.getString("createdAt");
-                if (ca != null) c.setCreatedAt(LocalDateTime.parse(ca));
+                if (ca != null) {
+                    try { c.setCreatedAt(LocalDateTime.parse(ca)); } catch (Exception ignored) {}
+                }
                 comments.add(c);
             }
+
+            // Sort ascending by createdAt in Java (avoids composite index requirement)
+            comments.sort((a, b) -> {
+                if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null) return -1;
+                if (b.getCreatedAt() == null) return 1;
+                return a.getCreatedAt().compareTo(b.getCreatedAt());
+            });
+
             return ResponseEntity.ok(ApiResponse.success(comments));
 
         } catch (Exception e) {
