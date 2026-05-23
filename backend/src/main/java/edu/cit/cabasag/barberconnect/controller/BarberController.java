@@ -81,25 +81,25 @@ public class BarberController {
 
             String imageUrl = cloudinaryService.uploadProfilePicture("barbers/" + userId, file);
 
-            // Persist the URL in the users document
             com.google.cloud.firestore.Firestore db = firebaseService.getFirestore();
             if (db != null) {
-                java.util.Map<String, Object> updates = new java.util.HashMap<>();
-                updates.put("profileImageUrl", imageUrl);
-                updates.put("updatedAt", new java.util.Date());
-                db.collection("users").document(userId).update(updates).get();
+                // 1. Update users.profileImageUrl (field-level, no overwrite)
+                java.util.Map<String, Object> userUpdates = new java.util.HashMap<>();
+                userUpdates.put("profileImageUrl", imageUrl);
+                userUpdates.put("updatedAt", new java.util.Date());
+                db.collection("users").document(userId).update(userUpdates).get();
 
-                // Also update the embedded barberProfile.profileImageUrl
-                var userSnap = db.collection("users").document(userId).get().get();
-                if (userSnap.exists()) {
-                    @SuppressWarnings("unchecked")
-                    java.util.Map<String, Object> bp =
-                        (java.util.Map<String, Object>) userSnap.getData().get("barberProfile");
-                    if (bp != null) {
-                        bp.put("profileImageUrl", imageUrl);
-                        db.collection("users").document(userId)
-                          .update("barberProfile", bp).get();
-                    }
+                // 2. Update barber_profiles.profileImageUrl (canonical source of truth)
+                var profileQuery = db.collection("barber_profiles")
+                        .whereEqualTo("user_id", userId)
+                        .limit(1).get().get();
+                if (!profileQuery.isEmpty()) {
+                    String profileDocId = profileQuery.getDocuments().get(0).getId();
+                    db.collection("barber_profiles").document(profileDocId)
+                      .update("profileImageUrl", imageUrl).get();
+                    log.info("Updated barber_profiles.profileImageUrl for user {}", userId);
+                } else {
+                    log.warn("No barber_profiles doc found for user {} — image saved to users only", userId);
                 }
             }
 
