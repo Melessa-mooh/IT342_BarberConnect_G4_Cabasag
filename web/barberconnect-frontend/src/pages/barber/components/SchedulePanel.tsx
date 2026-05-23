@@ -612,92 +612,322 @@ const SchedulePanel: React.FC = () => {
 
       {/* ── Leave Requests Tab ────────────────────────────────────────────────── */}
       {activeTab === 'leave' && (
-        <div className="flex flex-col gap-6">
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-          {/* Submit leave button */}
-          <div className="flex justify-end">
-            <button
-              onClick={() => setShowLeaveForm(v => !v)}
-              className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-all"
-            >
-              + Request Time Off
-            </button>
+          {/* ── Page sub-header ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>
+                Time Off Requests
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6B7280' }}>
+                Submit and track your leave requests. Approved days will be blocked on the customer booking calendar.
+              </p>
+            </div>
           </div>
 
-          {/* Leave form */}
-          {showLeaveForm && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl">
-              <h3 className="font-bold text-lg text-slate-800 mb-4">Request Time Off</h3>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-700">Date</label>
-                  <input
-                    type="date"
-                    value={leaveDate}
-                    onChange={e => setLeaveDate(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#D2691E] focus:ring-1 focus:ring-[#D2691E]"
-                  />
+          {/* ── Request Time Off card ── */}
+          <div style={{
+            background: '#fff',
+            border: '1px solid #E5E7EB',
+            borderRadius: 16,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)',
+            overflow: 'hidden',
+          }}>
+            {/* Card header */}
+            <div style={{
+              padding: '20px 28px 16px',
+              borderBottom: '1px solid #F3F4F6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: '#FFF7ED', border: '1px solid #FED7AA',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#F97316" style={{ width: 20, height: 20 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111827' }}>Request Time Off</p>
+                <p style={{ margin: '2px 0 0', fontSize: 12.5, color: '#9CA3AF' }}>
+                  Select a date and provide a reason for your leave request
+                </p>
+              </div>
+            </div>
+
+            {/* Card body */}
+            <div style={{ padding: '24px 28px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Date field */}
+                <div>
+                  <label style={{
+                    display: 'block', fontSize: 11.5, fontWeight: 700,
+                    color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em',
+                    marginBottom: 8,
+                  }}>
+                    Date
+                  </label>
+                  <div style={{ position: 'relative', maxWidth: 320 }}>
+                    <span style={{
+                      position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                      pointerEvents: 'none', display: 'flex', color: '#9CA3AF',
+                    }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 16, height: 16 }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                    </span>
+                    <input
+                      type="date"
+                      value={leaveDate}
+                      onChange={e => setLeaveDate(e.target.value)}
+                      style={{
+                        width: '100%', height: 44,
+                        background: '#FAFAFA', border: '1.5px solid #E5E7EB',
+                        borderRadius: 10, padding: '0 14px 0 38px',
+                        fontSize: 14, color: '#111827', outline: 'none',
+                        fontFamily: 'inherit', transition: 'border-color .15s, box-shadow .15s',
+                        cursor: 'pointer',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = '#F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; e.target.style.background = '#fff'; }}
+                      onBlur={e  => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFAFA'; }}
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-700">Reason (optional)</label>
+
+                {/* Reason field */}
+                <div>
+                  <label style={{
+                    display: 'block', fontSize: 11.5, fontWeight: 700,
+                    color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em',
+                    marginBottom: 8,
+                  }}>
+                    Reason <span style={{ color: '#9CA3AF', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                  </label>
                   <textarea
                     value={leaveReason}
                     onChange={e => setLeaveReason(e.target.value)}
-                    placeholder="Family event, doctor's appointment, personal day..."
-                    className="border border-slate-300 rounded-lg px-4 py-2.5 text-sm h-24 resize-none focus:outline-none focus:border-[#D2691E] focus:ring-1 focus:ring-[#D2691E]"
+                    placeholder="Family event, doctor's appointment, personal day…"
+                    rows={4}
+                    style={{
+                      width: '100%', background: '#FAFAFA',
+                      border: '1.5px solid #E5E7EB', borderRadius: 10,
+                      padding: '12px 14px', fontSize: 14, color: '#111827',
+                      fontFamily: 'inherit', resize: 'none', outline: 'none',
+                      transition: 'border-color .15s, box-shadow .15s',
+                      lineHeight: 1.55,
+                    }}
+                    onFocus={e => { e.target.style.borderColor = '#F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; e.target.style.background = '#fff'; }}
+                    onBlur={e  => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFAFA'; }}
                   />
                 </div>
-                <div className="flex gap-3 justify-end mt-2">
-                  <button 
-                    onClick={() => setShowLeaveForm(false)} 
-                    className="px-5 py-2.5 text-sm font-semibold text-slate-600 rounded-lg hover:bg-slate-100 border border-slate-300 transition-all"
+
+                {/* Action buttons */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                  gap: 10, paddingTop: 4, borderTop: '1px solid #F3F4F6', marginTop: 4,
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => { setLeaveDate(''); setLeaveReason(''); }}
+                    style={{
+                      height: 42, padding: '0 20px',
+                      border: '1.5px solid #E5E7EB', borderRadius: 10,
+                      background: '#fff', color: '#6B7280',
+                      fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+                      fontFamily: 'inherit', transition: 'all .15s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#D1D5DB'; (e.currentTarget as HTMLButtonElement).style.color = '#374151'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'; }}
                   >
-                    Cancel
+                    Clear
                   </button>
                   <button
+                    type="button"
                     onClick={handleSubmitLeave}
-                    disabled={submitting}
-                    className="bg-[#D2691E] hover:bg-[#8B4513] text-white px-5 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-50 transition-all shadow-sm"
+                    disabled={submitting || !leaveDate}
+                    style={{
+                      height: 42, padding: '0 24px',
+                      background: submitting || !leaveDate ? '#FED7AA' : 'linear-gradient(135deg, #F97316, #EA580C)',
+                      border: 'none', borderRadius: 10,
+                      color: '#fff', fontSize: 13.5, fontWeight: 700,
+                      cursor: submitting || !leaveDate ? 'not-allowed' : 'pointer',
+                      fontFamily: 'inherit',
+                      boxShadow: submitting || !leaveDate ? 'none' : '0 2px 8px rgba(249,115,22,0.35)',
+                      transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 7,
+                    }}
                   >
-                    {submitting ? 'Submitting...' : 'Submit Request'}
+                    {submitting ? (
+                      <>
+                        <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'barberSpin .7s linear infinite' }} />
+                        Submitting…
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 14, height: 14 }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        </svg>
+                        Submit Request
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Leave History */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-base font-bold text-slate-800 mb-6">Your Time Off History</h3>
-
-            {loadingLeave && <p className="text-slate-500 text-sm">Loading...</p>}
-            {leaveError  && <p className="text-red-500 text-sm">{leaveError}</p>}
-
-            {!loadingLeave && leaveRequests.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-slate-500 text-sm">No time off requests yet</p>
+          {/* ── Time Off History card ── */}
+          <div style={{
+            background: '#fff',
+            border: '1px solid #E5E7EB',
+            borderRadius: 16,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)',
+            overflow: 'hidden',
+          }}>
+            {/* Card header */}
+            <div style={{
+              padding: '20px 28px 16px',
+              borderBottom: '1px solid #F3F4F6',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: '#F0F9FF', border: '1px solid #BAE6FD',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#0369A1" style={{ width: 20, height: 20 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111827' }}>Your Time Off History</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 12.5, color: '#9CA3AF' }}>All submitted leave requests and their status</p>
+                </div>
               </div>
-            )}
+              {leaveRequests.length > 0 && (
+                <span style={{
+                  background: '#F3F4F6', color: '#6B7280',
+                  fontSize: 11.5, fontWeight: 700, padding: '4px 12px',
+                  borderRadius: 20,
+                }}>
+                  {leaveRequests.length} request{leaveRequests.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
 
-            <div className="flex flex-col gap-3">
-              {leaveRequests.map(lr => (
-                <div key={lr.leaveRequestId} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:border-slate-300 transition-all">
-                  <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-slate-800 text-sm">{lr.requestedDate}</span>
-                    {lr.reason && (
-                      <span className="text-sm text-slate-600">{lr.reason}</span>
-                    )}
-                    <span className="text-xs text-slate-400">
-                      Submitted: {lr.createdAt ? new Date(lr.createdAt).toLocaleDateString() : ''}
+            {/* Card body */}
+            <div style={{ padding: '8px 0' }}>
+              {loadingLeave && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 28px', gap: 10, color: '#9CA3AF' }}>
+                  <div style={{ width: 18, height: 18, border: '2px solid #E5E7EB', borderTopColor: '#F97316', borderRadius: '50%', animation: 'barberSpin .7s linear infinite' }} />
+                  <span style={{ fontSize: 13.5 }}>Loading requests…</span>
+                </div>
+              )}
+
+              {leaveError && (
+                <div style={{ margin: '12px 28px', padding: '12px 16px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, color: '#B91C1C', fontSize: 13.5 }}>
+                  {leaveError}
+                </div>
+              )}
+
+              {!loadingLeave && leaveRequests.length === 0 && (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', padding: '48px 28px', gap: 12,
+                }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 16,
+                    background: '#F9FAFB', border: '1px solid #E5E7EB',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#D1D5DB" style={{ width: 28, height: 28 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>No time off requests yet</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9CA3AF' }}>
+                      Use the form above to submit your first leave request
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {leaveRequests.map((lr, idx) => {
+                const statusStyle: Record<string, { bg: string; color: string; border: string }> = {
+                  PENDING:  { bg: '#FFFBEB', color: '#92400E', border: '#FDE68A' },
+                  APPROVED: { bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0' },
+                  DECLINED: { bg: '#FEF2F2', color: '#991B1B', border: '#FECACA' },
+                };
+                const ss = statusStyle[lr.status] ?? { bg: '#F3F4F6', color: '#374151', border: '#E5E7EB' };
+
+                return (
+                  <div
+                    key={lr.leaveRequestId}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '16px 28px',
+                      borderBottom: idx < leaveRequests.length - 1 ? '1px solid #F9FAFB' : 'none',
+                      gap: 16, transition: 'background .15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#FAFAFA')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                      {/* Date badge */}
+                      <div style={{
+                        background: '#FFF7ED', border: '1px solid #FED7AA',
+                        borderRadius: 10, padding: '8px 14px', flexShrink: 0, textAlign: 'center',
+                      }}>
+                        <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#C2410C', lineHeight: 1 }}>
+                          {lr.requestedDate ? new Date(lr.requestedDate + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric' }) : '—'}
+                        </p>
+                        <p style={{ margin: '2px 0 0', fontSize: 10, fontWeight: 700, color: '#F97316', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {lr.requestedDate ? new Date(lr.requestedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' }) : ''}
+                        </p>
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111827' }}>
+                          {lr.requestedDate ? new Date(lr.requestedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : lr.requestedDate}
+                        </p>
+                        {lr.reason ? (
+                          <p style={{ margin: '3px 0 0', fontSize: 13, color: '#6B7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {lr.reason}
+                          </p>
+                        ) : (
+                          <p style={{ margin: '3px 0 0', fontSize: 13, color: '#D1D5DB', fontStyle: 'italic' }}>No reason provided</p>
+                        )}
+                        <p style={{ margin: '3px 0 0', fontSize: 11.5, color: '#9CA3AF' }}>
+                          Submitted {lr.createdAt ? new Date(lr.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Status badge */}
+                    <span style={{
+                      background: ss.bg, color: ss.color,
+                      border: `1px solid ${ss.border}`,
+                      fontSize: 11.5, fontWeight: 700,
+                      padding: '5px 14px', borderRadius: 20,
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                      whiteSpace: 'nowrap', flexShrink: 0,
+                    }}>
+                      {lr.status}
                     </span>
                   </div>
-                  <span className={`text-xs font-bold px-4 py-1.5 rounded-full ${STATUS_COLORS[lr.status] ?? ''}`}>
-                    {lr.status}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
+
         </div>
       )}
 
