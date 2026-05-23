@@ -161,9 +161,17 @@ public class AuthService {
             // Verify Firebase ID token
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
             String uid = decodedToken.getUid();
+            String email = decodedToken.getEmail();
 
             // Find user in our database
             Optional<User> userOpt = userService.findById(uid);
+            if (userOpt.isEmpty() && email != null && !email.trim().isEmpty()) {
+                String normalizedEmail = email.trim().toLowerCase();
+                userOpt = userService.findByEmail(normalizedEmail);
+                if (userOpt.isEmpty() && !normalizedEmail.equals(email.trim())) {
+                    userOpt = userService.findByEmail(email.trim());
+                }
+            }
             if (userOpt.isEmpty()) {
                 throw new RuntimeException("User not found. Please register first.");
             }

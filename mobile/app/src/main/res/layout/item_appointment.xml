@@ -31,7 +31,7 @@
                     android:id="@+id/tvApptDateTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/brown_primary"
+                    android:textColor="@color/navy_dark"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
@@ -47,7 +47,7 @@
                     android:id="@+id/tvApptPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/brown_secondary"
+                    android:textColor="@color/orange_dark"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:layout_marginTop="2dp" />

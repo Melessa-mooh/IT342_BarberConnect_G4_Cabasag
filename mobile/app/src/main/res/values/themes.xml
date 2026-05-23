@@ -81,4 +81,15 @@
         <item name="android:focusable">true</item>
     </style>
 
+    <style name="DashboardCalendarDateText">
+        <item name="android:textColor">@color/navy_dark</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="DashboardCalendarWeekText">
+        <item name="android:textColor">@color/orange_dark</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 </resources>

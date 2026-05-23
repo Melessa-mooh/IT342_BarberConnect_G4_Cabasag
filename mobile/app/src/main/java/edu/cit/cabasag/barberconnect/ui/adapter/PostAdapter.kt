@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import edu.cit.cabasag.barberconnect.databinding.ItemPostBinding
 import edu.cit.cabasag.barberconnect.model.Post
 import java.text.SimpleDateFormat
@@ -13,23 +14,34 @@ import java.util.Locale
 
 class PostAdapter(
     private val onCommentsClick: (Post) -> Unit = {},
-    private val onLikeClick: (Post) -> Unit = {}
+    private val onLikeClick: (Post) -> Unit = {},
+    private val barberNameProvider: (Post) -> String? = { null }
 ) : ListAdapter<Post, PostAdapter.ViewHolder>(DIFF) {
 
     inner class ViewHolder(private val b: ItemPostBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(post: Post) {
             val barberId = post.barberProfileId ?: "Barber"
-            b.tvPostAvatar.text = barberId.firstOrNull()?.uppercaseChar()?.toString() ?: "B"
-            b.tvPostBarber.text = "Barber ...${barberId.takeLast(6)}"
+            val barberName = barberNameProvider(post)
+                ?: post.barberName
+                ?: "Barber ...${barberId.takeLast(6)}"
+            b.tvPostAvatar.text = barberName.firstOrNull()?.uppercaseChar()?.toString() ?: "B"
+            b.tvPostBarber.text = barberName
             b.tvPostContent.text = post.content.orEmpty()
             b.tvPostLikes.text = "Like ${post.likesCount ?: 0}"
             b.tvPostComments.text = "Comments ${post.commentsCount ?: 0}"
             b.tvPostLikes.setOnClickListener { onLikeClick(post) }
             b.tvPostComments.setOnClickListener { onCommentsClick(post) }
 
-            if (!post.imageUrl.isNullOrBlank()) {
-                b.ivPostImage.visibility = View.GONE
+            val imageUrl = post.imageUrl
+            if (!imageUrl.isNullOrBlank()) {
+                b.ivPostImage.visibility = View.VISIBLE
+                Glide.with(b.ivPostImage)
+                    .load(imageUrl)
+                    .centerCrop()
+                    .into(b.ivPostImage)
             } else {
+                Glide.with(b.ivPostImage).clear(b.ivPostImage)
+                b.ivPostImage.setImageDrawable(null)
                 b.ivPostImage.visibility = View.GONE
             }
 

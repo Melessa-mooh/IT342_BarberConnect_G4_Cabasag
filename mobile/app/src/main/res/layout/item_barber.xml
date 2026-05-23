@@ -16,16 +16,29 @@
         android:padding="16dp"
         android:gravity="center_vertical">
 
-        <!-- Avatar -->
-        <TextView
-            android:id="@+id/tvBarberAvatar"
+        <FrameLayout
             android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:gravity="center"
-            android:textColor="@color/white"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:background="@color/brown_secondary" />
+            android:layout_height="52dp">
+
+            <ImageView
+                android:id="@+id/ivBarberAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/orange_accent"
+                android:contentDescription="Barber profile image"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvBarberAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/orange_accent"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
         <!-- Info -->
         <LinearLayout
@@ -39,7 +52,7 @@
                 android:id="@+id/tvBarberName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/brown_primary"
+                android:textColor="@color/navy_dark"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -63,7 +76,7 @@
                     android:id="@+id/tvBarberRating"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/brown_secondary"
+                    android:textColor="@color/orange_dark"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -74,6 +87,15 @@
                     android:textColor="@color/gray_text"
                     android:textSize="12sp"
                     android:layout_marginStart="10dp" />
+
+                <TextView
+                    android:id="@+id/tvBarberAvailability"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/success_blue"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 

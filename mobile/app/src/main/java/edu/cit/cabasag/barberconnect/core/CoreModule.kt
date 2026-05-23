@@ -1,19 +1,16 @@
 package edu.cit.cabasag.barberconnect.core
 
+import edu.cit.cabasag.barberconnect.BuildConfig
+
 /**
- * Vertical Slice Architecture — Core / Shared Infrastructure
+ * Shared mobile infrastructure notes.
  *
- * This package groups all cross-cutting infrastructure shared across all feature slices:
- * - RetrofitClient    (OkHttp + Retrofit network layer with JWT interceptor)
- * - ApiService        (Retrofit interface — defines all HTTP endpoints)
- * - TokenManager      (DataStore-backed JWT & user session persistence)
- * - BarberConnectApp  (Application-level dependency injection container)
- *
- * No feature-specific business logic lives here.
- * All feature slices depend on core, but core has no dependencies on any feature.
+ * RetrofitClient and ApiService are the real network source of truth. This
+ * helper exposes the same generated BASE_URL so the mobile app cannot drift to
+ * a different hardcoded backend.
  */
 object CoreModule {
     const val MODULE_NAME = "core"
-    const val BASE_URL_DEBUG = "http://192.168.1.47:8080/api/v1/"
-    const val BASE_URL_RELEASE = "https://your-production-url.com/api/v1/"
+    val baseUrl: String
+        get() = BuildConfig.BASE_URL
 }

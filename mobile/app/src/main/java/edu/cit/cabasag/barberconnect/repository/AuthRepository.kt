@@ -1,8 +1,10 @@
 package edu.cit.cabasag.barberconnect.repository
 
+import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
+import edu.cit.cabasag.barberconnect.BuildConfig
 import edu.cit.cabasag.barberconnect.model.ApiResponse
 import edu.cit.cabasag.barberconnect.model.AuthResponse
 import edu.cit.cabasag.barberconnect.model.LoginRequest
@@ -23,6 +25,9 @@ class AuthRepository(
     private val api: ApiService,
     private val tokenManager: TokenManager
 ) {
+    private companion object {
+        const val TAG = "BarberAuth"
+    }
 
     // ── Register ───────────────────────────────────────────────────────────
 
@@ -33,6 +38,9 @@ class AuthRepository(
 
     suspend fun login(request: LoginRequest): Result<AuthResponse> {
         val normalizedRequest = request.copy(email = request.email.trim().lowercase())
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Login email: ${normalizedRequest.email}")
+        }
         val backendResult = authenticate { api.login(normalizedRequest) }
         if (backendResult.isSuccess) return backendResult
 
@@ -54,6 +62,9 @@ class AuthRepository(
         originalError: Throwable?
     ): Result<AuthResponse> {
         return try {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Backend login failed; attempting Firebase fallback for email: $email")
+            }
             val authResult = FirebaseAuth.getInstance()
                 .signInWithEmailAndPassword(email, password)
                 .awaitTask()
@@ -113,6 +124,10 @@ class AuthRepository(
         call: suspend () -> Response<ApiResponse<AuthResponse>>
     ): Result<AuthResponse> = try {
         val response = call()
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Request URL: ${response.raw().request.url}")
+            Log.d(TAG, "Response code: ${response.code()}")
+        }
         if (response.isSuccessful) {
             val body = response.body()
             if (body?.data != null) {
@@ -124,6 +139,9 @@ class AuthRepository(
             }
         } else {
             val errorJson = response.errorBody()?.string()
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Backend error body: ${errorJson.orEmpty()}")
+            }
             val msg = try {
                 Gson().fromJson(errorJson, ApiResponse::class.java)?.error
             } catch (_: Exception) { null }

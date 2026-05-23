@@ -3,14 +3,16 @@ package edu.cit.cabasag.barberconnect.model
 import com.google.gson.annotations.SerializedName
 
 data class Post(
-    @SerializedName("post_id")           val postId: String? = null,
+    @SerializedName("post_id") val postId: String? = null,
     @SerializedName("barber_profile_id") val barberProfileId: String? = null,
-    @SerializedName("user_id")           val userId: String? = null,
+    @SerializedName("user_id") val userId: String? = null,
     val content: String? = null,
-    val imageUrl: String? = null,
-    val likesCount: Int? = null,
-    val commentsCount: Int? = null,
-    val isActive: Boolean? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null
+    @SerializedName(value = "imageUrl", alternate = ["image_url"]) val imageUrl: String? = null,
+    @SerializedName(value = "likesCount", alternate = ["likes_count"]) val likesCount: Int? = null,
+    @SerializedName(value = "commentsCount", alternate = ["comments_count"]) val commentsCount: Int? = null,
+    @SerializedName(value = "isActive", alternate = ["is_active"]) val isActive: Boolean? = null,
+    @SerializedName(value = "createdAt", alternate = ["created_at"]) val createdAt: String? = null,
+    @SerializedName(value = "updatedAt", alternate = ["updated_at"]) val updatedAt: String? = null,
+    @SerializedName(value = "barberName", alternate = ["barber_name"]) val barberName: String? = null,
+    @SerializedName(value = "barberProfileImageUrl", alternate = ["barber_profile_image_url"]) val barberProfileImageUrl: String? = null
 )
