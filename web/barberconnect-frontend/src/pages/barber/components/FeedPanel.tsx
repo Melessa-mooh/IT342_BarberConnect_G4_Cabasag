@@ -190,13 +190,15 @@ const PostCard: React.FC<{
   barberInfo: Barber | null;
   isOwn: boolean;
   onReact: (id: string) => void;
-}> = ({ post, barberInfo, isOwn, onReact }) => {
-  const [commentsOpen, setCommentsOpen]     = useState(false);
-  const [comments, setComments]             = useState<PostComment[]>([]);
+}> = ({ post, barberInfo, onReact }) => {
+  const [commentsOpen, setCommentsOpen]       = useState(false);
+  const [comments, setComments]               = useState<PostComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
-  const [commentsError, setCommentsError]   = useState<string | null>(null);
-  const [commentInput, setCommentInput]     = useState('');
-  const [addingComment, setAddingComment]   = useState(false);
+  const [commentsError, setCommentsError]     = useState<string | null>(null);
+  const [commentInput, setCommentInput]       = useState('');
+  const [addingComment, setAddingComment]     = useState(false);
+  // commenter name cache: user_id → display name
+  const [commenterNames, setCommenterNames]   = useState<Record<string, string>>({});
   const { user } = useAuth();
 
   const barberName = barberInfo
@@ -208,6 +210,23 @@ const PostCard: React.FC<{
     ? new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Recently';
 
+  // Resolve commenter names for a list of comments
+  const resolveCommenterNames = async (newComments: PostComment[]) => {
+    const unknownIds = [...new Set(newComments.map(c => c.user_id).filter(id => id && !commenterNames[id]))];
+    if (unknownIds.length === 0) return;
+    const resolved: Record<string, string> = {};
+    await Promise.all(unknownIds.map(async (uid) => {
+      try {
+        const res = await import('../../../services/api').then(m => m.default.get(`/auth/user/${uid}`));
+        const u = res.data?.data ?? res.data;
+        resolved[uid] = `${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim() || 'User';
+      } catch {
+        resolved[uid] = 'User';
+      }
+    }));
+    setCommenterNames(prev => ({ ...prev, ...resolved }));
+  };
+
   const toggleComments = async () => {
     const opening = !commentsOpen;
     setCommentsOpen(opening);
@@ -217,6 +236,7 @@ const PostCard: React.FC<{
       try {
         const data = await postService.getComments(post.post_id);
         setComments(data);
+        await resolveCommenterNames(data);
       } catch (e: any) {
         console.error('Failed to load comments:', e);
         setCommentsError('Failed to load comments.');
@@ -234,107 +254,130 @@ const PostCard: React.FC<{
       const added = await postService.addComment(post.post_id, user.firebaseUid, content);
       setComments(prev => [...prev, added]);
       setCommentInput('');
+      // Resolve name for the new commenter (current user)
+      if (user.firebaseUid && !commenterNames[user.firebaseUid]) {
+        const myName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'You';
+        setCommenterNames(prev => ({ ...prev, [user.firebaseUid!]: myName }));
+      }
     } catch (e: any) {
       alert(e.message || 'Failed to add comment');
     } finally { setAddingComment(false); }
   };
 
+  const myName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'You';
+  const myInitial = (user?.firstName ?? 'U').charAt(0).toUpperCase();
+
   return (
-    <div style={{
-      background: '#fff', borderRadius: 20, overflow: 'hidden',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.07)',
-      border: '1px solid rgba(0,0,0,0.04)',
-      transition: 'box-shadow .25s, transform .25s',
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.11)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.07)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px 12px' }}>
-        <Avatar src={barberImg} name={barberName} size={48} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>{barberName}</p>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9CA3AF', fontWeight: 500 }}>{dateStr}</p>
+    <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+
+      {/* Post Header — real barber avatar + full name */}
+      <div className="flex items-center gap-4 p-5">
+        <Avatar src={barberImg} name={barberName} size={44} />
+        <div>
+          <h3 className="font-bold text-slate-800 text-sm">{barberName}</h3>
+          <p className="text-xs font-semibold text-slate-400 mt-0.5">{dateStr}</p>
         </div>
-        <button style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 16, height: 16 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-          </svg>
-        </button>
       </div>
 
-      {/* Caption */}
-      {post.content && (
-        <div style={{ padding: '0 18px 12px' }}>
-          <p style={{ margin: 0, fontSize: 14.5, color: '#374151', lineHeight: 1.6, fontWeight: 400 }}>{post.content}</p>
+      {/* Post Image */}
+      {post.imageUrl && (
+        <div className="w-full aspect-[4/5] bg-slate-900 overflow-hidden relative">
+          <img src={post.imageUrl} alt="Post" className="w-full h-full object-cover" />
         </div>
       )}
 
-      {/* Image */}
-      {post.imageUrl && (
-        <div style={{ width: '100%', height: 320, overflow: 'hidden', background: '#F3F4F6' }}>
-          <img src={post.imageUrl} alt="Post" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.02)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')} />
-        </div>
-      )}
+      {/* Caption */}
+      <div className="px-5 pt-4 pb-2">
+        <p className="text-sm text-slate-700 font-medium">{post.content}</p>
+      </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '12px 14px', borderTop: '1px solid #F3F4F6' }}>
-        <button onClick={() => onReact(post.post_id)}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 12px', borderRadius: 10, border: 'none', background: 'none', color: '#6B7280', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; (e.currentTarget as HTMLButtonElement).style.color = '#EF4444'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'; }}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 17, height: 17 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-          </svg>
-          {post.likesCount ?? 0}
+      <div className="p-5 flex items-center gap-4 border-t border-slate-50">
+        <button
+          onClick={() => onReact(post.post_id)}
+          className="flex items-center gap-2 text-slate-500 hover:text-[#D2691E] transition"
+        >
+          <span className="text-xl">❤️</span>
+          <span className="text-sm font-bold">{post.likesCount ?? 0}</span>
         </button>
-
-        <button onClick={toggleComments}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 12px', borderRadius: 10, border: 'none', background: commentsOpen ? '#FFF7ED' : 'none', color: commentsOpen ? '#F97316' : '#6B7280', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}
-          onMouseEnter={e => { if (!commentsOpen) { (e.currentTarget as HTMLButtonElement).style.background = '#FFF7ED'; (e.currentTarget as HTMLButtonElement).style.color = '#F97316'; } }}
-          onMouseLeave={e => { if (!commentsOpen) { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#6B7280'; } }}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 17, height: 17 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-          </svg>
-          View comments ({post.commentsCount ?? 0})
+        <button
+          onClick={toggleComments}
+          className="flex items-center gap-2 text-slate-500 hover:text-[#8B4513] transition"
+        >
+          <span className="text-xl">💬</span>
+          <span className="text-sm font-bold">{post.commentsCount ?? 0}</span>
         </button>
       </div>
 
       {/* Comments section */}
       {commentsOpen && (
-        <div style={{ borderTop: '1px solid #F3F4F6', padding: '14px 18px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {commentsLoading && <p style={{ margin: 0, fontSize: 13, color: '#9CA3AF' }}>Loading comments…</p>}
-          {commentsError  && <p style={{ margin: 0, fontSize: 13, color: '#EF4444' }}>{commentsError}</p>}
-          {!commentsLoading && !commentsError && comments.length === 0 && (
-            <p style={{ margin: 0, fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>No comments yet</p>
+        <div style={{ padding: '0 20px 18px', borderTop: '1px solid #F3F4F6' }}>
+          {commentsLoading && (
+            <p style={{ fontSize: 12.5, color: '#9CA3AF', padding: '10px 0' }}>Loading comments…</p>
           )}
-          {comments.map(c => (
-            <div key={c.comment_id} style={{ display: 'flex', gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6B7280', flexShrink: 0 }}>
-                {(c.user_id ?? 'U').charAt(0).toUpperCase()}
-              </div>
-              <div style={{ background: '#F9FAFB', borderRadius: 12, padding: '8px 12px', flex: 1, fontSize: 13.5, color: '#374151', lineHeight: 1.5 }}>
-                {c.content}
-              </div>
-            </div>
-          ))}
+          {commentsError && (
+            <p style={{ fontSize: 12.5, color: '#EF4444', padding: '10px 0' }}>{commentsError}</p>
+          )}
+          {!commentsLoading && !commentsError && comments.length === 0 && (
+            <p style={{ fontSize: 12.5, color: '#9CA3AF', fontStyle: 'italic', padding: '10px 0' }}>No comments yet — be the first!</p>
+          )}
+
+          {/* Comment list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+            {comments.map(c => {
+              const name = commenterNames[c.user_id] || 'User';
+              const initial = name.charAt(0).toUpperCase();
+              return (
+                <div key={c.comment_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: '#FFF7ED', border: '1.5px solid #FED7AA',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 12, fontWeight: 800, color: '#F97316',
+                  }}>
+                    {initial}
+                  </div>
+                  {/* Bubble */}
+                  <div style={{ flex: 1, background: '#F9FAFB', borderRadius: '0 12px 12px 12px', padding: '8px 12px', border: '1px solid #F3F4F6' }}>
+                    <p style={{ margin: '0 0 3px', fontSize: 11.5, fontWeight: 700, color: '#374151' }}>{name}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: '#4B5563', lineHeight: 1.5 }}>{c.content}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Add comment */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <Avatar src={null} name={`${user?.firstName ?? 'U'}`} size={30} />
-            <div style={{ flex: 1, display: 'flex', gap: 6 }}>
-              <input value={commentInput} onChange={e => setCommentInput(e.target.value)}
+          <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center' }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: '#FFF7ED', border: '1.5px solid #FED7AA',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 800, color: '#F97316',
+            }}>
+              {myInitial}
+            </div>
+            <div style={{ flex: 1, display: 'flex', gap: 8, background: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: 24, padding: '6px 6px 6px 14px', alignItems: 'center' }}>
+              <input
+                value={commentInput}
+                onChange={e => setCommentInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
-                placeholder="Write a comment…"
-                style={{ flex: 1, background: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: 20, padding: '7px 14px', fontSize: 13, color: '#374151', outline: 'none', fontFamily: 'inherit', transition: 'border-color .15s' }}
-                onFocus={e => (e.target.style.borderColor = '#F97316')}
-                onBlur={e  => (e.target.style.borderColor = '#E5E7EB')} />
-              <button onClick={handleAddComment} disabled={!commentInput.trim() || addingComment}
-                style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 20, padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: !commentInput.trim() ? 'not-allowed' : 'pointer', opacity: !commentInput.trim() ? 0.5 : 1, transition: 'opacity .15s', fontFamily: 'inherit' }}>
-                {addingComment ? '…' : 'Post'}
+                placeholder={`Comment as ${myName}…`}
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: '#374151', fontFamily: 'inherit' }}
+              />
+              <button
+                onClick={handleAddComment}
+                disabled={!commentInput.trim() || addingComment}
+                style={{
+                  background: commentInput.trim() ? 'linear-gradient(135deg,#F97316,#EA580C)' : '#E5E7EB',
+                  color: commentInput.trim() ? '#fff' : '#9CA3AF',
+                  border: 'none', borderRadius: 20, padding: '6px 14px',
+                  fontSize: 12, fontWeight: 700, cursor: commentInput.trim() ? 'pointer' : 'not-allowed',
+                  transition: 'all .15s', fontFamily: 'inherit', flexShrink: 0,
+                }}
+              >
+                {addingComment ? '…' : 'Send'}
               </button>
             </div>
           </div>
@@ -404,10 +447,10 @@ const FeedPanel: React.FC = () => {
         @keyframes fpSpin    { to { transform:rotate(360deg) } }
       `}</style>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40, alignItems: 'center' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, maxWidth: 640, width: '100%' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Social Feed</h2>
             <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6B7280' }}>Community feed — see and share posts from all barbers</p>
@@ -459,7 +502,7 @@ const FeedPanel: React.FC = () => {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, width: '100%', margin: '0 auto' }}>
           {posts.map(post => (
             <PostCard
               key={post.post_id}

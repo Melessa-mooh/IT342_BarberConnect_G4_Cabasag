@@ -48,6 +48,7 @@ const CustomerDashboard: React.FC = () => {
   const [postComments,    setPostComments]    = useState<Record<string, any[]>>({});
   const [commentInput,    setCommentInput]    = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
+  const [commenterNames,  setCommenterNames]  = useState<Record<string, string>>({});
 
   const [feedbackOpen,   setFeedbackOpen]   = useState(false);
   const [fbApptId,       setFbApptId]       = useState('');
@@ -149,6 +150,19 @@ const CustomerDashboard: React.FC = () => {
       try {
         const data = await postService.getComments(postId);
         setPostComments(prev => ({ ...prev, [postId]: data }));
+        // Resolve commenter names
+        const unknownIds = [...new Set((data as any[]).map((c: any) => c.user_id).filter((id: string) => id && !commenterNames[id]))];
+        if (unknownIds.length > 0) {
+          const resolved: Record<string, string> = {};
+          await Promise.all(unknownIds.map(async (uid: string) => {
+            try {
+              const res = await api.get(`/auth/user/${uid}`);
+              const u = res.data?.data ?? res.data;
+              resolved[uid] = `${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim() || 'User';
+            } catch { resolved[uid] = 'User'; }
+          }));
+          setCommenterNames(prev => ({ ...prev, ...resolved }));
+        }
       } catch { /* silent */ }
       finally { setLoadingComments(prev => ({ ...prev, [postId]: false })); }
     }
@@ -330,38 +344,62 @@ const CustomerDashboard: React.FC = () => {
 
                     {/* Comments section */}
                     {openComments[post.post_id] && (
-                      <div style={{ padding: '0 16px 14px', borderTop: '1px solid #F9FAFB' }}>
+                      <div style={{ padding: '0 16px 16px', borderTop: '1px solid #F9FAFB' }}>
                         {loadingComments[post.post_id] && (
-                          <p style={{ fontSize: 12, color: '#9CA3AF', padding: '8px 0' }}>Loading comments…</p>
+                          <p style={{ fontSize: 12.5, color: '#9CA3AF', padding: '10px 0' }}>Loading comments…</p>
                         )}
-                        {(postComments[post.post_id] ?? []).map((c: any) => (
-                          <div key={c.comment_id} style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#6B7280', flexShrink: 0 }}>
-                              {(c.user_id ?? 'U').charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ background: '#F9FAFB', borderRadius: 10, padding: '7px 12px', flex: 1 }}>
-                              <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>{c.content}</p>
-                            </div>
-                          </div>
-                        ))}
+                        {/* Comment list */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                          {(postComments[post.post_id] ?? []).map((c: any) => {
+                            const cName = commenterNames[c.user_id] || 'User';
+                            const cInitial = cName.charAt(0).toUpperCase();
+                            return (
+                              <div key={c.comment_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                <div style={{
+                                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                                  background: '#FFF7ED', border: '1.5px solid #FED7AA',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 11, fontWeight: 800, color: '#F97316',
+                                }}>
+                                  {cInitial}
+                                </div>
+                                <div style={{ flex: 1, background: '#F9FAFB', borderRadius: '0 12px 12px 12px', padding: '7px 12px', border: '1px solid #F3F4F6' }}>
+                                  <p style={{ margin: '0 0 2px', fontSize: 11.5, fontWeight: 700, color: '#374151' }}>{cName}</p>
+                                  <p style={{ margin: 0, fontSize: 13, color: '#4B5563', lineHeight: 1.5 }}>{c.content}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                         {/* Add comment input */}
-                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#FFF7ED', border: '1.5px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#F97316', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+                          <div style={{
+                            width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                            background: '#FFF7ED', border: '1.5px solid #FED7AA',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 800, color: '#F97316',
+                          }}>
                             {(user?.firstName ?? 'U').charAt(0).toUpperCase()}
                           </div>
-                          <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+                          <div style={{ flex: 1, display: 'flex', gap: 6, background: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: 24, padding: '5px 5px 5px 12px', alignItems: 'center' }}>
                             <input
                               type="text"
                               value={commentInput[post.post_id] ?? ''}
                               onChange={e => setCommentInput(prev => ({ ...prev, [post.post_id]: e.target.value }))}
                               onKeyDown={e => e.key === 'Enter' && handleAddComment(post.post_id)}
                               placeholder="Write a comment…"
-                              style={{ flex: 1, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 20, padding: '6px 14px', fontSize: 13, outline: 'none', fontFamily: 'inherit' }}
+                              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: '#374151', fontFamily: 'inherit' }}
                             />
                             <button
                               onClick={() => handleAddComment(post.post_id)}
                               disabled={!(commentInput[post.post_id] ?? '').trim()}
-                              style={{ background: '#F97316', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: (commentInput[post.post_id] ?? '').trim() ? 1 : 0.5, transition: 'opacity .15s' }}
+                              style={{
+                                background: (commentInput[post.post_id] ?? '').trim() ? 'linear-gradient(135deg,#F97316,#EA580C)' : '#E5E7EB',
+                                color: (commentInput[post.post_id] ?? '').trim() ? '#fff' : '#9CA3AF',
+                                border: 'none', borderRadius: 20, padding: '6px 14px',
+                                fontSize: 12, fontWeight: 700, cursor: (commentInput[post.post_id] ?? '').trim() ? 'pointer' : 'not-allowed',
+                                transition: 'all .15s', fontFamily: 'inherit', flexShrink: 0,
+                              }}
                             >
                               Post
                             </button>
