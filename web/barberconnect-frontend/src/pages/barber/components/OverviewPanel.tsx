@@ -4,6 +4,7 @@ import { incomeService, leaveService, type IncomeRecord, type LeaveRequest } fro
 import { appointmentService, type Appointment } from '../../../services/appointmentService';
 import { barberService, type Barber } from '../../../services/barberService';
 import { haircutStyleService, type HaircutStyle } from '../../../services/haircutStyleService';
+import api from '../../../services/api';
 
 interface OverviewPanelProps { setActiveTab?: (tab: string) => void; }
 
@@ -65,6 +66,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ setActiveTab }) => {
   const [haircutStyles, setHaircutStyles] = useState<HaircutStyle[]>([]);
   const [profile,       setProfile]       = useState<Barber | null>(null);
   const [loading,       setLoading]       = useState(true);
+  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!barberProfileId) return;
@@ -79,6 +81,20 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ setActiveTab }) => {
         ]);
         setIncomeRecords(inc); setAppointments(appts); setLeaveRequests(leaves);
         setHaircutStyles(styles); setProfile(prof);
+
+        // Resolve customer full names for the recent appointments table
+        const uniqueCustomerIds = [...new Set(appts.map(a => a.customer_id).filter(Boolean))];
+        const nameMap: Record<string, string> = {};
+        await Promise.all(uniqueCustomerIds.map(async (cid) => {
+          try {
+            const res = await api.get(`/auth/user/${cid}`);
+            const u = res.data?.data ?? res.data;
+            nameMap[cid] = `${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim() || 'Customer';
+          } catch {
+            nameMap[cid] = 'Customer';
+          }
+        }));
+        setCustomerNames(nameMap);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     })();
@@ -212,15 +228,18 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ setActiveTab }) => {
                   {/* Customer */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, color: '#F97316', flexShrink: 0 }}>
-                      {appt.customer_id.charAt(0).toUpperCase()}
+                      {(customerNames[appt.customer_id] ?? appt.customer_id).charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>Customer ···{appt.customer_id.slice(-4)}</p>
-                      <p style={{ margin: '1px 0 0', fontSize: 11, color: '#9CA3AF' }}>ID: {appt.customer_id.slice(0, 8)}…</p>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>
+                        {customerNames[appt.customer_id] ?? `Customer ···${appt.customer_id.slice(-4)}`}
+                      </p>
                     </div>
                   </div>
                   {/* Style */}
-                  <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>···{appt.haircut_style_id.slice(-6)}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                    {haircutStyles.find(s => s.haircut_style_id === appt.haircut_style_id)?.name ?? `···${appt.haircut_style_id.slice(-6)}`}
+                  </p>
                   {/* Date */}
                   <div>
                     <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>
