@@ -15,7 +15,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import edu.cit.cabasag.barberconnect.R
 import edu.cit.cabasag.barberconnect.databinding.ActivityRegisterBinding
-import edu.cit.cabasag.barberconnect.network.RetrofitClient
 import edu.cit.cabasag.barberconnect.repository.AuthRepository
 import edu.cit.cabasag.barberconnect.util.TokenManager
 import edu.cit.cabasag.barberconnect.util.UiState
@@ -34,8 +33,6 @@ class RegisterActivity : AppCompatActivity() {
             handleGoogleSignInResult(result)
         }
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
@@ -47,12 +44,10 @@ class RegisterActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
-    // ── Setup ──────────────────────────────────────────────────────────────
-
     private fun setupViewModel() {
         val tokenManager = TokenManager(this)
-        val apiService   = (application as edu.cit.cabasag.barberconnect.BarberConnectApp).retrofitClient.apiService
-        val repository   = AuthRepository(apiService, tokenManager)
+        val apiService = (application as edu.cit.cabasag.barberconnect.BarberConnectApp).retrofitClient.apiService
+        val repository = AuthRepository(apiService, tokenManager)
         viewModel = ViewModelProvider(this, AuthViewModelFactory(repository))[AuthViewModel::class.java]
     }
 
@@ -69,16 +64,7 @@ class RegisterActivity : AppCompatActivity() {
         viewModel.registerState.observe(this) { state ->
             when (state) {
                 is UiState.Loading -> setLoading(true)
-                is UiState.Success -> {
-                    setLoading(false)
-                    // Navigate to Login with success banner (mirrors web behaviour)
-                    val intent = Intent(this, LoginActivity::class.java).apply {
-                        putExtra(LoginActivity.EXTRA_MESSAGE, "Registration successful! Please sign in.")
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
-                    startActivity(intent)
-                    finish()
-                }
+                is UiState.Success -> navigateToDashboard()
                 is UiState.Error -> {
                     setLoading(false)
                     showError(state.message)
@@ -87,19 +73,10 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
-        // Google sign-up also shares loginState
         viewModel.loginState.observe(this) { state ->
             when (state) {
                 is UiState.Loading -> setLoading(true)
-                is UiState.Success -> {
-                    setLoading(false)
-                    startActivity(
-                        Intent(this, DashboardActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                    )
-                    finish()
-                }
+                is UiState.Success -> navigateToDashboard()
                 is UiState.Error -> {
                     setLoading(false)
                     showError(state.message)
@@ -112,29 +89,25 @@ class RegisterActivity : AppCompatActivity() {
     private fun setupClickListeners() {
         binding.btnRegister.setOnClickListener { attemptRegister() }
         binding.btnGoogleRegister.setOnClickListener { launchGoogleSignIn() }
-        binding.tvSignIn.setOnClickListener { finish() } // back to Login
+        binding.tvSignIn.setOnClickListener { finish() }
     }
 
-    // ── Register ───────────────────────────────────────────────────────────
-
     private fun attemptRegister() {
-        val firstName       = binding.etFirstName.text?.toString()?.trim() ?: ""
-        val lastName        = binding.etLastName.text?.toString()?.trim() ?: ""
-        val email           = binding.etEmail.text?.toString()?.trim() ?: ""
-        val password        = binding.etPassword.text?.toString() ?: ""
+        val firstName = binding.etFirstName.text?.toString()?.trim() ?: ""
+        val lastName = binding.etLastName.text?.toString()?.trim() ?: ""
+        val email = binding.etEmail.text?.toString()?.trim() ?: ""
+        val password = binding.etPassword.text?.toString() ?: ""
         val confirmPassword = binding.etConfirmPassword.text?.toString() ?: ""
-        val role            = if (binding.rbBarber.isChecked) "BARBER" else "CUSTOMER"
+        val role = if (binding.rbBarber.isChecked) "BARBER" else "CUSTOMER"
 
-        // Clear previous errors
-        binding.tilFirstName.error       = null
-        binding.tilLastName.error        = null
-        binding.tilEmail.error           = null
-        binding.tilPassword.error        = null
+        binding.tilFirstName.error = null
+        binding.tilLastName.error = null
+        binding.tilEmail.error = null
+        binding.tilPassword.error = null
         binding.tilConfirmPassword.error = null
         hideError()
 
         var valid = true
-
         if (firstName.length < 2 || !firstName.all { it.isLetter() || it.isWhitespace() }) {
             binding.tilFirstName.error = "First name must be at least 2 letters"
             valid = false
@@ -158,8 +131,6 @@ class RegisterActivity : AppCompatActivity() {
 
         if (valid) viewModel.register(firstName, lastName, email, password, role)
     }
-
-    // ── Google Sign-Up ─────────────────────────────────────────────────────
 
     private fun launchGoogleSignIn() {
         googleSignInClient.signOut().addOnCompleteListener {
@@ -201,17 +172,26 @@ class RegisterActivity : AppCompatActivity() {
             }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+    private fun navigateToDashboard() {
+        setLoading(false)
+        startActivity(Intent(this, DashboardActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
+    }
 
     private fun setLoading(loading: Boolean) {
-        binding.btnRegister.isEnabled       = !loading
+        binding.btnRegister.isEnabled = !loading
         binding.btnGoogleRegister.isEnabled = !loading
-        binding.btnRegister.text = if (loading)
-            getString(R.string.creating_account) else getString(R.string.sign_up)
+        binding.btnRegister.text = if (loading) {
+            getString(R.string.creating_account)
+        } else {
+            getString(R.string.sign_up)
+        }
     }
 
     private fun showError(msg: String) {
-        binding.tvError.text       = msg
+        binding.tvError.text = msg
         binding.tvError.visibility = View.VISIBLE
     }
 

@@ -48,7 +48,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val user = TokenManager(this@MyAppointmentsActivity).getUser().first()
-            val uid  = user?.firebaseUid
+            val uid  = user?.resolvedUserId
             if (uid != null) {
                 viewModel.loadMyAppointments(uid)
             } else {
@@ -126,7 +126,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
             .setPositiveButton("Submit") { _, _ ->
                 lifecycleScope.launch {
                     val user = TokenManager(this@MyAppointmentsActivity).getUser().first()
-                    val uid  = user?.firebaseUid ?: return@launch
+                    val uid  = user?.resolvedUserId ?: return@launch
                     viewModel.submitFeedback(
                         FeedbackRequest(
                             appointmentId  = appt.appointmentId ?: "",

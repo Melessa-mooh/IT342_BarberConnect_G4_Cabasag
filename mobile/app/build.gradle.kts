@@ -16,16 +16,13 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // ─────────────────────────────────────────────────────────────────────
-        // BASE URL — Samsung S22 Real Device Setup:
-        //   1. Run `ipconfig` on your Windows PC
-        //   2. Find "IPv4 Address" under the Wi-Fi adapter
-        //   3. Replace 192.168.1.100 with that IP
-        //   4. Make sure the backend (port 8080) is reachable from your phone
-        //      (same Wi-Fi network + Windows firewall allows port 8080)
-        // For emulator use: http://10.0.2.2:8080/api/v1/
-        // ─────────────────────────────────────────────────────────────────────
-        buildConfigField("String", "BASE_URL", "\"http://192.168.1.47:8080/api/v1/\"")
+        // Debug default is the Android emulator loopback.
+        // Real device testing: override with -PBASE_URL=http://<PC_LOCAL_IP>:8080/api/v1/
+        // Release/deployed builds should pass -PBASE_URL=https://<deployed-backend>/api/v1/
+        val configuredBaseUrl = providers.gradleProperty("BASE_URL")
+            .orElse("http://10.0.2.2:8080/api/v1/")
+            .get()
+        buildConfigField("String", "BASE_URL", "\"$configuredBaseUrl\"")
     }
 
     buildTypes {
@@ -35,7 +32,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://your-production-url.com/api/v1/\"")
+            val configuredBaseUrl = providers.gradleProperty("BASE_URL")
+                .orElse("https://your-production-url.com/api/v1/")
+                .get()
+            buildConfigField("String", "BASE_URL", "\"$configuredBaseUrl\"")
         }
     }
 

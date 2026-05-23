@@ -3,22 +3,22 @@
 
     <!-- Base application theme -->
     <style name="Theme.BarberConnect" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/brown_primary</item>
-        <item name="colorPrimaryVariant">@color/brown_dark</item>
-        <item name="colorSecondary">@color/brown_secondary</item>
+        <item name="colorPrimary">@color/navy_dark</item>
+        <item name="colorPrimaryVariant">@color/navy_panel</item>
+        <item name="colorSecondary">@color/orange_accent</item>
         <item name="colorSecondaryVariant">@color/brown_medium</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorSurface">@color/white</item>
         <item name="colorError">@color/error_red</item>
-        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:windowBackground">@color/barber_dashboard_bg</item>
         <!-- TextInputLayout focused colour -->
-        <item name="boxStrokeColor">@color/brown_secondary</item>
-        <item name="hintTextColor">@color/brown_secondary</item>
+        <item name="boxStrokeColor">@color/orange_accent</item>
+        <item name="hintTextColor">@color/orange_accent</item>
     </style>
 
     <!-- Splash theme (shows before content is ready) -->
     <style name="Theme.BarberConnect.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/brown_primary</item>
+        <item name="windowSplashScreenBackground">@color/navy_dark</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_scissors</item>
         <item name="postSplashScreenTheme">@style/Theme.BarberConnect</item>
     </style>
@@ -30,14 +30,14 @@
         <item name="boxCornerRadiusBottomStart">12dp</item>
         <item name="boxCornerRadiusBottomEnd">12dp</item>
         <item name="boxStrokeColor">@color/gray_border</item>
-        <item name="hintTextColor">@color/brown_secondary</item>
+        <item name="hintTextColor">@color/orange_accent</item>
         <item name="android:textColorHint">@color/gray_text</item>
     </style>
 
     <!-- Primary filled button -->
     <style name="BarberConnectButton" parent="Widget.MaterialComponents.Button">
         <item name="cornerRadius">12dp</item>
-        <item name="backgroundTint">@color/brown_primary</item>
+        <item name="backgroundTint">@color/orange_accent</item>
         <item name="android:textColor">@color/white</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
@@ -48,9 +48,37 @@
         <item name="cornerRadius">12dp</item>
         <item name="strokeColor">@color/gray_border</item>
         <item name="strokeWidth">2dp</item>
-        <item name="android:textColor">@color/brown_dark</item>
+        <item name="android:textColor">@color/navy_dark</item>
         <item name="android:textSize">15sp</item>
         <item name="backgroundTint">@color/white</item>
+    </style>
+
+    <style name="DrawerItemStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingHorizontal">14dp</item>
+        <item name="android:textColor">@color/gray_text_dark</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+    </style>
+
+    <style name="ScheduleTabStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">42dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:textColor">@color/gray_text_dark</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:background">@color/white</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
     </style>
 
 </resources>

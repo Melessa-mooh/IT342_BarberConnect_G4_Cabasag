@@ -8,9 +8,11 @@ data class Appointment(
     @SerializedName("barber_profile_id") val barberProfileId: String? = null,
     @SerializedName("haircut_style_id")  val haircutStyleId: String? = null,
     val appointmentDateTime: String? = null,
+    val durationMinutes: Int? = null,
     val totalPrice: Double? = null,
     val status: String? = null,
     val paymentMethod: String? = null,
     val paymentStatus: String? = null,
+    val selectedOptionIds: List<String>? = null,
     val notes: String? = null
 )

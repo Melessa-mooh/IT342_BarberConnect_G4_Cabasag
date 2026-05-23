@@ -26,6 +26,15 @@ class BarberViewModel(private val repository: BarberRepository) : ViewModel() {
     private val _createPostState = MutableLiveData<UiState<Post>>(UiState.Idle)
     val createPostState: LiveData<UiState<Post>> = _createPostState
 
+    private val _comments = MutableLiveData<UiState<List<Comment>>>(UiState.Idle)
+    val comments: LiveData<UiState<List<Comment>>> = _comments
+
+    private val _commentAdded = MutableLiveData<UiState<Comment>>(UiState.Idle)
+    val commentAdded: LiveData<UiState<Comment>> = _commentAdded
+
+    private val _reactionState = MutableLiveData<UiState<Reaction>>(UiState.Idle)
+    val reactionState: LiveData<UiState<Reaction>> = _reactionState
+
     fun loadAppointments(barberProfileId: String) {
         _appointments.value = UiState.Loading
         viewModelScope.launch {
@@ -88,8 +97,40 @@ class BarberViewModel(private val repository: BarberRepository) : ViewModel() {
         }
     }
 
+    fun loadComments(postId: String) {
+        _comments.value = UiState.Loading
+        viewModelScope.launch {
+            _comments.value = repository.getComments(postId).fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to load comments") }
+            )
+        }
+    }
+
+    fun addComment(postId: String, userId: String, content: String) {
+        _commentAdded.value = UiState.Loading
+        viewModelScope.launch {
+            _commentAdded.value = repository.addComment(postId, userId, content).fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to add comment") }
+            )
+        }
+    }
+
+    fun addReaction(postId: String, userId: String, type: String = "LIKE") {
+        _reactionState.value = UiState.Loading
+        viewModelScope.launch {
+            _reactionState.value = repository.addReaction(postId, userId, type).fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to react") }
+            )
+        }
+    }
+
     fun resetSubmitLeaveState() { _submitLeaveState.value  = UiState.Idle }
     fun resetCreatePostState()  { _createPostState.value   = UiState.Idle }
+    fun resetCommentAdded() { _commentAdded.value = UiState.Idle }
+    fun resetReactionState() { _reactionState.value = UiState.Idle }
 }
 
 class BarberViewModelFactory(

@@ -1,6 +1,8 @@
 package edu.cit.cabasag.barberconnect.network
 
 import edu.cit.cabasag.barberconnect.model.*
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -23,10 +25,44 @@ interface ApiService {
         @Header("Authorization") bearerToken: String
     ): Response<ApiResponse<AuthResponse>>
 
+    @PUT("auth/profile")
+    suspend fun updateProfile(
+        @Body request: UpdateProfileRequest
+    ): Response<ApiResponse<AuthResponse>>
+
+    @Multipart
+    @POST("auth/profile/image")
+    suspend fun uploadProfileImage(
+        @Part file: MultipartBody.Part
+    ): Response<ApiResponse<String>>
+
+    @GET("auth/user/{uid}")
+    suspend fun getUserName(
+        @Path("uid") uid: String
+    ): Response<ApiResponse<UserNameResponse>>
+
     // ── Barber / Catalog ──────────────────────────────────────────────────────
 
     @GET("barbers/public/available")
     suspend fun getAvailableBarbers(): Response<ApiResponse<List<Barber>>>
+
+    @GET("barbers/public/{id}")
+    suspend fun getBarberById(
+        @Path("id") id: String
+    ): Response<ApiResponse<Barber>>
+
+    @PUT("barbers/{userId}/profile")
+    suspend fun updateBarberProfile(
+        @Path("userId") userId: String,
+        @Body request: UpdateBarberProfileRequest
+    ): Response<ApiResponse<Barber>>
+
+    @Multipart
+    @POST("barbers/{userId}/profile-picture")
+    suspend fun uploadBarberProfilePicture(
+        @Path("userId") userId: String,
+        @Part file: MultipartBody.Part
+    ): Response<ApiResponse<String>>
 
     @GET("haircuts/barber/{barberProfileId}")
     suspend fun getHaircutStyles(
@@ -83,8 +119,35 @@ interface ApiService {
     @GET("posts")
     suspend fun getAllPosts(): Response<ApiResponse<List<Post>>>
 
+    @GET("posts/barber/{barberProfileId}")
+    suspend fun getPostsByBarber(
+        @Path("barberProfileId") barberProfileId: String
+    ): Response<ApiResponse<List<Post>>>
+
+    @Multipart
     @POST("posts")
-    suspend fun createPost(@Body body: Map<String, String>): Response<ApiResponse<Post>>
+    suspend fun createPost(
+        @Part("barberProfileId") barberProfileId: RequestBody,
+        @Part("content") content: RequestBody,
+        @Part file: MultipartBody.Part? = null
+    ): Response<ApiResponse<Post>>
+
+    @GET("posts/{postId}/comments")
+    suspend fun getComments(
+        @Path("postId") postId: String
+    ): Response<ApiResponse<List<Comment>>>
+
+    @POST("posts/{postId}/comments")
+    suspend fun addComment(
+        @Path("postId") postId: String,
+        @Body body: Map<String, String>
+    ): Response<ApiResponse<Comment>>
+
+    @POST("posts/{postId}/reactions")
+    suspend fun addReaction(
+        @Path("postId") postId: String,
+        @Body body: Map<String, String>
+    ): Response<ApiResponse<Reaction>>
 
     // ── Admin (optional — not implemented in UI yet) ──────────────────────────
 

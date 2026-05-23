@@ -6,12 +6,23 @@
     <color name="brown_medium">#A0522D</color>
     <color name="brown_dark">#5D2E0C</color>
     <color name="cream">#F4E4BC</color>
+    <color name="orange_accent">#F97316</color>
+    <color name="orange_dark">#EA580C</color>
+    <color name="orange_soft">#FFF7ED</color>
+    <color name="navy_dark">#111827</color>
+    <color name="navy_panel">#1F2937</color>
+    <color name="mobile_bg">#F4F6FA</color>
+    <color name="barber_dashboard_bg">#F5F7FB</color>
+    <color name="sidebar_active_bg">#26F97316</color>
 
     <!-- Neutrals -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="gray_border">#E5E5E5</color>
+    <color name="gray_border_soft">#E5E7EB</color>
     <color name="gray_text">#666666</color>
+    <color name="gray_text_dark">#374151</color>
+    <color name="gray_text_light">#9CA3AF</color>
     <color name="input_bg">#FAFAFA</color>
 
     <!-- State colours -->

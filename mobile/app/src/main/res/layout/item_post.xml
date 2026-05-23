@@ -67,6 +67,16 @@
             android:lineSpacingMultiplier="1.4"
             android:layout_marginBottom="10dp" />
 
+        <ImageView
+            android:id="@+id/ivPostImage"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginBottom="10dp"
+            android:background="@color/input_bg"
+            android:contentDescription="Post image"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
         <!-- Stats row -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -77,6 +87,10 @@
                 android:id="@+id/tvPostLikes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
                 android:textColor="@color/gray_text"
                 android:textSize="12sp" />
 
@@ -84,6 +98,10 @@
                 android:id="@+id/tvPostComments"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
                 android:textColor="@color/gray_text"
                 android:textSize="12sp"
                 android:layout_marginStart="16dp" />

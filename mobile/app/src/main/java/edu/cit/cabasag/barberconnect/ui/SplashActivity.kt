@@ -30,9 +30,10 @@ class SplashActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val token = viewModel.getToken().first()
             if (!token.isNullOrBlank()) {
+                viewModel.refreshCurrentUser()
                 startActivity(Intent(this@SplashActivity, DashboardActivity::class.java))
             } else {
-                startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
+                startActivity(Intent(this@SplashActivity, LandingActivity::class.java))
             }
             finish()
         }

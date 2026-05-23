@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_gradient"
-    android:fillViewport="true">
+    android:background="@color/mobile_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Header Bar -->
         <LinearLayout
             android:id="@+id/headerBar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_height="64dp"
+            android:background="@color/white"
+            android:elevation="4dp"
             android:gravity="center_vertical"
-            android:padding="20dp"
-            android:background="#44000000">
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp">
 
             <ImageView
                 android:layout_width="28dp"
@@ -28,134 +27,359 @@
                 android:src="@drawable/ic_scissors" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/app_name"
-                android:textColor="@color/white"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginStart="10dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnLogout"
-                style="@style/BarberConnectButton.Outlined"
+                android:id="@+id/tvHeaderBrand"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="@string/logout"
-                app:strokeColor="@color/white"
-                android:textColor="@color/white"
-                app:backgroundTint="@android:color/transparent"
-                android:textSize="13sp" />
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="BarberConnect"
+                android:textColor="@color/navy_dark"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etDashboardSearch"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="1"
+                android:background="@color/input_bg"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="6dp"
+                android:hint="Search barbers or styles..."
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
+                android:paddingHorizontal="10dp"
+                android:textColor="@color/gray_text_dark"
+                android:textColorHint="@color/gray_text_light"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/btnMenu"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@color/input_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="☰"
+                android:textColor="@color/navy_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Welcome Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/welcomeCard"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="20dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="12dp"
-            app:cardBackgroundColor="@color/white">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="28dp"
-                android:gravity="center">
+                android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/tvAvatar"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:gravity="center"
-                    android:background="@color/brown_primary"
-                    android:textColor="@color/white"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:id="@+id/tvWelcome"
-                    android:layout_width="wrap_content"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/welcomeCard"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/brown_primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:layout_marginBottom="8dp" />
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:strokeColor="@color/gray_border_soft"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvAvatar"
+                            android:layout_width="58dp"
+                            android:layout_height="58dp"
+                            android:gravity="center"
+                            android:textColor="@color/white"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvWelcome"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/navy_dark"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvEmail"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:textColor="@color/gray_text"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/tvRole"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:background="@color/orange_soft"
+                                android:paddingHorizontal="12dp"
+                                android:paddingVertical="5dp"
+                                android:textColor="@color/orange_dark"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <TextView
-                    android:id="@+id/tvEmail"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvDashboardTitle"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/brown_medium"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="12dp" />
-
-                <TextView
-                    android:id="@+id/tvRole"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="6dp"
-                    android:background="@color/cream"
-                    android:textColor="@color/brown_primary"
-                    android:textSize="13sp"
+                    android:layout_marginTop="22dp"
+                    android:text="Barber Feed"
+                    android:textColor="@color/navy_dark"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Role-aware navigation buttons -->
+                <TextView
+                    android:id="@+id/tvDashboardSubtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Your mobile dashboard"
+                    android:textColor="@color/gray_text"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardPrimary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvPrimaryIcon"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@color/orange_accent"
+                            android:gravity="center"
+                            android:text="1"
+                            android:textColor="@color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvPrimaryTitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/navy_dark"
+                                android:textSize="17sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvPrimarySubtitle"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:textColor="@color/gray_text"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="@color/orange_accent"
+                            android:textSize="30sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSecondary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
+                    <TextView
+                        android:id="@+id/tvSecondaryTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="18dp"
+                        android:textColor="@color/navy_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardTertiary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
+                    <TextView
+                        android:id="@+id/tvTertiaryTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="18dp"
+                        android:textColor="@color/navy_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardQuaternary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
+                    <TextView
+                        android:id="@+id/tvQuaternaryTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="18dp"
+                        android:textColor="@color/navy_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/drawerOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000"
+        android:clickable="true"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/drawerPanel"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/white"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="18dp"
+        android:visibility="gone">
+
         <LinearLayout
-            android:id="@+id/navButtonsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingBottom="24dp"
-            android:visibility="gone">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNav1"
-                style="@style/BarberConnectButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone"
-                android:text="" />
+            <TextView
+                android:id="@+id/tvDrawerTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Menu"
+                android:textColor="@color/navy_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNav2"
-                style="@style/BarberConnectButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone"
-                android:text="" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNav3"
-                style="@style/BarberConnectButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone"
-                android:text="" />
-
-            <!-- 4th button — barbers only -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNav4"
-                style="@style/BarberConnectButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone"
-                android:text="" />
+            <TextView
+                android:id="@+id/btnCloseDrawer"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="×"
+                android:textColor="@color/navy_dark"
+                android:textSize="28sp" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/drawerItem1"
+            style="@style/DrawerItemStyle" />
+        <TextView
+            android:id="@+id/drawerItem2"
+            style="@style/DrawerItemStyle" />
+        <TextView
+            android:id="@+id/drawerItem3"
+            style="@style/DrawerItemStyle" />
+        <TextView
+            android:id="@+id/drawerItem4"
+            style="@style/DrawerItemStyle" />
+        <TextView
+            android:id="@+id/drawerItem5"
+            style="@style/DrawerItemStyle"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/drawerItem6"
+            style="@style/DrawerItemStyle"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/drawerItem7"
+            style="@style/DrawerItemStyle"
+            android:visibility="gone" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            style="@style/BarberConnectButton.Outlined"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Sign Out" />
     </LinearLayout>
-</ScrollView>
+</FrameLayout>

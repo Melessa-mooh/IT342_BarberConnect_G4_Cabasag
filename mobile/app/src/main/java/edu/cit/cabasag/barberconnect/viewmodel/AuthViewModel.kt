@@ -23,6 +23,9 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     private val _registerState = MutableLiveData<UiState<AuthResponse>>(UiState.Idle)
     val registerState: LiveData<UiState<AuthResponse>> = _registerState
 
+    private val _currentUserState = MutableLiveData<UiState<AuthResponse>>(UiState.Idle)
+    val currentUserState: LiveData<UiState<AuthResponse>> = _currentUserState
+
     // ── Logout
     private val _loggedOut = MutableLiveData(false)
     val loggedOut: LiveData<Boolean> = _loggedOut
@@ -68,6 +71,16 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         viewModelScope.launch {
             repository.logout()
             _loggedOut.value = true
+        }
+    }
+
+    fun refreshCurrentUser() {
+        _currentUserState.value = UiState.Loading
+        viewModelScope.launch {
+            _currentUserState.value = repository.refreshCurrentUser().fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to refresh profile") }
+            )
         }
     }
 

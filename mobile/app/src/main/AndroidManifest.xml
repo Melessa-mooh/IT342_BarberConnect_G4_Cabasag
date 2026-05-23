@@ -30,6 +30,10 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.LandingActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
@@ -38,6 +42,12 @@
         <activity
             android:name=".ui.DashboardActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".ui.ProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".ui.DashboardActivity" />
 
         <!-- ── Customer screens ─────────────────────────────────────────── -->
         <activity

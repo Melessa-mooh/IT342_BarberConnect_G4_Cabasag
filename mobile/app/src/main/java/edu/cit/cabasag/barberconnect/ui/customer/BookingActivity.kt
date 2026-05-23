@@ -255,7 +255,7 @@ class BookingActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val tokenManager = TokenManager(this@BookingActivity)
             val user = tokenManager.getUser().first()
-            val customerId = user?.firebaseUid ?: run {
+            val customerId = user?.resolvedUserId ?: run {
                 Toast.makeText(this@BookingActivity, "Not logged in", Toast.LENGTH_SHORT).show()
                 return@launch
             }

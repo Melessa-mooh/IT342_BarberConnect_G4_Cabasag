@@ -1,6 +1,7 @@
 package edu.cit.cabasag.barberconnect.ui.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -8,27 +9,42 @@ import androidx.recyclerview.widget.RecyclerView
 import edu.cit.cabasag.barberconnect.databinding.ItemPostBinding
 import edu.cit.cabasag.barberconnect.model.Post
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
-class PostAdapter : ListAdapter<Post, PostAdapter.ViewHolder>(DIFF) {
+class PostAdapter(
+    private val onCommentsClick: (Post) -> Unit = {},
+    private val onLikeClick: (Post) -> Unit = {}
+) : ListAdapter<Post, PostAdapter.ViewHolder>(DIFF) {
 
     inner class ViewHolder(private val b: ItemPostBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(post: Post) {
             val barberId = post.barberProfileId ?: "Barber"
-            b.tvPostAvatar.text  = barberId.firstOrNull()?.uppercaseChar()?.toString() ?: "B"
-            b.tvPostBarber.text  = "Barber ···${barberId.takeLast(6)}"
-            b.tvPostContent.text = post.content ?: ""
-            b.tvPostLikes.text   = "❤ ${post.likesCount ?: 0}"
-            b.tvPostComments.text = "💬 ${post.commentsCount ?: 0}"
+            b.tvPostAvatar.text = barberId.firstOrNull()?.uppercaseChar()?.toString() ?: "B"
+            b.tvPostBarber.text = "Barber ...${barberId.takeLast(6)}"
+            b.tvPostContent.text = post.content.orEmpty()
+            b.tvPostLikes.text = "Like ${post.likesCount ?: 0}"
+            b.tvPostComments.text = "Comments ${post.commentsCount ?: 0}"
+            b.tvPostLikes.setOnClickListener { onLikeClick(post) }
+            b.tvPostComments.setOnClickListener { onCommentsClick(post) }
 
-            // Format date
-            val rawDate = post.createdAt ?: ""
+            if (!post.imageUrl.isNullOrBlank()) {
+                b.ivPostImage.visibility = View.GONE
+            } else {
+                b.ivPostImage.visibility = View.GONE
+            }
+
+            val rawDate = post.createdAt.orEmpty()
             b.tvPostDate.text = try {
                 val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                val d = sdf.parse(rawDate.take(19))
-                if (d != null) SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(d)
-                else rawDate
-            } catch (_: Exception) { rawDate }
+                val parsed = sdf.parse(rawDate.take(19))
+                if (parsed != null) {
+                    SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(parsed)
+                } else {
+                    rawDate
+                }
+            } catch (_: Exception) {
+                rawDate
+            }
         }
     }
 

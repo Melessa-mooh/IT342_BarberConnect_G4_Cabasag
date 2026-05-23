@@ -32,6 +32,15 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
     private val _posts = MutableLiveData<UiState<List<Post>>>(UiState.Idle)
     val posts: LiveData<UiState<List<Post>>> = _posts
 
+    private val _comments = MutableLiveData<UiState<List<Comment>>>(UiState.Idle)
+    val comments: LiveData<UiState<List<Comment>>> = _comments
+
+    private val _commentAdded = MutableLiveData<UiState<Comment>>(UiState.Idle)
+    val commentAdded: LiveData<UiState<Comment>> = _commentAdded
+
+    private val _reactionState = MutableLiveData<UiState<Reaction>>(UiState.Idle)
+    val reactionState: LiveData<UiState<Reaction>> = _reactionState
+
     fun loadBarbers() {
         _barbers.value = UiState.Loading
         viewModelScope.launch {
@@ -108,8 +117,40 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         }
     }
 
+    fun loadComments(postId: String) {
+        _comments.value = UiState.Loading
+        viewModelScope.launch {
+            _comments.value = repository.getComments(postId).fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to load comments") }
+            )
+        }
+    }
+
+    fun addComment(postId: String, userId: String, content: String) {
+        _commentAdded.value = UiState.Loading
+        viewModelScope.launch {
+            _commentAdded.value = repository.addComment(postId, userId, content).fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to add comment") }
+            )
+        }
+    }
+
+    fun addReaction(postId: String, userId: String, type: String = "LIKE") {
+        _reactionState.value = UiState.Loading
+        viewModelScope.launch {
+            _reactionState.value = repository.addReaction(postId, userId, type).fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.message ?: "Failed to react") }
+            )
+        }
+    }
+
     fun resetBookingState()  { _bookingState.value  = UiState.Idle }
     fun resetFeedbackState() { _feedbackState.value = UiState.Idle }
+    fun resetCommentAdded() { _commentAdded.value = UiState.Idle }
+    fun resetReactionState() { _reactionState.value = UiState.Idle }
 }
 
 class CustomerViewModelFactory(

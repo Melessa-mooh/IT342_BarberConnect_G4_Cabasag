@@ -11,6 +11,9 @@ class CustomerRepository(private val api: ApiService) {
     suspend fun getAvailableBarbers(): Result<List<Barber>> =
         safeCall { api.getAvailableBarbers() }
 
+    suspend fun getBarberById(id: String): Result<Barber> =
+        safeCall { api.getBarberById(id) }
+
     suspend fun getHaircutStyles(barberProfileId: String): Result<List<HaircutStyle>> =
         safeCall { api.getHaircutStyles(barberProfileId) }
 
@@ -31,6 +34,20 @@ class CustomerRepository(private val api: ApiService) {
 
     suspend fun getAllPosts(): Result<List<Post>> =
         safeCall { api.getAllPosts() }
+
+    suspend fun getComments(postId: String): Result<List<Comment>> =
+        safeCall { api.getComments(postId) }
+
+    suspend fun addComment(postId: String, userId: String, content: String): Result<Comment> =
+        safeCall { api.addComment(postId, mapOf("userId" to userId, "content" to content)) }
+
+    suspend fun addReaction(postId: String, userId: String, type: String = "LIKE"): Result<Reaction> =
+        safeCall { api.addReaction(postId, mapOf("userId" to userId, "type" to type)) }
+
+    suspend fun getUserDisplayName(userId: String): Result<String> =
+        safeCall { api.getUserName(userId) }.map {
+            "${it.firstName.orEmpty()} ${it.lastName.orEmpty()}".trim().ifBlank { "User" }
+        }
 
     // ── Internal helper ───────────────────────────────────────────────────────
 

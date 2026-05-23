@@ -23,10 +23,27 @@ class BarberLeaveActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBarberLeaveBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val barberProfileId = intent.getStringExtra("barberProfileId") ?: ""
+        BarberMobileNav.setup(
+            activity = this,
+            activeItem = "Schedule",
+            barberProfileId = barberProfileId,
+            menuButton = binding.btnMenu,
+            overlay = binding.drawerOverlay,
+            drawer = binding.drawerPanel,
+            closeButton = binding.btnCloseDrawer,
+            items = listOf(
+                binding.drawerItem1,
+                binding.drawerItem2,
+                binding.drawerItem3,
+                binding.drawerItem4,
+                binding.drawerItem5,
+                binding.drawerItem6,
+                binding.drawerItem7
+            ),
+            logoutButton = binding.btnLogout
+        )
 
         val api        = (application as BarberConnectApp).retrofitClient.apiService
         val repository = BarberRepository(api)
@@ -88,6 +105,4 @@ class BarberLeaveActivity : AppCompatActivity() {
 
         viewModel.loadLeaveRequests(barberProfileId)
     }
-
-    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 }

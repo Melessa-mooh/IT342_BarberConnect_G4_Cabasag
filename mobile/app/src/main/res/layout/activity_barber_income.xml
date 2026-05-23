@@ -1,19 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/cream">
+    android:background="@color/barber_dashboard_bg">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/brown_primary"
-        app:title="Income"
-        app:titleTextColor="@color/white" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@color/navy_dark"
+            android:elevation="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_scissors"
+                app:tint="@color/white" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="BarberConnect"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnMenu"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@color/navy_panel"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="Menu"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
     <!-- Summary card -->
     <com.google.android.material.card.MaterialCardView
@@ -22,7 +57,7 @@
         android:layout_margin="16dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="6dp"
-        app:cardBackgroundColor="@color/brown_primary">
+        app:cardBackgroundColor="@color/navy_dark">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -81,4 +116,77 @@
         android:layout_weight="1"
         android:padding="12dp"
         android:clipToPadding="false" />
-</LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/drawerOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000"
+        android:clickable="true"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/drawerPanel"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/navy_dark"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="18dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Professional Suite"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnCloseDrawer"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="X"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/drawerItem1" style="@style/DrawerItemStyle" />
+        <TextView android:id="@+id/drawerItem2" style="@style/DrawerItemStyle" />
+        <TextView android:id="@+id/drawerItem3" style="@style/DrawerItemStyle" />
+        <TextView android:id="@+id/drawerItem4" style="@style/DrawerItemStyle" />
+        <TextView android:id="@+id/drawerItem5" style="@style/DrawerItemStyle" />
+        <TextView android:id="@+id/drawerItem6" style="@style/DrawerItemStyle" />
+        <TextView android:id="@+id/drawerItem7" style="@style/DrawerItemStyle" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="14dp"
+            android:text="Sign Out"
+            android:textColor="#FCA5A5"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</FrameLayout>

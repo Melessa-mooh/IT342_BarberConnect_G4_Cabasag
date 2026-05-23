@@ -22,10 +22,27 @@ class BarberIncomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBarberIncomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val barberProfileId = intent.getStringExtra("barberProfileId") ?: ""
+        BarberMobileNav.setup(
+            activity = this,
+            activeItem = "Income Analytics",
+            barberProfileId = barberProfileId,
+            menuButton = binding.btnMenu,
+            overlay = binding.drawerOverlay,
+            drawer = binding.drawerPanel,
+            closeButton = binding.btnCloseDrawer,
+            items = listOf(
+                binding.drawerItem1,
+                binding.drawerItem2,
+                binding.drawerItem3,
+                binding.drawerItem4,
+                binding.drawerItem5,
+                binding.drawerItem6,
+                binding.drawerItem7
+            ),
+            logoutButton = binding.btnLogout
+        )
 
         val api        = (application as BarberConnectApp).retrofitClient.apiService
         val repository = BarberRepository(api)
@@ -62,6 +79,4 @@ class BarberIncomeActivity : AppCompatActivity() {
 
         viewModel.loadIncomeRecords(barberProfileId)
     }
-
-    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 }

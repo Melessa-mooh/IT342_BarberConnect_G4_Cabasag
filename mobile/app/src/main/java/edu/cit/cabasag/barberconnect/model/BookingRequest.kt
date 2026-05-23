@@ -7,6 +7,5 @@ data class BookingRequest(
     val appointmentDateTime: String,
     val totalPrice: Double,
     val paymentMethod: String,
-    val selectedOptionIds: List<String> = emptyList(),
-    val notes: String = ""
+    val selectedOptionIds: List<String> = emptyList()
 )
