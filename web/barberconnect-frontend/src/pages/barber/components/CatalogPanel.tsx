@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { haircutStyleService, type HaircutStyle, type StyleOption } from '../../../services/haircutStyleService';
 import api from '../../../services/api';
+import { getHaircutImage, setHaircutImageFallback } from '../../../utils/haircutImages';
 
 // ─── Validation helpers ────────────────────────────────────────────────────────
 interface FormErrors { name?: string; basePrice?: string; }
@@ -265,8 +266,9 @@ const CatalogPanel: React.FC = () => {
           <div key={style.haircut_style_id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all">
             <div className="h-48 bg-slate-200 overflow-hidden relative">
               <img
-                src={style.imageUrl || 'https://images.unsplash.com/photo-1599351431202-1e0f01ce346f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                src={getHaircutImage(style)}
                 alt={style.name}
+                onError={(event) => setHaircutImageFallback(event, style.name)}
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 shadow-sm">

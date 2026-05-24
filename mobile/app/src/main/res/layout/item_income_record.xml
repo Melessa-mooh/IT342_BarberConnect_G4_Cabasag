@@ -26,9 +26,26 @@
                 android:id="@+id/tvIncomeDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/brown_primary"
+                android:textColor="@color/navy_dark"
                 android:textSize="14sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvIncomeCustomer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/navy_dark"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvIncomeService"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/gray_text_dark"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvIncomePayment"
@@ -57,7 +74,7 @@
                 android:id="@+id/tvIncomeNet"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/brown_secondary"
+                android:textColor="@color/orange_dark"
                 android:textSize="17sp"
                 android:textStyle="bold" />
 

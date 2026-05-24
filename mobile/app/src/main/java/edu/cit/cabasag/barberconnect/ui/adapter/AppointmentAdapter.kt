@@ -13,7 +13,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class AppointmentAdapter(
-    private val onFeedback: ((Appointment) -> Unit)? = null
+    private val onFeedback: ((Appointment) -> Unit)? = null,
+    private val onComplete: ((Appointment) -> Unit)? = null
 ) : ListAdapter<Appointment, AppointmentAdapter.ViewHolder>(DIFF) {
 
     inner class ViewHolder(private val b: ItemAppointmentBinding) : RecyclerView.ViewHolder(b.root) {
@@ -28,7 +29,13 @@ class AppointmentAdapter(
             } catch (_: Exception) { rawDt }
 
             b.tvApptDateTime.text = displayDt
-            b.tvApptBarber.text   = "Barber: ${appt.barberProfileId?.take(8) ?: "—"}…"
+            val displayPerson = if (onComplete != null) {
+                appt.customerFullName ?: appt.barberFullName
+            } else {
+                appt.barberFullName ?: appt.customerFullName
+            } ?: "Appointment"
+            val displayService = appt.serviceName?.takeIf { it.isNotBlank() } ?: "Haircut Service"
+            b.tvApptBarber.text = "$displayPerson - $displayService"
             b.tvApptPrice.text    = "₱${"%.2f".format(appt.totalPrice ?: 0.0)}  •  ${appt.paymentMethod ?: ""}"
 
             // Status badge
@@ -51,6 +58,13 @@ class AppointmentAdapter(
                 b.btnFeedback.setOnClickListener { onFeedback.invoke(appt) }
             } else {
                 b.btnFeedback.visibility = View.GONE
+            }
+
+            if ((status == "CONFIRMED" || status == "IN_PROGRESS") && onComplete != null) {
+                b.btnComplete.visibility = View.VISIBLE
+                b.btnComplete.setOnClickListener { onComplete.invoke(appt) }
+            } else {
+                b.btnComplete.visibility = View.GONE
             }
         }
     }

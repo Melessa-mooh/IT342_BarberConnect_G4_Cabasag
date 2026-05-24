@@ -15,6 +15,10 @@ import java.util.List;
 public class Post {
     private String post_id;
     private String barber_profile_id;
+    private String barberUserId;
+    private String barberFullName;
+    private String barberProfileImageUrl;
+    private String barberShopName;
     private String content;
     private String imageUrl;
     private Integer likesCount = 0;

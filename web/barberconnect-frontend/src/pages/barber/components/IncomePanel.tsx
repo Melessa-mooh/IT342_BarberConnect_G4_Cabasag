@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { incomeService, type IncomeRecord } from '../../../services/barberFeatureService';
 import { appointmentService, type Appointment } from '../../../services/appointmentService';
@@ -281,8 +281,8 @@ const IncomePanel: React.FC = () => {
       {activeTab === 'history' && (
         <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
           {/* Table header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', padding: '10px 1.5rem', background: '#F9FAFB', borderBottom: '1px solid #F3F4F6' }}>
-            {['Date', 'Payment', 'Gross', 'Your Share'].map(h => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 110px 110px 110px', gap: 12, padding: '10px 1.5rem', background: '#F9FAFB', borderBottom: '1px solid #F3F4F6' }}>
+            {['Date', 'Customer', 'Service', 'Payment', 'Gross', 'Your Share'].map(h => (
               <span key={h} style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
             ))}
           </div>
@@ -294,8 +294,8 @@ const IncomePanel: React.FC = () => {
               const d = new Date(r.recordedAt);
               return (
                 <div key={r.income_record_id ?? r.appointment_id ?? idx} style={{
-                  display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px',
-                  padding: '14px 1.5rem', alignItems: 'center',
+                  display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 110px 110px 110px',
+                  padding: '14px 1.5rem', alignItems: 'center', gap: 12,
                   borderBottom: idx < recentRecords.length - 1 ? '1px solid #F9FAFB' : 'none',
                   transition: 'background .15s',
                 }}
@@ -306,10 +306,12 @@ const IncomePanel: React.FC = () => {
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>
                       {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
-                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9CA3AF' }}>Appt ···{r.appointment_id?.slice(-6)}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9CA3AF' }}>{r.paymentStatus ?? 'Paid'} payment</p>
                   </div>
+                  <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>{r.customerFullName || 'Customer'}</span>
+                  <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{r.serviceName || 'Service'}</span>
                   <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{r.paymentMethod ?? 'Cash'}</span>
-                  <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>₱{fmt(r.amount)}</span>
+                  <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>₱{fmt(getGross(r))}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#22C55E' }}>₱{fmt(r.netAmount)}</span>
                 </div>
               );

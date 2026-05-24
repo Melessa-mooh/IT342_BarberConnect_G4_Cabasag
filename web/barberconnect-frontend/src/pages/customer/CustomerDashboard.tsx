@@ -151,7 +151,14 @@ const CustomerDashboard: React.FC = () => {
         const data = await postService.getComments(postId);
         setPostComments(prev => ({ ...prev, [postId]: data }));
         // Resolve commenter names
-        const unknownIds = [...new Set((data as any[]).map((c: any) => c.user_id).filter((id: string) => id && !commenterNames[id]))];
+        const backendNames = (data as any[]).reduce<Record<string, string>>((acc, c) => {
+          if (c.user_id && c.commenterName) acc[c.user_id] = c.commenterName;
+          return acc;
+        }, {});
+        if (Object.keys(backendNames).length > 0) {
+          setCommenterNames(prev => ({ ...prev, ...backendNames }));
+        }
+        const unknownIds = [...new Set((data as any[]).map((c: any) => c.user_id).filter((id: string) => id && !commenterNames[id] && !backendNames[id]))];
         if (unknownIds.length > 0) {
           const resolved: Record<string, string> = {};
           await Promise.all(unknownIds.map(async (uid: string) => {
@@ -271,16 +278,21 @@ const CustomerDashboard: React.FC = () => {
 
                 // Look up barber info from the already-loaded barbers list
                 const postBarber = barbers.find(b => b.id === post.barber_profile_id);
-                const barberName = postBarber
+                const barberName = post.barberFullName || (postBarber
                   ? `${postBarber.firstName ?? ''} ${postBarber.lastName ?? ''}`.trim() || 'Barber'
-                  : 'Barber';
-                const barberInitials = postBarber
+                  : 'Barber');
+                const barberInitials = barberName
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map(n => n.charAt(0).toUpperCase())
+                  .join('') || (postBarber
                   ? [postBarber.firstName, postBarber.lastName]
                       .filter(Boolean)
                       .map(n => n!.charAt(0).toUpperCase())
                       .join('') || 'B'
-                  : (post.barber_profile_id ?? 'B').charAt(0).toUpperCase();
-                const barberImg = postBarber?.profileImageUrl ?? null;
+                  : 'B');
+                const barberImg = post.barberProfileImageUrl || postBarber?.profileImageUrl || null;
 
                 return (
                   <div key={post.post_id} className="cd-post">
@@ -351,7 +363,7 @@ const CustomerDashboard: React.FC = () => {
                         {/* Comment list */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
                           {(postComments[post.post_id] ?? []).map((c: any) => {
-                            const cName = commenterNames[c.user_id] || 'User';
+                            const cName = c.commenterName || commenterNames[c.user_id] || 'User';
                             const cInitial = cName.charAt(0).toUpperCase();
                             return (
                               <div key={c.comment_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>

@@ -75,5 +75,15 @@
             android:text="Leave Feedback"
             android:textSize="12sp"
             android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnComplete"
+            style="@style/BarberConnectButton.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginTop="10dp"
+            android:text="Mark Complete"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

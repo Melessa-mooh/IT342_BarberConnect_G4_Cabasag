@@ -69,6 +69,27 @@ interface ApiService {
         @Path("barberProfileId") barberProfileId: String
     ): Response<ApiResponse<List<HaircutStyle>>>
 
+    @Multipart
+    @POST("haircuts")
+    suspend fun createHaircutStyle(
+        @Part("barberProfileId") barberProfileId: RequestBody,
+        @Part("name") name: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("basePrice") basePrice: RequestBody,
+        @Part("durationMinutes") durationMinutes: RequestBody
+    ): Response<ApiResponse<HaircutStyle>>
+
+    @PUT("haircuts/{haircutStyleId}")
+    suspend fun updateHaircutStyle(
+        @Path("haircutStyleId") haircutStyleId: String,
+        @Body request: HaircutStyleUpdateRequest
+    ): Response<ApiResponse<HaircutStyle>>
+
+    @DELETE("haircuts/{haircutStyleId}")
+    suspend fun deleteHaircutStyle(
+        @Path("haircutStyleId") haircutStyleId: String
+    ): Response<ApiResponse<String>>
+
     @GET("barbers/{barberProfileId}/leave-dates")
     suspend fun getApprovedLeaveDates(
         @Path("barberProfileId") barberProfileId: String
@@ -101,6 +122,11 @@ interface ApiService {
     suspend fun getCustomerAppointments(
         @Path("customerId") customerId: String
     ): Response<ApiResponse<List<Appointment>>>
+
+    @PUT("appointments/{appointmentId}/complete")
+    suspend fun completeAppointment(
+        @Path("appointmentId") appointmentId: String
+    ): Response<ApiResponse<Appointment>>
 
     @GET("appointments/barber/{barberProfileId}")
     suspend fun getBarberAppointments(

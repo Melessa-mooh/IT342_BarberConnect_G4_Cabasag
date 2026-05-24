@@ -201,10 +201,10 @@ const PostCard: React.FC<{
   const [commenterNames, setCommenterNames]   = useState<Record<string, string>>({});
   const { user } = useAuth();
 
-  const barberName = barberInfo
+  const barberName = post.barberFullName || (barberInfo
     ? `${barberInfo.firstName ?? ''} ${barberInfo.lastName ?? ''}`.trim() || 'Barber'
-    : 'Barber';
-  const barberImg = barberInfo?.profileImageUrl ?? null;
+    : 'Barber');
+  const barberImg = post.barberProfileImageUrl || barberInfo?.profileImageUrl || null;
 
   const dateStr = post.createdAt
     ? new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -212,7 +212,14 @@ const PostCard: React.FC<{
 
   // Resolve commenter names for a list of comments
   const resolveCommenterNames = async (newComments: PostComment[]) => {
-    const unknownIds = [...new Set(newComments.map(c => c.user_id).filter(id => id && !commenterNames[id]))];
+    const backendNames = newComments.reduce<Record<string, string>>((acc, c) => {
+      if (c.user_id && c.commenterName) acc[c.user_id] = c.commenterName;
+      return acc;
+    }, {});
+    if (Object.keys(backendNames).length > 0) {
+      setCommenterNames(prev => ({ ...prev, ...backendNames }));
+    }
+    const unknownIds = [...new Set(newComments.map(c => c.user_id).filter(id => id && !commenterNames[id] && !backendNames[id]))];
     if (unknownIds.length === 0) return;
     const resolved: Record<string, string> = {};
     await Promise.all(unknownIds.map(async (uid) => {
@@ -325,7 +332,7 @@ const PostCard: React.FC<{
           {/* Comment list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
             {comments.map(c => {
-              const name = commenterNames[c.user_id] || 'User';
+              const name = c.commenterName || commenterNames[c.user_id] || 'User';
               const initial = name.charAt(0).toUpperCase();
               return (
                 <div key={c.comment_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>

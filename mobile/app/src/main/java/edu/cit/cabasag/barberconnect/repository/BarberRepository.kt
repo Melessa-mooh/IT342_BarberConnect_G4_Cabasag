@@ -14,6 +14,9 @@ class BarberRepository(private val api: ApiService) {
     suspend fun getBarberAppointments(barberProfileId: String): Result<List<Appointment>> =
         safeCall { api.getBarberAppointments(barberProfileId) }
 
+    suspend fun completeAppointment(appointmentId: String): Result<Appointment> =
+        safeCall { api.completeAppointment(appointmentId) }
+
     suspend fun getLeaveRequests(barberProfileId: String): Result<List<LeaveRequest>> =
         safeCall { api.getLeaveRequests(barberProfileId) }
 
@@ -25,6 +28,37 @@ class BarberRepository(private val api: ApiService) {
 
     suspend fun getIncomeRecords(barberProfileId: String): Result<List<IncomeRecord>> =
         safeCall { api.getBarberIncome(barberProfileId) }
+
+    suspend fun getHaircutStyles(barberProfileId: String): Result<List<HaircutStyle>> =
+        safeCall { api.getHaircutStyles(barberProfileId) }
+
+    suspend fun createHaircutStyle(
+        barberProfileId: String,
+        name: String,
+        description: String,
+        basePrice: Double,
+        durationMinutes: Int
+    ): Result<HaircutStyle> {
+        val text = "text/plain".toMediaType()
+        return safeCall {
+            api.createHaircutStyle(
+                barberProfileId.toRequestBody(text),
+                name.toRequestBody(text),
+                description.toRequestBody(text),
+                basePrice.toString().toRequestBody(text),
+                durationMinutes.toString().toRequestBody(text)
+            )
+        }
+    }
+
+    suspend fun updateHaircutStyle(
+        haircutStyleId: String,
+        request: HaircutStyleUpdateRequest
+    ): Result<HaircutStyle> =
+        safeCall { api.updateHaircutStyle(haircutStyleId, request) }
+
+    suspend fun deleteHaircutStyle(haircutStyleId: String): Result<String> =
+        safeCall { api.deleteHaircutStyle(haircutStyleId) }
 
     suspend fun getAllPosts(): Result<List<Post>> =
         safeCall { api.getAllPosts() }

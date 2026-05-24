@@ -1,6 +1,7 @@
 package edu.cit.cabasag.barberconnect.controller;
 
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
@@ -89,6 +90,7 @@ public class PostController {
             post.setIsActive(true);
             post.setCreatedAt(now);
             post.setUpdatedAt(now);
+            enrichPostWithBarber(db, post);
 
             log.info("Post created: {} for barberProfileId={}", postId, barberProfileId);
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(post));
@@ -115,7 +117,7 @@ public class PostController {
                     .limit(50)
                     .get().get();
 
-            List<Post> posts = mapPosts(snap);
+            List<Post> posts = mapPosts(db, snap);
             return ResponseEntity.ok(ApiResponse.success(posts));
 
         } catch (Exception e) {
@@ -140,7 +142,7 @@ public class PostController {
                     .orderBy("createdAt", Query.Direction.DESCENDING)
                     .get().get();
 
-            return ResponseEntity.ok(ApiResponse.success(mapPosts(snap)));
+            return ResponseEntity.ok(ApiResponse.success(mapPosts(db, snap)));
 
         } catch (Exception e) {
             log.error("Failed to fetch posts for barber {}: {}", barberProfileId, e.getMessage());
@@ -269,6 +271,7 @@ public class PostController {
             comment.setIsActive(true);
             comment.setCreatedAt(now);
             comment.setUpdatedAt(now);
+            enrichCommentWithUser(db, comment);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(comment));
 
@@ -307,6 +310,7 @@ public class PostController {
                 if (ca != null) {
                     try { c.setCreatedAt(LocalDateTime.parse(ca)); } catch (Exception ignored) {}
                 }
+                enrichCommentWithUser(db, c);
                 comments.add(c);
             }
 
@@ -328,7 +332,7 @@ public class PostController {
 
     // ─── helper ──────────────────────────────────────────────────────────────
 
-    private List<Post> mapPosts(QuerySnapshot snap) {
+    private List<Post> mapPosts(Firestore db, QuerySnapshot snap) {
         List<Post> list = new ArrayList<>();
         for (QueryDocumentSnapshot doc : snap.getDocuments()) {
             Post p = new Post();
@@ -343,8 +347,132 @@ public class PostController {
             p.setIsActive(Boolean.TRUE.equals(doc.getBoolean("isActive")));
             String ca = doc.getString("createdAt");
             if (ca != null) p.setCreatedAt(LocalDateTime.parse(ca));
+            enrichPostWithBarber(db, p);
             list.add(p);
         }
         return list;
+    }
+
+    private void enrichPostWithBarber(Firestore db, Post post) {
+        String profileId = post.getBarber_profile_id();
+        if (profileId == null || profileId.isBlank()) {
+            post.setBarberFullName("Barber");
+            return;
+        }
+
+        try {
+            DocumentSnapshot profile = findBarberProfile(db, profileId);
+            if (profile == null) {
+                post.setBarberFullName("Barber");
+                return;
+            }
+
+            String userId = firstNonBlank(getStringAny(profile, "user_id", "userId"));
+            post.setBarberUserId(userId);
+            post.setBarberShopName(firstNonBlank(getStringAny(profile, "shopName", "displayName", "fullName")));
+
+            String profileImage = firstNonBlank(
+                    getStringAny(profile, "profileImageUrl", "avatarUrl", "photoUrl")
+            );
+
+            DocumentSnapshot user = findUser(db, userId);
+            if (user != null) {
+                String fullName = buildFullName(user.getString("firstName"), user.getString("lastName"));
+                String userImage = firstNonBlank(getStringAny(user, "profileImageUrl", "photoUrl", "avatarUrl"));
+                post.setBarberFullName(firstNonBlank(
+                        fullName,
+                        getStringAny(profile, "displayName", "fullName", "shopName"),
+                        user.getString("username"),
+                        user.getString("email"),
+                        "Barber"
+                ));
+                post.setBarberProfileImageUrl(firstNonBlank(profileImage, userImage));
+                return;
+            }
+
+            post.setBarberFullName(firstNonBlank(
+                    getStringAny(profile, "displayName", "fullName", "shopName", "username", "email"),
+                    "Barber"
+            ));
+            post.setBarberProfileImageUrl(profileImage);
+        } catch (Exception e) {
+            log.warn("Could not resolve barber display info for post {}: {}", post.getPost_id(), e.getMessage());
+            post.setBarberFullName("Barber");
+        }
+    }
+
+    private DocumentSnapshot findBarberProfile(Firestore db, String profileId) throws Exception {
+        var byId = db.collection("barber_profiles").document(profileId).get().get();
+        if (byId.exists()) return byId;
+
+        QuerySnapshot byField = db.collection("barber_profiles")
+                .whereEqualTo("barber_profile_id", profileId)
+                .limit(1)
+                .get()
+                .get();
+        return byField.isEmpty() ? null : byField.getDocuments().get(0);
+    }
+
+    private DocumentSnapshot findUser(Firestore db, String userId) throws Exception {
+        if (userId == null || userId.isBlank()) return null;
+        var byId = db.collection("users").document(userId).get().get();
+        if (byId.exists()) return byId;
+
+        QuerySnapshot byField = db.collection("users")
+                .whereEqualTo("user_id", userId)
+                .limit(1)
+                .get()
+                .get();
+        return byField.isEmpty() ? null : byField.getDocuments().get(0);
+    }
+
+    private void enrichCommentWithUser(Firestore db, Comment comment) {
+        String userId = comment.getUser_id();
+        if (userId == null || userId.isBlank()) {
+            comment.setCommenterName("User");
+            return;
+        }
+
+        try {
+            DocumentSnapshot user = findUser(db, userId);
+            if (user == null) {
+                comment.setCommenterName("User");
+                return;
+            }
+
+            String fullName = buildFullName(user.getString("firstName"), user.getString("lastName"));
+            comment.setCommenterName(firstNonBlank(
+                    fullName,
+                    user.getString("username"),
+                    user.getString("email"),
+                    "User"
+            ));
+            comment.setProfileImageUrl(firstNonBlank(
+                    getStringAny(user, "profileImageUrl", "photoUrl", "avatarUrl")
+            ));
+        } catch (Exception e) {
+            log.warn("Could not resolve commenter display info for comment {}: {}", comment.getComment_id(), e.getMessage());
+            comment.setCommenterName("User");
+        }
+    }
+
+    private String buildFullName(String firstName, String lastName) {
+        return ((firstName == null ? "" : firstName.trim()) + " " +
+                (lastName == null ? "" : lastName.trim())).trim();
+    }
+
+    private String getStringAny(DocumentSnapshot doc, String... keys) {
+        for (String key : keys) {
+            String value = doc.getString(key);
+            if (value != null && !value.isBlank()) return value;
+        }
+        return "";
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return "";
     }
 }

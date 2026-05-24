@@ -29,7 +29,7 @@ object BarberMobileNav {
         val navItems = listOf(
             "Overview" to { activity.openDashboard() },
             "Schedule" to { activity.openBarber<BarberScheduleActivity>(barberProfileId) },
-            "Haircut Catalog" to { activity.openDashboard() },
+            "Haircut Catalog" to { activity.openBarber<BarberCatalogActivity>(barberProfileId) },
             "Social Feed" to { activity.openBarber<BarberFeedActivity>(barberProfileId) },
             "Income Analytics" to { activity.openBarber<BarberIncomeActivity>(barberProfileId) },
             "Ratings" to { activity.openDashboard() },

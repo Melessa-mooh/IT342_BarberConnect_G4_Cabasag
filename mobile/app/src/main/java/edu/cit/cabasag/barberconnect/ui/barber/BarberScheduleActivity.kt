@@ -4,6 +4,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -34,8 +35,16 @@ class BarberScheduleActivity : AppCompatActivity() {
         val repository = BarberRepository(api)
         viewModel = ViewModelProvider(this, BarberViewModelFactory(repository))[BarberViewModel::class.java]
 
-        // No feedback callback for barber view
-        val adapter = AppointmentAdapter()
+        val adapter = AppointmentAdapter(
+            onComplete = { appointment ->
+                val appointmentId = appointment.appointmentId
+                if (appointmentId.isNullOrBlank()) {
+                    Toast.makeText(this, "Appointment ID missing.", Toast.LENGTH_SHORT).show()
+                } else {
+                    viewModel.completeAppointment(appointmentId)
+                }
+            }
+        )
         binding.recyclerAppointments.layoutManager = LinearLayoutManager(this)
         binding.recyclerAppointments.adapter = adapter
 
@@ -61,6 +70,21 @@ class BarberScheduleActivity : AppCompatActivity() {
                     binding.progressBar.visibility = View.GONE
                     binding.tvError.visibility     = View.VISIBLE
                     binding.tvError.text           = state.message
+                }
+                else -> Unit
+            }
+        }
+
+        viewModel.completeAppointmentState.observe(this) { state ->
+            when (state) {
+                is UiState.Success -> {
+                    Toast.makeText(this, "Appointment marked complete.", Toast.LENGTH_SHORT).show()
+                    viewModel.resetCompleteAppointmentState()
+                    viewModel.loadAppointments(barberProfileId)
+                }
+                is UiState.Error -> {
+                    Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
+                    viewModel.resetCompleteAppointmentState()
                 }
                 else -> Unit
             }

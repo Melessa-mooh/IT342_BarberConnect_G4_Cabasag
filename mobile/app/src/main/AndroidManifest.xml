@@ -78,6 +78,11 @@
             android:parentActivityName=".ui.DashboardActivity" />
 
         <activity
+            android:name=".ui.barber.BarberCatalogActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.DashboardActivity" />
+
+        <activity
             android:name=".ui.barber.BarberLeaveActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize"

@@ -17,6 +17,9 @@ public class LeaveRequest {
 
     private String leaveRequestId;
     private String barberProfileId;
+    private String barberUserId;
+    private String barberFullName;
+    private String barberEmail;
     private String requestedDate;   // format: "yyyy-MM-dd"
     private String reason;
     private LeaveStatus status = LeaveStatus.PENDING;

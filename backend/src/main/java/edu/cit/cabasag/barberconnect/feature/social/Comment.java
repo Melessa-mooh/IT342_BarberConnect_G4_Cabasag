@@ -11,6 +11,8 @@ public class Comment {
     private String comment_id;
     private String post_id;
     private String user_id;
+    private String commenterName;
+    private String profileImageUrl;
     private String content;
     private Boolean isActive = true;
     private LocalDateTime createdAt;

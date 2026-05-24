@@ -471,8 +471,8 @@ const SchedulePanel: React.FC = () => {
             <div className="px-8 py-6 max-h-[65vh] overflow-y-auto space-y-6">
               {getAppointmentsForDate(popupDate).map((app) => {
                 const time = new Date(app.appointmentDateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                const customerName = customerNames[app.customer_id] || 'Loading...';
-                const styleName    = styleNames[app.haircut_style_id] || 'Loading...';
+                const customerName = app.customerFullName || customerNames[app.customer_id] || 'Customer';
+                const styleName    = app.serviceName || styleNames[app.haircut_style_id] || 'Haircut Service';
                 const addOnNames   = (app.selectedOptionIds ?? []).map(id => addOnMap[id]).filter(Boolean);
 
                 const statusConfig: Record<string, { icon: string; color: string; label: string }> = {
@@ -951,8 +951,8 @@ const SchedulePanel: React.FC = () => {
             {appointments.map(app => {
               const d = new Date(app.appointmentDateTime);
               const isToday = d.toDateString() === new Date().toDateString();
-              const customerName = customerNames[app.customer_id] || `Customer ···${app.customer_id.slice(-4)}`;
-              const styleName    = styleNames[app.haircut_style_id] || `Style ···${app.haircut_style_id.slice(-4)}`;
+              const customerName = app.customerFullName || customerNames[app.customer_id] || 'Customer';
+              const styleName    = app.serviceName || styleNames[app.haircut_style_id] || 'Haircut Service';
 
               const statusColors: Record<string, string> = {
                 COMPLETED:   'bg-emerald-100 text-emerald-700',

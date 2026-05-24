@@ -27,6 +27,7 @@ public class HaircutStyleService {
 
     private static final String HAIRCUTS_COLLECTION = "haircut_styles";
     private static final String OPTIONS_COLLECTION = "style_options";
+    private static final String DEFAULT_HAIRCUT_IMAGE_BASE = "/images/default-haircuts/";
 
     /** Expose Firestore for controller-level single-doc lookups */
     public com.google.cloud.firestore.Firestore getFirestore() {
@@ -42,7 +43,7 @@ public class HaircutStyleService {
             if (db == null) throw new RuntimeException("Firestore not available");
 
             String haircutStyleId = UUID.randomUUID().toString();
-            String imageUrl = null;
+            String imageUrl = defaultHaircutImageUrl(name);
 
             if (file != null && !file.isEmpty()) {
                 imageUrl = cloudinaryService.uploadProfilePicture("haircuts/" + barberProfileId, file);
@@ -149,6 +150,20 @@ public class HaircutStyleService {
             }
         }
         return created;
+    }
+
+    public static String defaultHaircutImageUrl(String styleName) {
+        String normalized = styleName == null ? "" : styleName.toLowerCase();
+        if (normalized.contains("premium")) {
+            return DEFAULT_HAIRCUT_IMAGE_BASE + "premium-cut.jpg";
+        }
+        if (normalized.contains("trend") || normalized.contains("modern")) {
+            return DEFAULT_HAIRCUT_IMAGE_BASE + "trend-cut.jpeg";
+        }
+        if (normalized.contains("barber")) {
+            return DEFAULT_HAIRCUT_IMAGE_BASE + "barber-cut.png";
+        }
+        return DEFAULT_HAIRCUT_IMAGE_BASE + "classic-cut.png";
     }
 
     @SuppressWarnings("null")

@@ -21,6 +21,11 @@ public class Appointment {
     private String customer_id;
     private String barber_profile_id;
     private String haircut_style_id;
+    private String customerFullName;
+    private String customerProfileImageUrl;
+    private String barberFullName;
+    private String barberProfileImageUrl;
+    private String serviceName;
     private Date appointmentDateTime;
     private Integer durationMinutes;
     private BigDecimal totalPrice;

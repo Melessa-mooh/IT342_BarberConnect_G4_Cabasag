@@ -6,6 +6,10 @@ import axios from 'axios';
 export interface Post {
   post_id: string;
   barber_profile_id: string;
+  barberUserId?: string;
+  barberFullName?: string;
+  barberProfileImageUrl?: string | null;
+  barberShopName?: string;
   content: string;
   imageUrl: string | null;
   likesCount: number;
@@ -18,6 +22,8 @@ export interface PostComment {
   comment_id: string;
   post_id: string;
   user_id: string;
+  commenterName?: string;
+  profileImageUrl?: string | null;
   content: string;
   isActive: boolean;
   createdAt: string;
@@ -34,6 +40,9 @@ export interface Reaction {
 export interface LeaveRequest {
   leaveRequestId: string;
   barberProfileId: string;
+  barberUserId?: string;
+  barberFullName?: string;
+  barberEmail?: string;
   requestedDate: string;
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'DECLINED';
@@ -45,6 +54,8 @@ export interface FeedbackWithReply {
   feedbackId: string;
   appointmentId: string;
   customerId: string;
+  customerFullName?: string;
+  customerProfileImageUrl?: string | null;
   barberProfileId: string;
   rating: number;
   comment: string;
@@ -69,11 +80,16 @@ export interface IncomeRecord {
   appointment_id?: string;
   barberProfileId?: string;
   barber_profile_id?: string;
+  customerId?: string;
+  customerFullName?: string;
+  barberFullName?: string;
+  serviceName?: string;
   amount: number;
   grossAmount?: number;   // alias — some records use this field name
   platformFee: number;
   netAmount: number;
   paymentMethod?: string;
+  paymentStatus?: string;
   recordedAt: string;
 }
 

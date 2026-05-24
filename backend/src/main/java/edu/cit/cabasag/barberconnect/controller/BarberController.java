@@ -233,7 +233,7 @@ public class BarberController {
             db.collection(LEAVE_REQUESTS_COLLECTION).document(leaveId).set(doc).get();
 
             LeaveRequest leaveRequest = new LeaveRequest(
-                    leaveId, barberProfileId, requestedDate, reason,
+                    leaveId, barberProfileId, null, null, null, requestedDate, reason,
                     LeaveRequest.LeaveStatus.PENDING, now, null);
 
             log.info("Leave request created: {} for barberProfileId={}", leaveId, barberProfileId);

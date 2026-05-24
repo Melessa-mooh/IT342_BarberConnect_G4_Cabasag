@@ -21,6 +21,7 @@ import edu.cit.cabasag.barberconnect.repository.CustomerRepository
 import edu.cit.cabasag.barberconnect.ui.adapter.AppointmentAdapter
 import edu.cit.cabasag.barberconnect.ui.adapter.BarberAdapter
 import edu.cit.cabasag.barberconnect.ui.adapter.PostAdapter
+import edu.cit.cabasag.barberconnect.ui.barber.BarberCatalogActivity
 import edu.cit.cabasag.barberconnect.ui.barber.BarberFeedActivity as BarberSocialFeedActivity
 import edu.cit.cabasag.barberconnect.ui.barber.BarberIncomeActivity
 import edu.cit.cabasag.barberconnect.ui.barber.BarberLeaveActivity
@@ -306,7 +307,7 @@ class DashboardActivity : AppCompatActivity() {
             items = listOf(
                 DrawerItem("Overview", true) { toastCurrentOverview() },
                 DrawerItem("Schedule") { openBarberSchedule() },
-                DrawerItem("Haircut Catalog") { showUnavailable("Haircut Catalog") },
+                DrawerItem("Haircut Catalog") { openBarberCatalog() },
                 DrawerItem("Social Feed") { openBarberFeed() },
                 DrawerItem("Income Analytics") { openBarberIncome() },
                 DrawerItem("Ratings") { showUnavailable("Ratings") },
@@ -390,6 +391,10 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun openBarberFeed() {
         start<BarberSocialFeedActivity> { putExtra("barberProfileId", barberProfileId) }
+    }
+
+    private fun openBarberCatalog() {
+        start<BarberCatalogActivity> { putExtra("barberProfileId", barberProfileId) }
     }
 
     private fun openBarberIncome() {

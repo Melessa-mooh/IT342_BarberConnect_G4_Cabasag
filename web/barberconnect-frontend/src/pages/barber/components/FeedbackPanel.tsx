@@ -127,19 +127,24 @@ const FeedbackPanel: React.FC = () => {
           )}
 
           <div className="flex flex-col gap-5">
-            {feedback.map(fb => (
+            {feedback.map(fb => {
+              const customerName = fb.customerFullName || 'Customer';
+              const customerInitial = customerName.charAt(0).toUpperCase();
+              return (
               <div key={fb.feedbackId} className="flex gap-4 pb-5 border-b border-slate-100 last:border-0 last:pb-0">
 
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-slate-200 flex flex-shrink-0 items-center justify-center text-slate-600 font-bold text-sm">
-                  {(fb.customerId ?? '?').charAt(0).toUpperCase()}
+                  {fb.customerProfileImageUrl ? (
+                    <img src={fb.customerProfileImageUrl} alt={customerName} className="w-full h-full rounded-full object-cover" />
+                  ) : customerInitial}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-bold text-slate-800 text-sm">{fb.customerId}</h4>
+                      <h4 className="font-bold text-slate-800 text-sm">{customerName}</h4>
                       <p className="text-xs text-slate-400">
                         {fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : ''}
                       </p>
@@ -182,7 +187,8 @@ const FeedbackPanel: React.FC = () => {
                   )}
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}

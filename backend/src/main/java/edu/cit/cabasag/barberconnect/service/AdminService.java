@@ -1,8 +1,8 @@
 package edu.cit.cabasag.barberconnect.service;
 
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.AggregateQuerySnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,52 +49,109 @@ public class AdminService {
             Firestore db = firebaseService.getFirestore();
             if (db == null) throw new RuntimeException("Firestore not available");
 
-            // 1. Total Appointments
-            AggregateQuerySnapshot appointmentsSnapshot = db.collection("appointments")
-                    .count()
-                    .get()
-                    .get();
-            stats.put("totalAppointments", appointmentsSnapshot.getCount());
+            QuerySnapshot usersSnapshot = db.collection("users").get().get();
+            QuerySnapshot profilesSnapshot = db.collection("barber_profiles").get().get();
+            QuerySnapshot appointmentsSnapshot = db.collection("appointments").get().get();
+            QuerySnapshot incomeSnapshot = db.collection("income_records").get().get();
 
-            // 2. Active Barbers
-            AggregateQuerySnapshot barbersSnapshot = db.collection("users")
-                    .whereEqualTo("role", "BARBER")
-                    .whereEqualTo("isActive", true)
-                    .count()
-                    .get()
-                    .get();
-            stats.put("activeBarbers", barbersSnapshot.getCount());
-
-            // 3. Total Customers
-            AggregateQuerySnapshot customersSnapshot = db.collection("users")
-                    .whereEqualTo("role", "CUSTOMER")
-                    .count()
-                    .get()
-                    .get();
-            stats.put("totalCustomers", customersSnapshot.getCount());
-
-            // 4. Total Revenue (sum of all COMPLETED appointments)
-            QuerySnapshot revenueSnapshot = db.collection("appointments")
-                    .whereEqualTo("status", "COMPLETED")
-                    .get()
-                    .get();
-            double totalRevenue = 0.0;
-            for (QueryDocumentSnapshot doc : revenueSnapshot.getDocuments()) {
-                Double price = doc.getDouble("totalPrice");
-                if (price != null) totalRevenue += price;
+            Map<String, QueryDocumentSnapshot> usersById = new HashMap<>();
+            long registeredCustomers = 0;
+            for (QueryDocumentSnapshot userDoc : usersSnapshot.getDocuments()) {
+                usersById.put(userDoc.getId(), userDoc);
+                if ("CUSTOMER".equalsIgnoreCase(String.valueOf(userDoc.get("role")))) {
+                    registeredCustomers++;
+                }
             }
+
+            long activeBarbers = 0;
+            for (QueryDocumentSnapshot profileDoc : profilesSnapshot.getDocuments()) {
+                String userId = profileDoc.getString("user_id");
+                QueryDocumentSnapshot userDoc = userId == null ? null : usersById.get(userId);
+                boolean userActive = userDoc == null || !Boolean.FALSE.equals(userDoc.getBoolean("isActive"));
+                boolean profileActive = !Boolean.FALSE.equals(profileDoc.getBoolean("isAvailable"));
+                if (userActive && profileActive) {
+                    activeBarbers++;
+                }
+            }
+
+            long pendingAppointments = 0;
+            long confirmedAppointments = 0;
+            long inProgressAppointments = 0;
+            long completedAppointments = 0;
+            long cancelledAppointments = 0;
+            long noShowAppointments = 0;
+            long paidAppointments = 0;
+            BigDecimal appointmentRevenue = BigDecimal.ZERO;
+
+            for (QueryDocumentSnapshot appointmentDoc : appointmentsSnapshot.getDocuments()) {
+                String status = normalizeFirestoreValue(appointmentDoc.get("status"));
+                String paymentStatus = normalizeFirestoreValue(appointmentDoc.get("paymentStatus"));
+
+                switch (status) {
+                    case "PENDING" -> pendingAppointments++;
+                    case "CONFIRMED" -> confirmedAppointments++;
+                    case "IN_PROGRESS" -> inProgressAppointments++;
+                    case "COMPLETED" -> completedAppointments++;
+                    case "CANCELLED" -> cancelledAppointments++;
+                    case "NO_SHOW" -> noShowAppointments++;
+                    default -> { }
+                }
+
+                if ("PAID".equals(paymentStatus)) {
+                    paidAppointments++;
+                }
+                if ("COMPLETED".equals(status) && "PAID".equals(paymentStatus)) {
+                    appointmentRevenue = appointmentRevenue.add(toBigDecimal(appointmentDoc.get("totalPrice")));
+                }
+            }
+
+            BigDecimal incomeRevenue = BigDecimal.ZERO;
+            for (QueryDocumentSnapshot incomeDoc : incomeSnapshot.getDocuments()) {
+                String paymentStatus = normalizeFirestoreValue(incomeDoc.get("paymentStatus"));
+                if (paymentStatus.isBlank() || "PAID".equals(paymentStatus)) {
+                    incomeRevenue = incomeRevenue.add(toBigDecimal(incomeDoc.get("amount")));
+                }
+            }
+
+            BigDecimal totalRevenue = incomeRevenue.compareTo(BigDecimal.ZERO) > 0
+                    ? incomeRevenue
+                    : appointmentRevenue;
+
             stats.put("totalRevenue", totalRevenue);
+            stats.put("totalAppointments", appointmentsSnapshot.size());
+            stats.put("activeBarbers", activeBarbers);
+            stats.put("registeredCustomers", registeredCustomers);
+            stats.put("totalCustomers", registeredCustomers);
+            stats.put("completedAppointments", completedAppointments);
+            stats.put("pendingAppointments", pendingAppointments);
+            stats.put("confirmedAppointments", confirmedAppointments);
+            stats.put("inProgressAppointments", inProgressAppointments);
+            stats.put("cancelledAppointments", cancelledAppointments);
+            stats.put("noShowAppointments", noShowAppointments);
+            stats.put("paidAppointments", paidAppointments);
+            stats.put("generatedAt", LocalDateTime.now().toString());
 
             return stats;
 
         } catch (Exception e) {
             log.error("Failed to aggregate shop statistics: {}", e.getMessage());
-            stats.put("totalAppointments", 0);
-            stats.put("activeBarbers", 0);
-            stats.put("totalCustomers", 0);
-            stats.put("totalRevenue", 0);
-            return stats;
+            throw new RuntimeException("Failed to aggregate shop statistics: " + e.getMessage(), e);
         }
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal decimal) return decimal;
+        if (value instanceof Number number) return new BigDecimal(number.toString());
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException ignored) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private String normalizeFirestoreValue(Object value) {
+        return value == null ? "" : value.toString().trim().toUpperCase();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -306,7 +364,7 @@ public class AdminService {
                     .whereEqualTo("status", LeaveRequest.LeaveStatus.PENDING.name())
                     .get().get();
 
-            return mapLeaveRequests(snapshot);
+            return mapLeaveRequests(db, snapshot);
 
         } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to fetch pending leave requests: {}", e.getMessage());
@@ -344,12 +402,13 @@ public class AdminService {
             var updated = docRef.get().get();
             LeaveRequest lr = new LeaveRequest();
             lr.setLeaveRequestId(updated.getString("leaveRequestId"));
-            lr.setBarberProfileId(updated.getString("barberProfileId"));
+            lr.setBarberProfileId(getStringAny(updated, "barberProfileId", "barber_profile_id"));
             lr.setRequestedDate(updated.getString("requestedDate"));
             lr.setReason(updated.getString("reason"));
             lr.setStatus(newStatus);
             lr.setCreatedAt(updated.getDate("createdAt"));
             lr.setResolvedAt(now);
+            enrichLeaveRequestWithBarber(db, lr);
 
             log.info("Leave request {} set to {}", leaveRequestId, newStatus);
             return lr;
@@ -360,21 +419,109 @@ public class AdminService {
         }
     }
 
-    private List<LeaveRequest> mapLeaveRequests(QuerySnapshot snapshot) {
+    private List<LeaveRequest> mapLeaveRequests(Firestore db, QuerySnapshot snapshot) {
         List<LeaveRequest> list = new ArrayList<>();
         for (QueryDocumentSnapshot doc : snapshot.getDocuments()) {
             LeaveRequest lr = new LeaveRequest();
             lr.setLeaveRequestId(doc.getString("leaveRequestId"));
-            lr.setBarberProfileId(doc.getString("barberProfileId"));
+            lr.setBarberProfileId(getStringAny(doc, "barberProfileId", "barber_profile_id"));
             lr.setRequestedDate(doc.getString("requestedDate"));
             lr.setReason(doc.getString("reason"));
             String s = doc.getString("status");
             if (s != null) lr.setStatus(LeaveRequest.LeaveStatus.valueOf(s));
             lr.setCreatedAt(doc.getDate("createdAt"));
             lr.setResolvedAt(doc.getDate("resolvedAt"));
+            enrichLeaveRequestWithBarber(db, lr);
             list.add(lr);
         }
         return list;
+    }
+
+    private void enrichLeaveRequestWithBarber(Firestore db, LeaveRequest request) {
+        String profileId = request.getBarberProfileId();
+        if (profileId == null || profileId.isBlank()) {
+            request.setBarberFullName("Unknown Barber");
+            return;
+        }
+
+        try {
+            DocumentSnapshot profileDoc = findBarberProfileDocument(db, profileId);
+            if (profileDoc == null) {
+                request.setBarberFullName("Unknown Barber");
+                return;
+            }
+
+            String userId = getStringAny(profileDoc, "user_id", "userId");
+            request.setBarberUserId(userId);
+
+            DocumentSnapshot userDoc = findUserDocument(db, userId);
+            if (userDoc != null) {
+                String fullName = buildFullName(userDoc.getString("firstName"), userDoc.getString("lastName"));
+                if (fullName.isBlank()) fullName = firstNonBlank(userDoc.getString("username"), userDoc.getString("email"));
+                request.setBarberFullName(fullName.isBlank() ? "Unknown Barber" : fullName);
+                request.setBarberEmail(userDoc.getString("email"));
+                return;
+            }
+
+            String profileFallback = firstNonBlank(
+                    getStringAny(profileDoc, "displayName", "fullName", "shopName"),
+                    getStringAny(profileDoc, "username", "email")
+            );
+            request.setBarberFullName(profileFallback.isBlank() ? "Unknown Barber" : profileFallback);
+            request.setBarberEmail(getStringAny(profileDoc, "email"));
+        } catch (Exception e) {
+            log.warn("Could not resolve barber name for leave request {}: {}", request.getLeaveRequestId(), e.getMessage());
+            request.setBarberFullName("Unknown Barber");
+        }
+    }
+
+    private DocumentSnapshot findBarberProfileDocument(Firestore db, String profileId) throws Exception {
+        QuerySnapshot byField = db.collection("barber_profiles")
+                .whereEqualTo("barber_profile_id", profileId)
+                .limit(1)
+                .get()
+                .get();
+        if (!byField.isEmpty()) return byField.getDocuments().get(0);
+
+        var byDocumentId = db.collection("barber_profiles").document(profileId).get().get();
+        if (byDocumentId.exists()) {
+            return byDocumentId;
+        }
+        return null;
+    }
+
+    private DocumentSnapshot findUserDocument(Firestore db, String userId) throws Exception {
+        if (userId == null || userId.isBlank()) return null;
+        var userSnap = db.collection("users").document(userId).get().get();
+        if (userSnap.exists()) {
+            return userSnap;
+        }
+        QuerySnapshot byField = db.collection("users")
+                .whereEqualTo("user_id", userId)
+                .limit(1)
+                .get()
+                .get();
+        return byField.isEmpty() ? null : byField.getDocuments().get(0);
+    }
+
+    private String buildFullName(String firstName, String lastName) {
+        return ((firstName == null ? "" : firstName.trim()) + " " +
+                (lastName == null ? "" : lastName.trim())).trim();
+    }
+
+    private String getStringAny(DocumentSnapshot doc, String... keys) {
+        for (String key : keys) {
+            String value = doc.getString(key);
+            if (value != null && !value.isBlank()) return value;
+        }
+        return "";
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return "";
     }
 
     // ──────────────────────────────────────────────────────────────────────────────
@@ -585,7 +732,7 @@ public class AdminService {
             doc.put("description",        style[1]);
             doc.put("basePrice",          style[2]);
             doc.put("durationMinutes",    style[3]);
-            doc.put("imageUrl",           null);
+            doc.put("imageUrl",           HaircutStyleService.defaultHaircutImageUrl((String) style[0]));
             doc.put("isActive",           true);
             doc.put("styleOptionIds",     new java.util.ArrayList<>());
             doc.put("createdAt",          new Date());

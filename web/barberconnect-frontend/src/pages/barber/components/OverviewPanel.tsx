@@ -83,7 +83,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ setActiveTab }) => {
         setHaircutStyles(styles); setProfile(prof);
 
         // Resolve customer full names for the recent appointments table
-        const uniqueCustomerIds = [...new Set(appts.map(a => a.customer_id).filter(Boolean))];
+        const uniqueCustomerIds = [...new Set(appts.filter(a => !a.customerFullName).map(a => a.customer_id).filter(Boolean))];
         const nameMap: Record<string, string> = {};
         await Promise.all(uniqueCustomerIds.map(async (cid) => {
           try {
@@ -228,17 +228,17 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ setActiveTab }) => {
                   {/* Customer */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, color: '#F97316', flexShrink: 0 }}>
-                      {(customerNames[appt.customer_id] ?? appt.customer_id).charAt(0).toUpperCase()}
+                      {(appt.customerFullName ?? customerNames[appt.customer_id] ?? 'Customer').charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#111827' }}>
-                        {customerNames[appt.customer_id] ?? `Customer ···${appt.customer_id.slice(-4)}`}
+                        {appt.customerFullName ?? customerNames[appt.customer_id] ?? 'Customer'}
                       </p>
                     </div>
                   </div>
                   {/* Style */}
                   <p style={{ margin: 0, fontSize: 13, color: '#374151', fontWeight: 500 }}>
-                    {haircutStyles.find(s => s.haircut_style_id === appt.haircut_style_id)?.name ?? `···${appt.haircut_style_id.slice(-6)}`}
+                    {appt.serviceName ?? haircutStyles.find(s => s.haircut_style_id === appt.haircut_style_id)?.name ?? 'Haircut Service'}
                   </p>
                   {/* Date */}
                   <div>

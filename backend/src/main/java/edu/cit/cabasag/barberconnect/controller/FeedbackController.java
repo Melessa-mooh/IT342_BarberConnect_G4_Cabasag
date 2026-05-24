@@ -1,6 +1,7 @@
 package edu.cit.cabasag.barberconnect.controller;
 
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import edu.cit.cabasag.barberconnect.dto.response.ApiResponse;
@@ -201,6 +202,8 @@ public class FeedbackController {
         private String  feedbackId;
         private String  appointmentId;
         private String  customerId;
+        private String  customerFullName;
+        private String  customerProfileImageUrl;
         private String  barberProfileId;
         private Integer rating;
         private String  comment;
@@ -241,6 +244,8 @@ public class FeedbackController {
                         doc.getString("feedback_id"),
                         doc.getString("appointment_id"),
                         doc.getString("customer_id"),
+                        resolveCustomerFullName(db, doc.getString("customer_id")),
+                        resolveCustomerProfileImage(db, doc.getString("customer_id")),
                         doc.getString("barber_profile_id"),
                         ratingL == null ? null : ratingL.intValue(),
                         doc.getString("comment"),
@@ -257,5 +262,41 @@ public class FeedbackController {
             log.error("Failed to fetch feedback for barber {}: {}", barberProfileId, e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    private String resolveCustomerFullName(Firestore db, String customerId) {
+        if (customerId == null || customerId.isBlank()) return "Customer";
+        try {
+            DocumentSnapshot user = db.collection("users").document(customerId).get().get();
+            if (!user.exists()) return "Customer";
+            String firstName = user.getString("firstName");
+            String lastName = user.getString("lastName");
+            String fullName = ((firstName == null ? "" : firstName.trim()) + " " +
+                    (lastName == null ? "" : lastName.trim())).trim();
+            if (!fullName.isBlank()) return fullName;
+            return firstNonBlank(user.getString("username"), user.getString("email"), "Customer");
+        } catch (Exception e) {
+            log.warn("Could not resolve feedback customer name for {}: {}", customerId, e.getMessage());
+            return "Customer";
+        }
+    }
+
+    private String resolveCustomerProfileImage(Firestore db, String customerId) {
+        if (customerId == null || customerId.isBlank()) return null;
+        try {
+            DocumentSnapshot user = db.collection("users").document(customerId).get().get();
+            return user.exists()
+                    ? firstNonBlank(user.getString("profileImageUrl"), user.getString("photoUrl"), user.getString("avatarUrl"))
+                    : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) return value.trim();
+        }
+        return "";
     }
 }

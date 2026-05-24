@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import edu.cit.cabasag.barberconnect.R
 import edu.cit.cabasag.barberconnect.databinding.ItemPostBinding
 import edu.cit.cabasag.barberconnect.model.Post
 import java.text.SimpleDateFormat
@@ -20,10 +21,10 @@ class PostAdapter(
 
     inner class ViewHolder(private val b: ItemPostBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(post: Post) {
-            val barberId = post.barberProfileId ?: "Barber"
             val barberName = barberNameProvider(post)
-                ?: post.barberName
-                ?: "Barber ...${barberId.takeLast(6)}"
+                ?: post.barberFullName
+                ?: post.barberShopName
+                ?: "Barber"
             b.tvPostAvatar.text = barberName.firstOrNull()?.uppercaseChar()?.toString() ?: "B"
             b.tvPostBarber.text = barberName
             b.tvPostContent.text = post.content.orEmpty()
@@ -31,6 +32,22 @@ class PostAdapter(
             b.tvPostComments.text = "Comments ${post.commentsCount ?: 0}"
             b.tvPostLikes.setOnClickListener { onLikeClick(post) }
             b.tvPostComments.setOnClickListener { onCommentsClick(post) }
+
+            val avatarUrl = post.barberProfileImageUrl
+            if (!avatarUrl.isNullOrBlank()) {
+                b.ivPostAvatar.visibility = View.VISIBLE
+                b.tvPostAvatar.visibility = View.GONE
+                Glide.with(b.ivPostAvatar)
+                    .load(avatarUrl)
+                    .circleCrop()
+                    .into(b.ivPostAvatar)
+            } else {
+                Glide.with(b.ivPostAvatar).clear(b.ivPostAvatar)
+                b.ivPostAvatar.setImageDrawable(null)
+                b.ivPostAvatar.visibility = View.GONE
+                b.tvPostAvatar.visibility = View.VISIBLE
+                b.tvPostAvatar.setBackgroundColor(b.tvPostAvatar.context.getColor(R.color.orange_accent))
+            }
 
             val imageUrl = post.imageUrl
             if (!imageUrl.isNullOrBlank()) {

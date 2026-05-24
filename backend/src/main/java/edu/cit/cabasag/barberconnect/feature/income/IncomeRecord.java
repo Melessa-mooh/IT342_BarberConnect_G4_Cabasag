@@ -19,10 +19,15 @@ public class IncomeRecord {
     private String income_record_id;
     private String barber_profile_id;
     private String appointment_id;
+    private String customerId;
+    private String customerFullName;
+    private String barberFullName;
+    private String serviceName;
     private BigDecimal amount;
     private BigDecimal platformFee;    // 20%
     private BigDecimal netAmount;      // 80%
     private PaymentMethod paymentMethod;
+    private String paymentStatus;
     private String recordedAt;
 
     public enum PaymentMethod {

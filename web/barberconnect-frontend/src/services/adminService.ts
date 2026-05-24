@@ -5,6 +5,12 @@ export interface AdminStats {
   totalAppointments: number;
   activeBarbers: number;
   totalCustomers: number;
+  registeredCustomers?: number;
+  completedAppointments?: number;
+  pendingAppointments?: number;
+  cancelledAppointments?: number;
+  paidAppointments?: number;
+  generatedAt?: string;
 }
 
 const adminService = {
@@ -16,4 +22,5 @@ const adminService = {
   }
 };
 
+export { adminService };
 export default adminService;

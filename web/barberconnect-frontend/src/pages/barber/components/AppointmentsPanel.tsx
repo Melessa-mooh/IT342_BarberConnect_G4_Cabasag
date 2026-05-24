@@ -9,20 +9,21 @@ const AppointmentsPanel = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchAppointments = async () => {
+    try {
+      const data = await appointmentService.getBarberAppointments(barberProfileId);
+      data.sort((a, b) => new Date(b.appointmentDateTime).getTime() - new Date(a.appointmentDateTime).getTime());
+      setAppointments(data);
+    } catch (err) {
+      console.error('Failed to fetch appointments', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!barberProfileId) return;
-    const fetchAppointments = async () => {
-      try {
-        const data = await appointmentService.getBarberAppointments(barberProfileId);
-        // Sort descending
-        data.sort((a, b) => new Date(b.appointmentDateTime).getTime() - new Date(a.appointmentDateTime).getTime());
-        setAppointments(data);
-      } catch (err) {
-        console.error('Failed to fetch appointments', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
     fetchAppointments();
   }, [barberProfileId]);
 
@@ -33,6 +34,17 @@ const AppointmentsPanel = () => {
       setAppointments(appointments.map(app => app.appointment_id === id ? { ...app, status: newStatus } : app));
     } catch (err) {
       console.error('Failed to update status', err);
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    try {
+      await appointmentService.completeAppointment(id);
+      alert('Appointment marked complete.');
+      await fetchAppointments();
+    } catch (err) {
+      console.error('Failed to complete appointment', err);
+      alert('Failed to complete appointment.');
     }
   };
 
@@ -61,10 +73,12 @@ const AppointmentsPanel = () => {
               </tr>
             ) : appointments.map((app) => {
               const d = new Date(app.appointmentDateTime);
+              const customerName = app.customerFullName || 'Customer';
+              const serviceName = app.serviceName || 'Haircut Service';
               return (
               <tr key={app.appointment_id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                <td className="p-4 text-gray-800 font-medium">Customer {app.customer_id.substring(0, 4)}</td>
-                <td className="p-4 text-gray-600">Style {app.haircut_style_id.substring(0, 4)}</td>
+                <td className="p-4 text-gray-800 font-medium">{customerName}</td>
+                <td className="p-4 text-gray-600">{serviceName}</td>
                 <td className="p-4 text-gray-600 font-medium">{d.toLocaleDateString()} {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 text-xs font-bold rounded-full 
@@ -84,6 +98,11 @@ const AppointmentsPanel = () => {
                         Cancel
                       </button>
                     </div>
+                  )}
+                  {(app.status === 'CONFIRMED' || app.status === 'IN_PROGRESS') && (
+                    <button onClick={() => handleComplete(app.appointment_id)} className="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1 rounded-md text-sm font-medium transition">
+                      Mark Complete
+                    </button>
                   )}
                 </td>
               </tr>

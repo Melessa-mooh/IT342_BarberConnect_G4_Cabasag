@@ -216,7 +216,7 @@ class BarberFeedActivity : AppCompatActivity() {
     private fun formatComments(comments: List<Comment>): String {
         if (comments.isEmpty()) return "No comments yet. Be the first."
         return comments.joinToString(separator = "\n\n") {
-            val user = it.userId?.takeLast(6)?.let { suffix -> "User ...$suffix" } ?: "User"
+            val user = it.commenterName?.takeIf { name -> name.isNotBlank() } ?: "User"
             "$user: ${it.content.orEmpty()}"
         }
     }

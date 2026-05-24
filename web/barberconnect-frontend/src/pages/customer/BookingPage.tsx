@@ -5,6 +5,7 @@ import { appointmentService } from '../../services/appointmentService';
 import { barberService } from '../../services/barberService';
 import api from '../../services/api';
 import CustomerNavbar from '../../components/CustomerNavbar';
+import { getHaircutImage, setHaircutImageFallback } from '../../utils/haircutImages';
 import './BookingPage.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ const BookingPage: React.FC = () => {
           id:    s.haircut_style_id,
           name:  s.name,
           price: s.basePrice ?? s.base_price ?? 0,
-          image: s.imageUrl ?? '/api/placeholder/150/150',
+          image: getHaircutImage({ name: s.name, imageUrl: s.imageUrl }),
         })));
         const leaveDates = await barberService.getApprovedLeaveDates(selectedBarber.id);
         setApprovedLeaveDates(leaveDates);
@@ -329,7 +330,11 @@ const BookingPage: React.FC = () => {
                       className={`style-card ${selectedStyle?.id === style.id ? 'selected' : ''}`}
                       onClick={() => setSelectedStyle(style)}
                     >
-                      <img src={style.image} alt={style.name} />
+                      <img
+                        src={style.image}
+                        alt={style.name}
+                        onError={(event) => setHaircutImageFallback(event, style.name)}
+                      />
                       <h4>{style.name}</h4>
                       <span>₱{style.price}</span>
                     </div>

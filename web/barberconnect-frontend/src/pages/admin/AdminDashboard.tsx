@@ -49,9 +49,9 @@ const AdminDashboard: React.FC = () => {
       try {
         const data = await adminService.getDashboardStats();
         setStats(data);
-      } catch {
-        setStatsError('Using preview mode. Backend connection failed.');
-        setStats({ totalRevenue: 0, totalAppointments: 0, activeBarbers: 0, totalCustomers: 0 });
+      } catch (error: any) {
+        setStatsError(error?.message || 'Failed to load admin dashboard data.');
+        setStats(null);
       } finally {
         setStatsLoading(false);
       }
@@ -136,6 +136,11 @@ const AdminDashboard: React.FC = () => {
     return 'bg-red-100 text-red-600 border-red-200';
   };
 
+  const formatPeso = (value?: number) =>
+    `₱${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const customersTotal = stats?.registeredCustomers ?? stats?.totalCustomers ?? 0;
+
   return (
     <div className="admin-dashboard-container">
       {/* Sidebar */}
@@ -186,19 +191,19 @@ const AdminDashboard: React.FC = () => {
             <section className="stats-grid">
               <div className="stat-card">
                 <span className="stat-title">Total Revenue (All Time)</span>
-                <h3 className="stat-value revenue-value">₱{stats?.totalRevenue?.toLocaleString()}</h3>
+                <h3 className="stat-value revenue-value">{stats ? formatPeso(stats.totalRevenue) : 'Unavailable'}</h3>
               </div>
               <div className="stat-card">
                 <span className="stat-title">Total Appointments</span>
-                <h3 className="stat-value">{stats?.totalAppointments}</h3>
+                <h3 className="stat-value">{stats ? stats.totalAppointments : 'Unavailable'}</h3>
               </div>
               <div className="stat-card">
                 <span className="stat-title">Active Barbers</span>
-                <h3 className="stat-value">{stats?.activeBarbers}</h3>
+                <h3 className="stat-value">{stats ? stats.activeBarbers : 'Unavailable'}</h3>
               </div>
               <div className="stat-card">
                 <span className="stat-title">Registered Customers</span>
-                <h3 className="stat-value">{stats?.totalCustomers}</h3>
+                <h3 className="stat-value">{stats ? customersTotal : 'Unavailable'}</h3>
               </div>
             </section>
             <section style={{ marginTop: '2rem' }}>
@@ -291,7 +296,7 @@ const AdminDashboard: React.FC = () => {
                       <p style={{ fontWeight: 700, color: '#e2e8f0', margin: 0, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {rec.firstName} {rec.lastName}
                       </p>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '2px 0 0' }}>{rec.userId}</p>
+                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '2px 0 0' }}>Barber</p>
                     </div>
                     <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '0.45rem 1rem', borderRadius: '20px', border: '1px solid', whiteSpace: 'nowrap', letterSpacing: '0.05em' }}
                       className={attBadge(rec.attendanceStatus)}>
@@ -335,8 +340,8 @@ const AdminDashboard: React.FC = () => {
                     <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '4px 0 0' }}>
                       {lr.reason || 'No reason provided'}
                     </p>
-                    <p style={{ color: '#475569', fontSize: '0.72rem', margin: '4px 0 0' }}>
-                      Barber: {lr.barberProfileId}
+                    <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: '4px 0 0' }} title={lr.barberProfileId}>
+                      Barber: {lr.barberFullName || 'Unknown Barber'}
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>

@@ -22,6 +22,11 @@ export interface Appointment {
   paymentMethod: string;
   paymentStatus: string;
   selectedOptionIds: string[];
+  customerFullName?: string;
+  customerProfileImageUrl?: string | null;
+  barberFullName?: string;
+  barberProfileImageUrl?: string | null;
+  serviceName?: string;
 }
 
 export const appointmentService = {
