@@ -65,6 +65,7 @@ cd IT342_BarberConnect_G4_Cabasag/backend
 # File: backend/src/main/resources/application.properties
 # Required keys:
 #   firebase.service-account-key=<path-to-serviceAccountKey.json>
+# For deployment, set FIREBASE_SERVICE_ACCOUNT_JSON to the full service account JSON instead.
 #   cloudinary.cloud-name=<your-cloud-name>
 #   cloudinary.api-key=<your-api-key>
 #   cloudinary.api-secret=<your-api-secret>

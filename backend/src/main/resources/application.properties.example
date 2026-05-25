@@ -14,6 +14,7 @@ server.servlet.context-path=/api/v1
 # Firebase Configuration
 # FIREBASE_SERVICE_ACCOUNT_PATH: filename of the service account JSON on the classpath
 #   e.g. serviceAccountKey.json  (place the file in src/main/resources/ locally)
+# FIREBASE_SERVICE_ACCOUNT_JSON: full service account JSON for deployment environments
 firebase.service-account-key=classpath:${FIREBASE_SERVICE_ACCOUNT_PATH:serviceAccountKey.json}
 firebase.project.id=your-firebase-project-id
 

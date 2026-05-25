@@ -9,10 +9,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 import javax.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @Slf4j
@@ -27,22 +30,29 @@ public class FirebaseConfig {
     @Value("${firebase.storage.bucket:}")
     private String storageBucket;
 
+    private static final String FIREBASE_SERVICE_ACCOUNT_JSON_ENV = "FIREBASE_SERVICE_ACCOUNT_JSON";
+
     @PostConstruct
     public void initializeFirebase() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder();
 
-                // Try to load service account key if provided
-                if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isEmpty()) {
+                String serviceAccountJson = System.getenv(FIREBASE_SERVICE_ACCOUNT_JSON_ENV);
+                if (serviceAccountJson != null && !serviceAccountJson.isBlank()) {
+                    try (InputStream serviceAccount = new ByteArrayInputStream(
+                            serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
+                        optionsBuilder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
+                        log.info("Firebase initialized with service account JSON from environment");
+                    }
+                } else if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isEmpty()) {
                     try {
-                        // Remove "classpath:" prefix if present
-                        String keyPath = serviceAccountKeyPath.replace("classpath:", "");
-                        Resource resource = new ClassPathResource(keyPath);
+                        Resource resource = resolveServiceAccountResource(serviceAccountKeyPath);
 
                         if (resource.exists()) {
-                            InputStream serviceAccount = resource.getInputStream();
-                            optionsBuilder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
+                            try (InputStream serviceAccount = resource.getInputStream()) {
+                                optionsBuilder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
+                            }
                             log.info("Firebase initialized with service account key");
                         } else {
                             log.warn("Service account key file not found: {}", serviceAccountKeyPath);
@@ -115,5 +125,14 @@ public class FirebaseConfig {
             log.error("Failed to get FirebaseAuth instance: {}", e.getMessage());
             return null;
         }
+    }
+
+    private Resource resolveServiceAccountResource(String configuredPath) {
+        String keyPath = configuredPath.trim();
+        if (keyPath.startsWith("classpath:")) {
+            return new ClassPathResource(keyPath.substring("classpath:".length()));
+        }
+        Resource fileResource = new FileSystemResource(keyPath);
+        return fileResource.exists() ? fileResource : new ClassPathResource(keyPath);
     }
 }
