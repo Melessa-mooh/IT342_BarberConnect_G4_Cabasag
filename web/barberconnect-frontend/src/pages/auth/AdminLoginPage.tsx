@@ -124,7 +124,7 @@ const AdminLoginPage: React.FC = () => {
                     if (errors.email) setErrors(p => ({ ...p, email: undefined }));
                   }}
                   className={errors.email ? 'al-input-err' : ''}
-                  placeholder="admin@barberconnect.com"
+                  placeholder="Enter admin email"
                   autoComplete="username"
                 />
                 {errors.email && <span className="al-field-err">{errors.email}</span>}
@@ -167,15 +167,8 @@ const AdminLoginPage: React.FC = () => {
 
             {/* Credentials hint */}
             <div className="al-hint-box">
-              <p className="al-hint-title">Default credentials</p>
-              <div className="al-hint-row">
-                <span>Email</span>
-                <code>admin@barberconnect.com</code>
-              </div>
-              <div className="al-hint-row">
-                <span>Password</span>
-                <code>admin123</code>
-              </div>
+              <p className="al-hint-title">Admin account</p>
+              <p className="al-hint-note">Use the admin account configured in your backend environment variables.</p>
               <p className="al-hint-note">Make sure your Spring Boot backend is running first.</p>
             </div>
 

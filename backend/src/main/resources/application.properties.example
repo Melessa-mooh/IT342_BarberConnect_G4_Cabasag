@@ -39,6 +39,11 @@ jwt.refresh-expiration=604800000
 # Found in Firebase Console → Project Settings → General → Web API Key
 firebase.web-api-key=${FIREBASE_WEB_API_KEY}
 
+# Default Admin Bootstrap
+# Set these as environment variables before starting the backend.
+# BARBERCONNECT_ADMIN_EMAIL=admin@barberconnect.com
+# BARBERCONNECT_ADMIN_PASSWORD=change-this-password
+
 # Cloudinary Configuration
 cloudinary.cloud-name=your-cloud-name
 cloudinary.api-key=your-api-key

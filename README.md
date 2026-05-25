@@ -69,6 +69,9 @@ cd IT342_BarberConnect_G4_Cabasag/backend
 #   cloudinary.api-key=<your-api-key>
 #   cloudinary.api-secret=<your-api-secret>
 #   jwt.secret=<your-secret-key>
+# Environment variables for optional default admin bootstrap:
+#   BARBERCONNECT_ADMIN_EMAIL=admin@barberconnect.com
+#   BARBERCONNECT_ADMIN_PASSWORD=change-this-password
 
 # 3. Run the backend (starts on http://localhost:8080)
 ./mvnw spring-boot:run        # macOS / Linux
