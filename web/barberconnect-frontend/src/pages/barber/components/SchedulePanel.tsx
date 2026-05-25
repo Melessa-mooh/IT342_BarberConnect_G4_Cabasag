@@ -4,12 +4,6 @@ import { leaveService, type LeaveRequest } from '../../../services/barberFeature
 import { appointmentService, type Appointment } from '../../../services/appointmentService';
 import api from '../../../services/api';
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING:  'bg-amber-100 text-amber-700 border-amber-200',
-  APPROVED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  DECLINED: 'bg-red-100 text-red-600 border-red-200',
-};
-
 const SchedulePanel: React.FC = () => {
   const { user } = useAuth();
   // FIX: Remove fallback to firebaseUid
@@ -25,7 +19,7 @@ const SchedulePanel: React.FC = () => {
   const [leaveRequests, setLeaveRequests]   = useState<LeaveRequest[]>([]);
   const [loadingLeave, setLoadingLeave]     = useState(false);
   const [leaveError, setLeaveError]         = useState<string | null>(null);
-  const [showLeaveForm, setShowLeaveForm]   = useState(false);
+  const [, setShowLeaveForm] = useState(false);
   const [leaveDate, setLeaveDate]           = useState('');
   const [leaveReason, setLeaveReason]       = useState('');
   const [submitting, setSubmitting]         = useState(false);

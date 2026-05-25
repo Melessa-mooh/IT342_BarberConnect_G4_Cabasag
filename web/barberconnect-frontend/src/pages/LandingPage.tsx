@@ -6,7 +6,6 @@ import haircut1 from '../images/haircut 1.png';
 import haircut2 from '../images/haircut 2.png';
 import midnightCurtains from '../images/Midnight-Curtains.jpeg';
 import woman1 from '../images/woman1.jpg';
-import woman2 from '../images/woman2.jpg';
 
 type Role = 'customer' | 'barber' | null;
 
