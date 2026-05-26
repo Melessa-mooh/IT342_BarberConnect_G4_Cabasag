@@ -1,9 +1,12 @@
 package edu.cit.cabasag.barberconnect.ui.customer
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -105,16 +108,30 @@ class BarberFeedActivity : AppCompatActivity() {
         val postId = post.postId ?: return
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(40, 20, 40, 0)
+            setPadding(40, 24, 40, 8)
+            setBackgroundColor(Color.WHITE)
         }
-        val status = TextView(this).apply { text = "Loading comments..." }
+        val commentsBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val commentsScroll = ScrollView(this).apply {
+            addView(commentsBox)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                resources.displayMetrics.density.times(220).toInt()
+            ).apply { setMargins(0, 0, 0, 16) }
+        }
         val input = EditText(this).apply {
             hint = "Write a comment"
             minLines = 1
             maxLines = 3
+            setTextColor(Color.parseColor("#111827"))
+            setHintTextColor(Color.parseColor("#6B7280"))
+            backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CA3AF"))
         }
-        container.addView(status)
+        container.addView(commentsScroll)
         container.addView(input)
+        renderComments(emptyList(), commentsBox, "Loading comments...")
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("Comments")
@@ -124,6 +141,8 @@ class BarberFeedActivity : AppCompatActivity() {
             .create()
 
         dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#F97316"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#6B7280"))
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val uid = currentUserId
                 val content = input.text?.toString()?.trim().orEmpty()
@@ -140,32 +159,48 @@ class BarberFeedActivity : AppCompatActivity() {
                         onSuccess = {
                             Toast.makeText(this@BarberFeedActivity, "Comment added.", Toast.LENGTH_SHORT).show()
                             input.text?.clear()
-                            loadDialogComments(postId, status)
+                            loadDialogComments(postId, commentsBox)
                             viewModel.loadPosts()
                         },
                         onFailure = { Toast.makeText(this@BarberFeedActivity, it.message, Toast.LENGTH_LONG).show() }
                     )
                 }
             }
-            loadDialogComments(postId, status)
+            loadDialogComments(postId, commentsBox)
         }
         dialog.show()
     }
 
-    private fun loadDialogComments(postId: String, status: TextView) {
+    private fun loadDialogComments(postId: String, commentsBox: LinearLayout) {
         lifecycleScope.launch {
             repository.getComments(postId).fold(
-                onSuccess = { comments -> status.text = formatComments(comments) },
-                onFailure = { status.text = it.message ?: "Failed to load comments" }
+                onSuccess = { comments -> renderComments(comments, commentsBox) },
+                onFailure = { renderComments(emptyList(), commentsBox, it.message ?: "Failed to load comments") }
             )
         }
     }
 
-    private fun formatComments(comments: List<Comment>): String {
-        if (comments.isEmpty()) return "No comments yet. Be the first."
-        return comments.joinToString(separator = "\n\n") {
-            val user = it.commenterName?.takeIf { name -> name.isNotBlank() } ?: "User"
-            "$user: ${it.content.orEmpty()}"
+    private fun renderComments(
+        comments: List<Comment>,
+        commentsBox: LinearLayout,
+        emptyMessage: String = "No comments yet. Be the first."
+    ) {
+        commentsBox.removeAllViews()
+        if (comments.isEmpty()) {
+            commentsBox.addView(commentText(emptyMessage, muted = true))
+            return
         }
+        comments.forEach { comment ->
+            val user = comment.commenterName?.takeIf { name -> name.isNotBlank() } ?: "User"
+            val date = comment.createdAt?.takeIf { created -> created.isNotBlank() }?.let { created -> "\n$created" }.orEmpty()
+            commentsBox.addView(commentText("$user$date\n${comment.content.orEmpty()}"))
+        }
+    }
+
+    private fun commentText(text: String, muted: Boolean = false): TextView = TextView(this).apply {
+        this.text = text
+        setTextColor(Color.parseColor(if (muted) "#6B7280" else "#111827"))
+        textSize = 14f
+        setPadding(0, 0, 0, 16)
     }
 }

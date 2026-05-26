@@ -122,6 +122,7 @@ class ProfileActivity : AppCompatActivity() {
                 showStatus(basic.exceptionOrNull()?.message ?: "Failed to save profile.", true)
                 return@launch
             }
+            val updatedUser = basic.getOrNull()
 
             if (current.role.equals("BARBER", ignoreCase = true)) {
                 val barber = barberRepository.updateBarberProfile(
@@ -141,10 +142,10 @@ class ProfileActivity : AppCompatActivity() {
                 }
             }
 
-            user = authRepository.refreshCurrentUser().getOrNull()
+            user = authRepository.refreshCurrentUser().getOrNull() ?: updatedUser
             populate(user)
             setSaving(false)
-            showStatus("Profile saved.", false)
+            showStatus("Profile updated successfully", false)
         }
     }
 

@@ -129,7 +129,14 @@
                 <CalendarView
                     android:id="@+id/calendarView"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:background="@color/white"
+                    android:dateTextAppearance="@style/BookingCalendarDateText"
+                    android:weekDayTextAppearance="@style/BookingCalendarWeekText"
+                    android:focusedMonthDateColor="@color/navy_dark"
+                    android:unfocusedMonthDateColor="@color/gray_text_light"
+                    android:weekSeparatorLineColor="@color/gray_border_soft"
+                    android:selectedWeekBackgroundColor="@color/orange_soft" />
 
                 <TextView
                     android:id="@+id/tvSelectedDate"
@@ -227,7 +234,9 @@
                         android:layout_weight="1"
                         android:text="Cash"
                         android:checked="true"
-                        android:textColor="@color/brown_primary" />
+                        android:textColor="#111827"
+                        android:textColorHint="#6B7280"
+                        android:buttonTint="@color/radio_payment_tint" />
 
                     <RadioButton
                         android:id="@+id/radioCard"
@@ -235,7 +244,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Card"
-                        android:textColor="@color/brown_primary" />
+                        android:textColor="#111827"
+                        android:textColorHint="#6B7280"
+                        android:buttonTint="@color/radio_payment_tint" />
 
                     <RadioButton
                         android:id="@+id/radioDigital"
@@ -243,7 +254,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="E-Wallet"
-                        android:textColor="@color/brown_primary" />
+                        android:textColor="#111827"
+                        android:textColorHint="#6B7280"
+                        android:buttonTint="@color/radio_payment_tint" />
                 </RadioGroup>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

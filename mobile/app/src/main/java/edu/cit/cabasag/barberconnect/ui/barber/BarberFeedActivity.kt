@@ -1,11 +1,15 @@
 package edu.cit.cabasag.barberconnect.ui.barber
 
+import android.net.Uri
 import android.os.Bundle
+import android.graphics.Color
 import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -23,6 +27,10 @@ import edu.cit.cabasag.barberconnect.viewmodel.BarberViewModel
 import edu.cit.cabasag.barberconnect.viewmodel.BarberViewModelFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 
 class BarberFeedActivity : AppCompatActivity() {
 
@@ -31,6 +39,14 @@ class BarberFeedActivity : AppCompatActivity() {
     private lateinit var adapter: PostAdapter
     private lateinit var repository: BarberRepository
     private var currentUserId: String? = null
+    private var selectedPostImageUri: Uri? = null
+
+    private val postImagePicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        selectedPostImageUri = uri
+        binding.ivSelectedPostImage.visibility = if (uri != null) View.VISIBLE else View.GONE
+        binding.btnRemovePostImage.visibility = if (uri != null) View.VISIBLE else View.GONE
+        if (uri != null) binding.ivSelectedPostImage.setImageURI(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,17 +98,24 @@ class BarberFeedActivity : AppCompatActivity() {
 
         // Show create-post panel for barbers
         binding.createPostCard.visibility = View.VISIBLE
+        binding.btnChoosePostImage.setOnClickListener { postImagePicker.launch("image/*") }
+        binding.btnRemovePostImage.setOnClickListener {
+            selectedPostImageUri = null
+            binding.ivSelectedPostImage.setImageDrawable(null)
+            binding.ivSelectedPostImage.visibility = View.GONE
+            binding.btnRemovePostImage.visibility = View.GONE
+        }
         binding.btnPost.setOnClickListener {
             val content = binding.etPostContent.text?.toString()?.trim() ?: ""
             if (barberProfileId.isBlank()) {
                 Toast.makeText(this, "Barber profile not loaded. Refresh your profile and try again.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
-            if (content.isBlank()) {
-                Toast.makeText(this, "Post content cannot be empty.", Toast.LENGTH_SHORT).show()
+            if (content.isBlank() && selectedPostImageUri == null) {
+                Toast.makeText(this, "Add a caption or choose an image.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            viewModel.createPost(barberProfileId, content)
+            viewModel.createPost(barberProfileId, content, selectedPostImageUri?.toMultipartPart("file", "post"))
         }
 
         viewModel.createPostState.observe(this) { state ->
@@ -101,6 +124,10 @@ class BarberFeedActivity : AppCompatActivity() {
                 is UiState.Success -> {
                     binding.btnPost.isEnabled = true
                     binding.etPostContent.text?.clear()
+                    selectedPostImageUri = null
+                    binding.ivSelectedPostImage.setImageDrawable(null)
+                    binding.ivSelectedPostImage.visibility = View.GONE
+                    binding.btnRemovePostImage.visibility = View.GONE
                     Toast.makeText(this, "Post published!", Toast.LENGTH_SHORT).show()
                     viewModel.resetCreatePostState()
                     viewModel.loadPosts() // refresh feed
@@ -157,16 +184,30 @@ class BarberFeedActivity : AppCompatActivity() {
         val postId = post.postId ?: return
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(40, 20, 40, 0)
+            setPadding(40, 24, 40, 8)
+            setBackgroundColor(Color.WHITE)
         }
-        val status = TextView(this).apply { text = "Loading comments..." }
+        val commentsBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val commentsScroll = ScrollView(this).apply {
+            addView(commentsBox)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                resources.displayMetrics.density.times(220).toInt()
+            ).apply { setMargins(0, 0, 0, 16) }
+        }
         val input = EditText(this).apply {
             hint = "Write a comment"
             minLines = 1
             maxLines = 3
+            setTextColor(Color.parseColor("#111827"))
+            setHintTextColor(Color.parseColor("#6B7280"))
+            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#9CA3AF"))
         }
-        container.addView(status)
+        container.addView(commentsScroll)
         container.addView(input)
+        renderComments(emptyList(), commentsBox, "Loading comments...")
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("Comments")
@@ -176,6 +217,8 @@ class BarberFeedActivity : AppCompatActivity() {
             .create()
 
         dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#F97316"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#6B7280"))
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val uid = currentUserId
                 val content = input.text?.toString()?.trim().orEmpty()
@@ -192,32 +235,61 @@ class BarberFeedActivity : AppCompatActivity() {
                         onSuccess = {
                             Toast.makeText(this@BarberFeedActivity, "Comment added.", Toast.LENGTH_SHORT).show()
                             input.text?.clear()
-                            loadDialogComments(postId, status)
+                            loadDialogComments(postId, commentsBox)
                             viewModel.loadPosts()
                         },
                         onFailure = { Toast.makeText(this@BarberFeedActivity, it.message, Toast.LENGTH_LONG).show() }
                     )
                 }
             }
-            loadDialogComments(postId, status)
+            loadDialogComments(postId, commentsBox)
         }
         dialog.show()
     }
 
-    private fun loadDialogComments(postId: String, status: TextView) {
+    private fun loadDialogComments(postId: String, commentsBox: LinearLayout) {
         lifecycleScope.launch {
             repository.getComments(postId).fold(
-                onSuccess = { comments -> status.text = formatComments(comments) },
-                onFailure = { status.text = it.message ?: "Failed to load comments" }
+                onSuccess = { comments -> renderComments(comments, commentsBox) },
+                onFailure = { renderComments(emptyList(), commentsBox, it.message ?: "Failed to load comments") }
             )
         }
     }
 
-    private fun formatComments(comments: List<Comment>): String {
-        if (comments.isEmpty()) return "No comments yet. Be the first."
-        return comments.joinToString(separator = "\n\n") {
-            val user = it.commenterName?.takeIf { name -> name.isNotBlank() } ?: "User"
-            "$user: ${it.content.orEmpty()}"
+    private fun renderComments(
+        comments: List<Comment>,
+        commentsBox: LinearLayout,
+        emptyMessage: String = "No comments yet. Be the first."
+    ) {
+        commentsBox.removeAllViews()
+        if (comments.isEmpty()) {
+            commentsBox.addView(commentText(emptyMessage, muted = true))
+            return
+        }
+        comments.forEach { comment ->
+            val user = comment.commenterName?.takeIf { name -> name.isNotBlank() } ?: "User"
+            val date = comment.createdAt?.takeIf { created -> created.isNotBlank() }?.let { created -> "\n$created" }.orEmpty()
+            commentsBox.addView(commentText("$user$date\n${comment.content.orEmpty()}"))
+        }
+    }
+
+    private fun commentText(text: String, muted: Boolean = false): TextView = TextView(this).apply {
+        this.text = text
+        setTextColor(Color.parseColor(if (muted) "#6B7280" else "#111827"))
+        textSize = 14f
+        setPadding(0, 0, 0, 16)
+    }
+
+    private fun Uri.toMultipartPart(fieldName: String, prefix: String): MultipartBody.Part? {
+        val cacheFile = File(cacheDir, "$prefix-upload-${System.currentTimeMillis()}.jpg")
+        return try {
+            contentResolver.openInputStream(this)?.use { input ->
+                cacheFile.outputStream().use { output -> input.copyTo(output) }
+            } ?: return null
+            val body = cacheFile.asRequestBody("image/*".toMediaTypeOrNull())
+            MultipartBody.Part.createFormData(fieldName, cacheFile.name, body)
+        } catch (_: Exception) {
+            null
         }
     }
 }

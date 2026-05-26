@@ -1,6 +1,7 @@
 package edu.cit.cabasag.barberconnect.network
 
 import android.content.Context
+import android.util.Log
 import edu.cit.cabasag.barberconnect.BuildConfig
 import edu.cit.cabasag.barberconnect.util.TokenManager
 import kotlinx.coroutines.flow.firstOrNull
@@ -15,6 +16,13 @@ import java.util.concurrent.TimeUnit
 class RetrofitClient(context: Context) {
 
     private val tokenManager = TokenManager(context)
+    private val baseUrl = BuildConfig.BASE_URL
+
+    init {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Final BASE_URL: $baseUrl")
+        }
+    }
 
     private val authInterceptor = Interceptor { chain ->
         val token = runBlocking { tokenManager.getToken().firstOrNull() }
@@ -27,7 +35,7 @@ class RetrofitClient(context: Context) {
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = if (BuildConfig.DEBUG)
-            HttpLoggingInterceptor.Level.BODY
+            HttpLoggingInterceptor.Level.BASIC
         else
             HttpLoggingInterceptor.Level.NONE
     }
@@ -42,10 +50,14 @@ class RetrofitClient(context: Context) {
 
     val apiService: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
+    }
+
+    private companion object {
+        const val TAG = "BarberNetwork"
     }
 }

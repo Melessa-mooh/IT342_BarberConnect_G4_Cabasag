@@ -5,6 +5,7 @@ import edu.cit.cabasag.barberconnect.model.*
 import edu.cit.cabasag.barberconnect.repository.BarberRepository
 import edu.cit.cabasag.barberconnect.util.UiState
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 
 class BarberViewModel(private val repository: BarberRepository) : ViewModel() {
 
@@ -101,7 +102,8 @@ class BarberViewModel(private val repository: BarberRepository) : ViewModel() {
         name: String,
         description: String,
         basePrice: Double,
-        durationMinutes: Int
+        durationMinutes: Int,
+        file: MultipartBody.Part? = null
     ) {
         _catalogMutationState.value = UiState.Loading
         viewModelScope.launch {
@@ -110,7 +112,8 @@ class BarberViewModel(private val repository: BarberRepository) : ViewModel() {
                 name,
                 description,
                 basePrice,
-                durationMinutes
+                durationMinutes,
+                file
             ).fold(
                 onSuccess = { UiState.Success("Style created") },
                 onFailure = { UiState.Error(it.message ?: "Failed to create style") }
@@ -161,10 +164,10 @@ class BarberViewModel(private val repository: BarberRepository) : ViewModel() {
         }
     }
 
-    fun createPost(barberProfileId: String, content: String) {
+    fun createPost(barberProfileId: String, content: String, file: MultipartBody.Part? = null) {
         _createPostState.value = UiState.Loading
         viewModelScope.launch {
-            _createPostState.value = repository.createPost(barberProfileId, content).fold(
+            _createPostState.value = repository.createPost(barberProfileId, content, file).fold(
                 onSuccess = { UiState.Success(it) },
                 onFailure = { UiState.Error(it.message ?: "Failed to create post") }
             )

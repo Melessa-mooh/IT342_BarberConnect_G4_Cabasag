@@ -1,6 +1,8 @@
 package edu.cit.cabasag.barberconnect.ui.customer
 
 import android.app.AlertDialog
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -101,9 +103,6 @@ class MyAppointmentsActivity : AppCompatActivity() {
     }
 
     private fun showFeedbackDialog(appt: Appointment) {
-        val dialogView = layoutInflater.inflate(
-            android.R.layout.simple_list_item_2, null
-        )
         // Build a simple dialog with RatingBar + EditText
         val ratingBar = RatingBar(this).apply {
             numStars    = 5
@@ -112,6 +111,9 @@ class MyAppointmentsActivity : AppCompatActivity() {
         }
         val etComment = EditText(this).apply {
             hint = "Leave a comment (optional)"
+            setTextColor(Color.parseColor("#111827"))
+            setHintTextColor(Color.parseColor("#6B7280"))
+            backgroundTintList = ColorStateList.valueOf(Color.parseColor("#9CA3AF"))
         }
         val container = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL

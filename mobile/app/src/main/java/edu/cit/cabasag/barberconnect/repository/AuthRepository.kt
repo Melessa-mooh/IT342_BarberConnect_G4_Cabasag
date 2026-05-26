@@ -39,6 +39,7 @@ class AuthRepository(
     suspend fun login(request: LoginRequest): Result<AuthResponse> {
         val normalizedRequest = request.copy(email = request.email.trim().lowercase())
         if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Login request start")
             Log.d(TAG, "Login email: ${normalizedRequest.email}")
         }
         val backendResult = authenticate { api.login(normalizedRequest) }
@@ -148,8 +149,14 @@ class AuthRepository(
             Result.failure(Exception(msg ?: "Request failed (${response.code()})"))
         }
     } catch (e: IOException) {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Network exception: ${e.message}")
+        }
         Result.failure(Exception("Network error. Check your connection."))
     } catch (e: Exception) {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Unexpected auth exception: ${e.message}")
+        }
         Result.failure(Exception(e.message ?: "Unexpected error."))
     }
 

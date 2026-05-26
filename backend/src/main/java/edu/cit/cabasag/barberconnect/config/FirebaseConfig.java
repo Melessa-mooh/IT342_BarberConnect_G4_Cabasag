@@ -16,6 +16,7 @@ import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 @Configuration
 @Slf4j
@@ -27,62 +28,25 @@ public class FirebaseConfig {
     @Value("${firebase.project.id:barberconnect-db}")
     private String projectId;
 
+    @Value("${FIREBASE_PROJECT_ID:}")
+    private String firebaseProjectId;
+
     @Value("${firebase.storage.bucket:}")
     private String storageBucket;
 
     private static final String FIREBASE_SERVICE_ACCOUNT_JSON_ENV = "FIREBASE_SERVICE_ACCOUNT_JSON";
+    private static final String FIREBASE_SERVICE_ACCOUNT_BASE64_ENV = "FIREBASE_SERVICE_ACCOUNT_BASE64";
 
     @PostConstruct
     public void initializeFirebase() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
-                FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder();
+                FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder()
+                        .setCredentials(loadFirebaseCredentials());
 
-                String serviceAccountJson = System.getenv(FIREBASE_SERVICE_ACCOUNT_JSON_ENV);
-                if (serviceAccountJson != null && !serviceAccountJson.isBlank()) {
-                    try (InputStream serviceAccount = new ByteArrayInputStream(
-                            serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
-                        optionsBuilder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
-                        log.info("Firebase initialized with service account JSON from environment");
-                    }
-                } else if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isEmpty()) {
-                    try {
-                        Resource resource = resolveServiceAccountResource(serviceAccountKeyPath);
-
-                        if (resource.exists()) {
-                            try (InputStream serviceAccount = resource.getInputStream()) {
-                                optionsBuilder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
-                            }
-                            log.info("Firebase initialized with service account key");
-                        } else {
-                            log.warn("Service account key file not found: {}", serviceAccountKeyPath);
-                            // Initialize with application default credentials for development
-                            optionsBuilder.setCredentials(GoogleCredentials.getApplicationDefault());
-                        }
-                    } catch (Exception e) {
-                        log.warn("Failed to load service account key, using application default credentials: {}",
-                                e.getMessage());
-                        try {
-                            optionsBuilder.setCredentials(GoogleCredentials.getApplicationDefault());
-                        } catch (Exception ex) {
-                            log.warn(
-                                    "Application default credentials not available, initializing without credentials for development");
-                        }
-                    }
-                } else {
-                    log.info("No service account key configured, using dummy credentials for development");
-                    try {
-                        optionsBuilder.setCredentials(GoogleCredentials.fromStream(
-                                new java.io.ByteArrayInputStream(
-                                        "{\"type\": \"service_account\", \"project_id\": \"dummy\"}".getBytes())));
-                    } catch (Exception e) {
-                        log.warn("Application dummy credentials failed");
-                    }
-                }
-
-                // Set project ID if available
-                if (projectId != null && !projectId.isEmpty()) {
-                    optionsBuilder.setProjectId(projectId);
+                String resolvedProjectId = firstNonBlank(firebaseProjectId, projectId);
+                if (resolvedProjectId != null) {
+                    optionsBuilder.setProjectId(resolvedProjectId);
                 }
 
                 if (storageBucket != null && !storageBucket.isEmpty()) {
@@ -94,21 +58,7 @@ public class FirebaseConfig {
             }
         } catch (Exception e) {
             log.error("Failed to initialize Firebase: {}", e.getMessage());
-            // Initialize a minimal Firebase app for development
-            try {
-                if (FirebaseApp.getApps().isEmpty()) {
-                    FirebaseOptions options = FirebaseOptions.builder()
-                            .setProjectId(projectId != null ? projectId : "barberconnect-dev")
-                            .setCredentials(GoogleCredentials.fromStream(
-                                    new java.io.ByteArrayInputStream(
-                                            "{\"type\": \"service_account\", \"project_id\": \"dummy\"}".getBytes())))
-                            .build();
-                    FirebaseApp.initializeApp(options);
-                    log.info("Firebase initialized with minimal configuration for development");
-                }
-            } catch (Exception ex) {
-                log.error("Failed to initialize Firebase even with minimal configuration: {}", ex.getMessage());
-            }
+            throw new IllegalStateException("Firebase Admin SDK could not be initialized", e);
         }
     }
 
@@ -116,15 +66,50 @@ public class FirebaseConfig {
     public FirebaseAuth firebaseAuth() {
         try {
             if (!FirebaseApp.getApps().isEmpty()) {
-                return FirebaseAuth.getInstance();
-            } else {
-                log.warn("Firebase app not initialized, FirebaseAuth will not be available");
-                return null;
+                return FirebaseAuth.getInstance(FirebaseApp.getInstance());
             }
+            throw new IllegalStateException("Firebase app is not initialized");
         } catch (Exception e) {
             log.error("Failed to get FirebaseAuth instance: {}", e.getMessage());
-            return null;
+            throw new IllegalStateException("FirebaseAuth bean could not be created", e);
         }
+    }
+
+    private GoogleCredentials loadFirebaseCredentials() throws Exception {
+        String serviceAccountBase64 = normalizeEnvValue(System.getenv(FIREBASE_SERVICE_ACCOUNT_BASE64_ENV));
+        if (serviceAccountBase64 != null) {
+            byte[] decoded = Base64.getMimeDecoder().decode(serviceAccountBase64.replaceAll("\\s+", ""));
+            try (InputStream serviceAccount = new ByteArrayInputStream(decoded)) {
+                log.info("Loading Firebase credentials from {}", FIREBASE_SERVICE_ACCOUNT_BASE64_ENV);
+                return GoogleCredentials.fromStream(serviceAccount);
+            }
+        }
+
+        String serviceAccountJson = normalizeEnvValue(System.getenv(FIREBASE_SERVICE_ACCOUNT_JSON_ENV));
+        if (serviceAccountJson != null && !serviceAccountJson.isBlank()) {
+            serviceAccountJson = serviceAccountJson
+                    .replace("\\n", "\n")
+                    .replace("\\\"", "\"");
+            try (InputStream serviceAccount = new ByteArrayInputStream(
+                    serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
+                log.info("Loading Firebase credentials from {}", FIREBASE_SERVICE_ACCOUNT_JSON_ENV);
+                return GoogleCredentials.fromStream(serviceAccount);
+            }
+        }
+
+        if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isBlank()) {
+            Resource resource = resolveServiceAccountResource(serviceAccountKeyPath);
+            if (resource.exists()) {
+                try (InputStream serviceAccount = resource.getInputStream()) {
+                    log.info("Loading Firebase credentials from configured service account key");
+                    return GoogleCredentials.fromStream(serviceAccount);
+                }
+            }
+            log.warn("Service account key file not found: {}", serviceAccountKeyPath);
+        }
+
+        log.warn("Firebase service account JSON/key not configured. Trying application default credentials.");
+        return GoogleCredentials.getApplicationDefault();
     }
 
     private Resource resolveServiceAccountResource(String configuredPath) {
@@ -134,5 +119,22 @@ public class FirebaseConfig {
         }
         Resource fileResource = new FileSystemResource(keyPath);
         return fileResource.exists() ? fileResource : new ClassPathResource(keyPath);
+    }
+
+    private String normalizeEnvValue(String value) {
+        if (value == null) return null;
+        String normalized = value.trim();
+        if (normalized.isBlank()) return null;
+        if (normalized.length() >= 2 && normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1).trim();
+        }
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) return value.trim();
+        }
+        return null;
     }
 }

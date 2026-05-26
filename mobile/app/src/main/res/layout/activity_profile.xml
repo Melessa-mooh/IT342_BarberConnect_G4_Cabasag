@@ -116,11 +116,17 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
+                            app:hintTextColor="#6B7280"
+                            app:boxStrokeColor="#9CA3AF"
+                            app:boxStrokeErrorColor="@color/error_red"
                             android:hint="First name">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etFirstName"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:textColor="#111827"
+                                android:textColorHint="#6B7280"
+                                android:backgroundTint="#9CA3AF" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
@@ -128,11 +134,17 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
+                            app:hintTextColor="#6B7280"
+                            app:boxStrokeColor="#9CA3AF"
+                            app:boxStrokeErrorColor="@color/error_red"
                             android:hint="Last name">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etLastName"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:textColor="#111827"
+                                android:textColorHint="#6B7280"
+                                android:backgroundTint="#9CA3AF" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
@@ -140,12 +152,18 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
+                            app:hintTextColor="#6B7280"
+                            app:boxStrokeColor="#9CA3AF"
+                            app:boxStrokeErrorColor="@color/error_red"
                             android:hint="Phone number">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etPhone"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="phone" />
+                                android:inputType="phone"
+                                android:textColor="#111827"
+                                android:textColorHint="#6B7280"
+                                android:backgroundTint="#9CA3AF" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <LinearLayout
@@ -160,6 +178,9 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
+                                app:hintTextColor="#6B7280"
+                                app:boxStrokeColor="#9CA3AF"
+                                app:boxStrokeErrorColor="@color/error_red"
                                 android:hint="Bio">
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/etBio"
@@ -167,7 +188,10 @@
                                     android:layout_height="wrap_content"
                                     android:inputType="textMultiLine"
                                     android:maxLines="4"
-                                    android:minLines="2" />
+                                    android:minLines="2"
+                                    android:textColor="#111827"
+                                    android:textColorHint="#6B7280"
+                                    android:backgroundTint="#9CA3AF" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -175,12 +199,18 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
+                                app:hintTextColor="#6B7280"
+                                app:boxStrokeColor="#9CA3AF"
+                                app:boxStrokeErrorColor="@color/error_red"
                                 android:hint="Years experience">
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/etExperience"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="number" />
+                                    android:inputType="number"
+                                    android:textColor="#111827"
+                                    android:textColorHint="#6B7280"
+                                    android:backgroundTint="#9CA3AF" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -188,12 +218,18 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
+                                app:hintTextColor="#6B7280"
+                                app:boxStrokeColor="#9CA3AF"
+                                app:boxStrokeErrorColor="@color/error_red"
                                 android:hint="GCash number">
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/etGcash"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:inputType="phone" />
+                                    android:inputType="phone"
+                                    android:textColor="#111827"
+                                    android:textColorHint="#6B7280"
+                                    android:backgroundTint="#9CA3AF" />
                             </com.google.android.material.textfield.TextInputLayout>
 
                             <com.google.android.material.switchmaterial.SwitchMaterial
@@ -201,6 +237,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
+                                android:textColor="#111827"
                                 android:text="Available for bookings" />
                         </LinearLayout>
 

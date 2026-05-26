@@ -16,12 +16,14 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Debug default is the Android emulator loopback.
-        // Real device testing: override with -PBASE_URL=http://<PC_LOCAL_IP>:8080/api/v1/
+        // Debug default targets a real device over USB with `adb reverse tcp:8080 tcp:8080`.
+        // Emulator testing: override with -PBASE_URL=http://10.0.2.2:8080/api/v1/
+        // Same-Wi-Fi real device testing: override with -PBASE_URL=http://<PC_LOCAL_IP>:8080/api/v1/
         // Release/deployed builds should pass -PBASE_URL=https://<deployed-backend>/api/v1/
-        val configuredBaseUrl = providers.gradleProperty("BASE_URL")
-            .orElse("http://10.0.2.2:8080/api/v1/")
+        val rawBaseUrl = providers.gradleProperty("BASE_URL")
+            .orElse("http://127.0.0.1:8080/api/v1/")
             .get()
+        val configuredBaseUrl = if (rawBaseUrl.endsWith("/")) rawBaseUrl else "$rawBaseUrl/"
         buildConfigField("String", "BASE_URL", "\"$configuredBaseUrl\"")
     }
 
@@ -32,9 +34,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            val configuredBaseUrl = providers.gradleProperty("BASE_URL")
+            val rawBaseUrl = providers.gradleProperty("BASE_URL")
                 .orElse("https://your-production-url.com/api/v1/")
                 .get()
+            val configuredBaseUrl = if (rawBaseUrl.endsWith("/")) rawBaseUrl else "$rawBaseUrl/"
             buildConfigField("String", "BASE_URL", "\"$configuredBaseUrl\"")
         }
     }

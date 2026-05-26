@@ -55,7 +55,7 @@ interface ApiService {
     suspend fun updateBarberProfile(
         @Path("userId") userId: String,
         @Body request: UpdateBarberProfileRequest
-    ): Response<ApiResponse<Barber>>
+    ): Response<ApiResponse<AuthResponse.BarberProfileResponse>>
 
     @Multipart
     @POST("barbers/{userId}/profile-picture")
@@ -76,7 +76,8 @@ interface ApiService {
         @Part("name") name: RequestBody,
         @Part("description") description: RequestBody,
         @Part("basePrice") basePrice: RequestBody,
-        @Part("durationMinutes") durationMinutes: RequestBody
+        @Part("durationMinutes") durationMinutes: RequestBody,
+        @Part file: MultipartBody.Part? = null
     ): Response<ApiResponse<HaircutStyle>>
 
     @PUT("haircuts/{haircutStyleId}")

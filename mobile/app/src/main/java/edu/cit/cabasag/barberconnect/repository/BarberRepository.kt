@@ -1,5 +1,7 @@
 package edu.cit.cabasag.barberconnect.repository
 
+import android.util.Log
+import edu.cit.cabasag.barberconnect.BuildConfig
 import com.google.gson.Gson
 import edu.cit.cabasag.barberconnect.model.*
 import edu.cit.cabasag.barberconnect.network.ApiService
@@ -10,6 +12,9 @@ import retrofit2.Response
 import java.io.IOException
 
 class BarberRepository(private val api: ApiService) {
+    private companion object {
+        const val TAG = "BarberRepository"
+    }
 
     suspend fun getBarberAppointments(barberProfileId: String): Result<List<Appointment>> =
         safeCall { api.getBarberAppointments(barberProfileId) }
@@ -37,7 +42,8 @@ class BarberRepository(private val api: ApiService) {
         name: String,
         description: String,
         basePrice: Double,
-        durationMinutes: Int
+        durationMinutes: Int,
+        file: MultipartBody.Part? = null
     ): Result<HaircutStyle> {
         val text = "text/plain".toMediaType()
         return safeCall {
@@ -46,7 +52,8 @@ class BarberRepository(private val api: ApiService) {
                 name.toRequestBody(text),
                 description.toRequestBody(text),
                 basePrice.toString().toRequestBody(text),
-                durationMinutes.toString().toRequestBody(text)
+                durationMinutes.toString().toRequestBody(text),
+                file
             )
         }
     }
@@ -66,18 +73,19 @@ class BarberRepository(private val api: ApiService) {
     suspend fun getBarberById(id: String): Result<Barber> =
         safeCall { api.getBarberById(id) }
 
-    suspend fun updateBarberProfile(userId: String, request: UpdateBarberProfileRequest): Result<Barber> =
+    suspend fun updateBarberProfile(userId: String, request: UpdateBarberProfileRequest): Result<AuthResponse.BarberProfileResponse> =
         safeCall { api.updateBarberProfile(userId, request) }
 
     suspend fun uploadBarberProfilePicture(userId: String, file: MultipartBody.Part): Result<String> =
         safeCall { api.uploadBarberProfilePicture(userId, file) }
 
-    suspend fun createPost(barberProfileId: String, content: String): Result<Post> {
+    suspend fun createPost(barberProfileId: String, content: String, file: MultipartBody.Part? = null): Result<Post> {
         val text = "text/plain".toMediaType()
         return safeCall {
             api.createPost(
                 barberProfileId.toRequestBody(text),
-                content.toRequestBody(text)
+                content.toRequestBody(text),
+                file
             )
         }
     }
@@ -101,6 +109,9 @@ class BarberRepository(private val api: ApiService) {
     private suspend fun <T> safeCall(call: suspend () -> Response<ApiResponse<T>>): Result<T> =
         try {
             val response = call()
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Response code: ${response.code()}")
+            }
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body?.data != null) {
@@ -109,14 +120,24 @@ class BarberRepository(private val api: ApiService) {
                     Result.failure(Exception(body?.error ?: "Empty response"))
                 }
             } else {
+                val errorBody = response.errorBody()?.string()
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Backend error body: ${errorBody.orEmpty()}")
+                }
                 val msg = try {
-                    Gson().fromJson(response.errorBody()?.string(), ApiResponse::class.java)?.error
+                    Gson().fromJson(errorBody, ApiResponse::class.java)?.error
                 } catch (_: Exception) { null }
                 Result.failure(Exception(msg ?: "Request failed (${response.code()})"))
             }
         } catch (e: IOException) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Network exception: ${e.message}")
+            }
             Result.failure(Exception("Network error. Check your connection."))
         } catch (e: Exception) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Unexpected repository exception: ${e.message}")
+            }
             Result.failure(Exception(e.message ?: "Unexpected error."))
         }
 }
